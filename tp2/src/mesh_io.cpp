@@ -208,7 +208,7 @@ bool read_indexed_positions( const char *filename, std::vector<Point>& positions
 }
 
 
-bool read_materials_mtl( const char *filename, Materials& _materials  )
+bool read_materials_mtl( const char *filename, Materials& materials  )
 {
     FILE *in= fopen(filename, "rt");
     if(!in)
@@ -244,8 +244,8 @@ bool read_materials_mtl( const char *filename, Materials& _materials  )
         {
             if(sscanf(line, "newmtl %[^\r\n]", tmp) == 1)
             {
-                int id= _materials.insert(Material(Black()), tmp);
-                material= &_materials.material(id);
+                int id= materials.insert(Material(Black()), tmp);
+                material= &materials.material(id);
             }
         }
         
@@ -281,13 +281,13 @@ bool read_materials_mtl( const char *filename, Materials& _materials  )
         else if(line[0] == 'm')
         {
             if(sscanf(line, "map_Kd %[^\r\n]", tmp) == 1)
-                material->diffuse_texture= _materials.insert_texture( absolute_filename(pathname(filename), tmp).c_str() );
+                material->diffuse_texture= materials.insert_texture( absolute_filename(pathname(filename), tmp).c_str() );
                 
             else if(sscanf(line, "map_Ks %[^\r\n]", tmp) == 1)
-                material->specular_texture= _materials.insert_texture( absolute_filename(pathname(filename), tmp).c_str() );
+                material->specular_texture= materials.insert_texture( absolute_filename(pathname(filename), tmp).c_str() );
                 
             else if(sscanf(line, "map_Ns %[^\r\n]", tmp) == 1)
-                material->ns_texture= _materials.insert_texture( absolute_filename(pathname(filename), tmp).c_str() );
+                material->ns_texture= materials.insert_texture( absolute_filename(pathname(filename), tmp).c_str() );
         }
     }
     
@@ -299,7 +299,7 @@ bool read_materials_mtl( const char *filename, Materials& _materials  )
     return !error;
 }
 
-bool read_materials( const char *filename, Materials& _materials, std::vector<int>& indices )
+bool read_materials( const char *filename, Materials& materials, std::vector<int>& indices )
 {
     indices.clear();
     
@@ -376,7 +376,7 @@ bool read_materials( const char *filename, Materials& _materials, std::vector<in
                     materials_filename= std::string(tmp);
                 
                 // charge les matieres
-                if(!read_materials_mtl( materials_filename.c_str(), _materials ))
+                if(!read_materials_mtl( materials_filename.c_str(), materials ))
                     break;
             }
         }
@@ -384,7 +384,7 @@ bool read_materials( const char *filename, Materials& _materials, std::vector<in
         else if(line[0] == 'u')
         {
            if(sscanf(line, "usemtl %[^\r\n]", tmp) == 1)
-               material_id= _materials.find(tmp);
+               material_id= materials.find(tmp);
         }
     }
     
@@ -513,8 +513,8 @@ MeshIOData read_meshio_data( const char *filename )
             }
             
             // force une matiere par defaut, si necessaire
-            if(material_id == -1 && data._materials.count() > 0)
-                material_id= data._materials.default_material_index();
+            if(material_id == -1 && data.materials.count() > 0)
+                material_id= data.materials.default_material_index();
             
             // triangule la face
             for(unsigned v= 2; v +1 < wp.size(); v++)
@@ -560,7 +560,7 @@ MeshIOData read_meshio_data( const char *filename )
                     materials_filename= std::string(tmp);
                 
                 // charge les matieres
-                if(!read_materials_mtl( materials_filename.c_str(), data._materials ))
+                if(!read_materials_mtl( materials_filename.c_str(), data.materials ))
                     break;
             }
         }
@@ -568,7 +568,7 @@ MeshIOData read_meshio_data( const char *filename )
         else if(line[0] == 'u')
         {
            if(sscanf(line, "usemtl %[^\r\n]", tmp) == 1)
-               material_id= data._materials.find(tmp);
+               material_id= data.materials.find(tmp);
         }
     }
     
@@ -582,14 +582,14 @@ MeshIOData read_meshio_data( const char *filename )
 
     printf("  %d indices, %d positions %d texcoords %d normals\n", 
         int(data.indices.size()), int(data.positions.size()), int(data.texcoords.size()), int(data.normals.size()));
-    printf("  %d materials, %d textures\n", data._materials.count(), data._materials.filename_count());
+    printf("  %d materials, %d textures\n", data.materials.count(), data.materials.filename_count());
     return data;
 }
 
 
-bool read_images( const Materials& _materials, std::vector<Image>& images )
+bool read_images( const Materials& materials, std::vector<Image>& images )
 {
-    int n= _materials.filename_count();
+    int n= materials.filename_count();
     if(n == 0)  // pas de textures
         return true;
     
@@ -599,7 +599,7 @@ bool read_images( const Materials& _materials, std::vector<Image>& images )
     for(int i= 0; i < n; i++)
     {
         //~ printf("loading '%s'...\n", materials.filename(i));
-        images[i]= read_image(_materials.filename(i));
+        images[i]= read_image(materials.filename(i));
     }
     
     return true;
@@ -608,7 +608,7 @@ bool read_images( const Materials& _materials, std::vector<Image>& images )
 
 bool read_images( MeshIOData& data )
 {
-    return read_images(data._materials, data.images);
+    return read_images(data.materials, data.images);
 }
 
 

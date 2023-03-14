@@ -45,16 +45,16 @@ struct Material
 struct Materials
 {
     std::vector<std::string> names;     //!< noms des matieres.
-    std::vector<Material> _materials;    //!< description des matieres.
+    std::vector<Material> materials;    //!< description des matieres.
     std::vector<std::string> texture_filenames; //!< noms des textures a charger.
     int default_material_id;    //!< indice de la matiere par defaut dans materials.
     
-    Materials( ) : names(), _materials(), texture_filenames(), default_material_id(-1) {}
+    Materials( ) : names(), materials(), texture_filenames(), default_material_id(-1) {}
     
     void clear( ) 
     {
         names.clear();
-        _materials.clear();
+        materials.clear();
         texture_filenames.clear();
         default_material_id= -1;
     }
@@ -65,11 +65,11 @@ struct Materials
         int id= find(name);
         if(id == -1)
         {
-            id= int(_materials.size());
+            id= int(materials.size());
             names.push_back(name);
-            _materials.push_back(material);
+            materials.push_back(material);
         }
-        assert(_materials.size() == names.size());
+        assert(materials.size() == names.size());
         return id;
     }
     
@@ -100,17 +100,17 @@ struct Materials
     }
     
     //! nombre de matieres.
-    int count( ) const { return int(_materials.size()); }
+    int count( ) const { return int(materials.size()); }
     
     //! renvoie le nom de la ieme matiere.
-    const char *name( const int id ) const { assert(id != -1); assert(id < int(_materials.size())); return names[id].c_str(); }
+    const char *name( const int id ) const { assert(id != -1); assert(id < int(materials.size())); return names[id].c_str(); }
     //! renvoie le nom de la ieme matiere.
-    const char *name( const int id ) { assert(id != -1); assert(id < int(_materials.size())); return names[id].c_str(); }
+    const char *name( const int id ) { assert(id != -1); assert(id < int(materials.size())); return names[id].c_str(); }
     
     //! renvoie la ieme matiere.
-    const Material& material( const int id ) const { assert(id != -1); assert(id < int(_materials.size())); return _materials[id]; }
+    const Material& material( const int id ) const { assert(id != -1); assert(id < int(materials.size())); return materials[id]; }
     //! renvoie la ieme matiere.
-    Material& material( const int id ) { assert(id != -1); assert(id < int(_materials.size())); return _materials[id]; }
+    Material& material( const int id ) { assert(id != -1); assert(id < int(materials.size())); return materials[id]; }
     
     //! renvoie la ieme matiere.
     const Material& operator() ( const int id ) const { return material(id); }
@@ -123,7 +123,7 @@ struct Materials
         int id= find(name);
         if(id != -1)
             // renvoie la matiere
-            return _materials[id];
+            return materials[id];
         else
             // ou renvoie la matiere par defaut...
             return default_material();

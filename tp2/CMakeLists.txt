@@ -51,6 +51,7 @@ endif()
 
 #Copying the "data" folder into the binary directory so that the application has access to the data folder even when in the folders created by the QtCreator "compiler"
 file(COPY data DESTINATION ${PROJECT_BINARY_DIR})
+message("/data OBJ files copied")
 
 #If CMAKE_BUILD_TYPE hasn't been specified on the commandline, defaulting to release
 if(NOT CMAKE_BUILD_TYPE)

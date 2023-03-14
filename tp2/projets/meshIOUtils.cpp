@@ -1,6 +1,7 @@
 #include "meshIOUtils.h"
+#include "mesh_io.h"
 
-std::vector<Triangle> MeshIOUtils::createTriangles(MeshIOData meshData, Transform meshTransform)
+std::vector<Triangle> MeshIOUtils::create_triangles(MeshIOData meshData, Transform meshTransform)
 {
 	std::vector<Triangle> _triangles;
 	_triangles.reserve(meshData.indices.size() / 3);

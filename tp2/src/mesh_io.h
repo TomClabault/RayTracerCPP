@@ -128,7 +128,7 @@ exemple plus complet, charge un objet, ses matieres et recupere la couleur de ch
     Color color= material.diffuse;
 \endcode
 */
-bool read_materials( const char *filename, Materials& _materials, std::vector<int>& indices );
+bool read_materials( const char *filename, Materials& materials, std::vector<int>& indices );
 
 /*! charge les images / textures referencees par les matieres d'un objet.
 
@@ -151,7 +151,7 @@ exemple :
         return "erreur";
 \endcode
 */
-bool read_images( const Materials& _materials, std::vector<Image>& images );
+bool read_images( const Materials& materials, std::vector<Image>& images );
 
 
 struct MeshIOData
@@ -162,7 +162,7 @@ struct MeshIOData
     std::vector<int> indices;
     std::vector<int> material_indices;
     
-    Materials _materials;
+    Materials materials;
     std::vector<Image> images;
 };
 

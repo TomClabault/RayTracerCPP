@@ -20,13 +20,17 @@ int main()
     MeshIOData meshData;
     std::vector<Triangle> triangles;
 
-    /*meshData = read_meshio_data("data/geometry.obj");
-    triangles = MeshIOUtils::createTriangles(meshData, Translation(Vector(-1, -2, -7)) * RotationY(180) * Scale(0.02));*/
+    //meshData = read_meshio_data("data/geometry.obj");
+    //triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(-1, -2, -7)) * RotationY(160) * Scale(0.02));
 
     meshData = read_meshio_data("data/robot.obj");
-    triangles = MeshIOUtils::createTriangles(meshData, Translation(Vector(0, -2, -4)));
+    data, Translation(Vector(0, -2, -4)));
+   
+    //meshData = read_meshio_data("data/sphere_low.obj");
+    //meshData = read_meshio_data("data/sphere_fat.obj");
+    //triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(0, 0, 0)));
 
-    Scene scene(Camera(Vector(0, 0, 0)), triangles, meshData._materials, PointLight(Vector(-2, 0, 0)));
+    Scene scene(Camera(Vector(0, 0, 0)), triangles, meshData.materials, PointLight(Vector(2, 0, 2)));
 
     Timer timer;
     RayTracer rayTracer(IMAGE_WIDTH, IMAGE_HEIGHT, scene);
