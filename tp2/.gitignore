@@ -1,0 +1,11 @@
+obj/*
+*.make
+Makefile
+modules/*
+bin/*
+gkit3/obj
+gkit3/bin
+*.png
+out/
+build/
+.vs
