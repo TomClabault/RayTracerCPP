@@ -11,7 +11,7 @@
 struct Scene
 {
 	Scene(Camera camera, std::vector<Triangle>& triangles, Materials _materials, PointLight point_light) 
-		: _camera(camera), _triangles(triangles), _materials(_materials), _point_light(point_light) {}
+		: _camera(camera), _point_light(point_light), _triangles(triangles), _materials(_materials) {}
 
 	Camera _camera;
 	PointLight _point_light;

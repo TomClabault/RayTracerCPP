@@ -13,7 +13,7 @@ Material RayTracer::DEFAULT_MATERIAL = init_default_material();
 Color RayTracer::AMBIENT_COLOR = Color(0.1, 0.1, 0.1);
 
 RayTracer::RayTracer(unsigned int width, unsigned int height, Scene scene) : _width(width), _height(height),
-	_scene(scene), _image(Image(width, height)) {}
+	_image(Image(width, height)), _scene(scene) {}
 
 Image* RayTracer::getImage()
 {
@@ -25,7 +25,7 @@ Color RayTracer::computeDiffuse(const Material& hitMaterial, const Vector& norma
 	return hitMaterial.diffuse * std::max(0.0f, dot(normal, direction_to_light));
 }
 
-Color RayTracer::computeSpecular(const Material& hit_material, const Vector& ray_direction, const Vector& inter_point, const Vector& normal, const Vector& direction_to_light)
+Color RayTracer::computeSpecular(const Material& hit_material, const Vector& ray_direction, const Vector& normal, const Vector& direction_to_light)
 {
 	Vector incident_direction = -direction_to_light;
 	Vector reflection_ray = incident_direction - 2 * dot(normal, incident_direction) * normal;
@@ -60,11 +60,11 @@ bool RayTracer::isShadowed(const Vector& inter_point, const Vector& light_positi
 void RayTracer::trace()
 {
 #pragma omp parallel for
-	for (int py = 0; py < _height; py++)
+	for (unsigned int py = 0; py < _height; py++)
 	{
 		float y_world = (float)py / _height * 2 - 1;
 
-		for (int px = 0; px < _width; px++)
+		for (unsigned int px = 0; px < _width; px++)
 		{
 			float x_world = (float)px / _width * 2 - 1;
 			x_world *= (float)_width / _height;
@@ -98,7 +98,7 @@ void RayTracer::trace()
 					hit_material = _scene._materials(finalHitInfo.mat_index);
 
 				finalColor = finalColor + computeDiffuse(hit_material, normal, direction_to_light);
-				finalColor = finalColor + computeSpecular(hit_material, ray._direction, inter_point, normal, direction_to_light);
+				finalColor = finalColor + computeSpecular(hit_material, ray._direction, normal, direction_to_light);
 				if (isShadowed(inter_point, _scene._point_light._position))
 					finalColor = finalColor * Color(RayTracer::SHADOW_INTENSITY);
 

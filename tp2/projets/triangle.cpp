@@ -17,7 +17,6 @@ bool Triangle::intersect(const Ray& ray, HitInfo& hitInfo) const
     Vector ac = _c - _a;
     Vector OA = ray._origin - _a;
     Vector minusDcrossOA = cross(-ray._direction, OA);
-    Vector normal = _normal;
 
     float Mdet = dot(_normal, -ray._direction);
     if (Mdet == 0)//If Mdet > 0, triangle back-facing. If == 0, ray parallel to triangle

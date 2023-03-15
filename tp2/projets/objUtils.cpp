@@ -2,11 +2,6 @@
 #include "objUtils.h"
 #include "triangle.h"
 
-void ObjUtils::assignMaterials(std::vector<Triangle>& _triangles, const Materials& _materials, const std::vector<int>& materialIndices)
-{
-    std::cout << materialIndices.size() << "\n";
-}
-
 std::vector<Triangle> ObjUtils::readObj(const char* filePath, const Transform transform, Vector& pMin, Vector& pMax)
 {
     std::vector<Triangle> _triangles;

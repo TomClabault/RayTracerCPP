@@ -25,7 +25,7 @@ private:
 	 */
 	Color computeDiffuse(const Material& hitMaterial, const Vector& normal, const Vector& direction_to_light);
 
-	Color computeSpecular(const Material& hitMaterial, const Vector& ray_direction, const Vector& inter_point, const Vector& normal, const Vector& direction_to_light);
+	Color computeSpecular(const Material& hitMaterial, const Vector& ray_direction, const Vector& normal, const Vector& direction_to_light);
 
 	/*
 	 * @return Returns true if the point is shadowed by another object, false otherwise.

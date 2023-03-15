@@ -1,3 +1,4 @@
+#include <ctime>
 #include <iostream>
 #include <vector>
 
@@ -88,7 +89,7 @@ void triangle_intersections_tests()
     assert_true(!triangleB.intersect(ray00, t, trash, trash), ray00 << " intersecting " << triangleB << " but shouldn't\n");
     assert_true(!triangleC.intersect(ray00, t, trash, trash), ray00 << " intersecting " << triangleC << " but shouldn't\n");
 
-    float u, v, c;
+    float u, v;
     for (Triangle& triangle : rubik) {
         assert_true(!triangle.intersect(ray200x200, t, u, v), "Ray " << ray200x200 << " intersected with the triangle " << triangle << " of the rubik but shouldn't have." << std::endl);
     }
