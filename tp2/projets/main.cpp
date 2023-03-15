@@ -24,7 +24,7 @@ int main()
     //triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(-1, -2, -7)) * RotationY(160) * Scale(0.02));
 
     meshData = read_meshio_data("data/robot.obj");
-    data, Translation(Vector(0, -2, -4)));
+    triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(0, -2, -4)));
    
     //meshData = read_meshio_data("data/sphere_low.obj");
     //meshData = read_meshio_data("data/sphere_fat.obj");

@@ -19,7 +19,7 @@ __m256Vector::__m256Vector(Vector vecs[8])
 
 Vector __m256Vector::operator[] (int i)
 {
-	return Vector(_x.m256_f32[i], _y.m256_f32[i], _z.m256_f32[i]);
+    return Vector(_x[i], _y[i], _z[i]);
 }
 
 __m256Vector operator / (const __m256Vector& a, float c)

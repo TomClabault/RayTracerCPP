@@ -9,3 +9,4 @@ gkit3/bin
 out/
 build/
 .vs
+CMakeLists.txt.user

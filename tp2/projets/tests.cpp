@@ -148,10 +148,14 @@ void SIMD_implementations_tests()
     std::cout << "Testing SIMD lengths... ";
     __m256 lengthsA = _mm256_length(__a);
     __m256 lengthsB = _mm256_length(__b);
+    float lengthsAArray[8], lengthsBArray[8];
+
+    _mm256_store_ps(lengthsAArray, lengthsA);
+    _mm256_store_ps(lengthsBArray, lengthsB);
 
     for (int i = 0; i < 8; i++) {
-        assert_true(float_equal(lengthsA.m256_f32[i], length(__a[i]), epsilon), "SIMD length() wasn't equal to reference length() at index" << i << ". Was " << lengthsA.m256_f32[i] << " but expected " << length(__a[i]) << std::endl);
-        assert_true(float_equal(lengthsB.m256_f32[i], length(__b[i]), epsilon), "SIMD length() wasn't equal to reference length() at index" << i << ". Was " << lengthsB.m256_f32[i] << " but expected " << length(__b[i]) << std::endl);
+        assert_true(float_equal(lengthsAArray[i], length(__a[i]), epsilon), "SIMD length() wasn't equal to reference length() at index" << i << ". Was " << lengthsAArray[i] << " but expected " << length(__a[i]) << std::endl);
+        assert_true(float_equal(lengthsBArray[i], length(__b[i]), epsilon), "SIMD length() wasn't equal to reference length() at index" << i << ". Was " << lengthsBArray[i] << " but expected " << length(__b[i]) << std::endl);
     }
     std::cout << "OK!" << std::endl;
     // --------------- //
@@ -173,8 +177,12 @@ void SIMD_implementations_tests()
     // --------------- //
     std::cout << "Testing SIMD Dot Products... ";
     __m256 dotProd = _mm256_dot_product(__a, __b);
+    float dotProdArray[8];
+
+    _mm256_store_ps(dotProdArray, dotProd);
+
     for (int i = 0; i < 8; i++) {
-        assert_true(float_equal(dotProd.m256_f32[i], dot(__a[i], __b[i]), epsilon), "SIMD Dot Product wasn't equal to reference dot product at index " << i << ". Was " << dotProd.m256_f32[i] << " but expected " << dot(__a[i], __b[i]) << std::endl);
+        assert_true(float_equal(dotProdArray[i], dot(__a[i], __b[i]), epsilon), "SIMD Dot Product wasn't equal to reference dot product at index " << i << ". Was " << dotProdArray[i] << " but expected " << dot(__a[i], __b[i]) << std::endl);
     }
     std::cout << "OK!" << std::endl;
     // --------------- //
