@@ -8,12 +8,12 @@
 class RayTracer
 {
 public:
-	static constexpr float EPSILON = 1.0e-4;
-	static constexpr float SHADOW_INTENSITY = 0.5;
+	static constexpr float EPSILON = 1.0e-4f;
+	static constexpr float SHADOW_INTENSITY = 0.5f;
 	static Material DEFAULT_MATERIAL;
 	static Color AMBIENT_COLOR;
 
-	RayTracer(unsigned int width, unsigned int height, Scene scene);
+	RayTracer(int width, int height, Scene scene);
 
 	Image* getImage();
 
@@ -33,7 +33,7 @@ private:
 	bool isShadowed(const Vector& inter_point, const Vector& light_position);
 
 private:
-	unsigned int _width, _height;
+	int _width, _height;
 
 	Image _image;
 

@@ -13,7 +13,7 @@ struct HitInfo
 
     //Barycentric coordinates of the intersection point in the triangle
     float u = 1.0, v = 0.0;
-    int mat_index;//Index of the material of the intersected triangle. 
+    int mat_index = -1;//Index of the material of the intersected triangle. 
     //This index can be used to retrieve the material in the Materials array in the Scene
 
     //Normal at the intersection point. NON NORMALIZED!!

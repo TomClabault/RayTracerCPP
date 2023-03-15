@@ -3,9 +3,10 @@
 Triangle::Triangle() :  _a(Vector(0, 0, 0)),
                         _b(Vector(1, 0, 0)),
                         _c(Vector(0, 1, 0)),
-                        _normal(cross(_b - _a, _c - _a)) {}
+                        _normal(cross(_b - _a, _c - _a)),
+                        _materialIndex(-1) {}
 
-Triangle::Triangle(Vector a, Vector b, Vector c) : _a(a), _b(b), _c(c), _normal(cross(_b - _a, _c - _a)) {};
+Triangle::Triangle(Vector a, Vector b, Vector c) : _a(a), _b(b), _c(c), _normal(cross(_b - _a, _c - _a)), _materialIndex(-1) {};
 
 bool Triangle::intersect(const Ray& ray, HitInfo& hitInfo) const
 {

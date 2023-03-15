@@ -1,6 +1,6 @@
 # Blender 3.4.1
 # www.blender.org
-mtllib sphere.mtl
+mtllib sphere_fat.mtl
 o Sphere
 v -0.004475 0.826951 -2.049561
 v -0.016822 0.537441 -2.332473

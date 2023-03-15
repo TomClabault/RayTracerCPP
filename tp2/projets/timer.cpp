@@ -10,7 +10,7 @@ void Timer::stop()
     m_stop = std::chrono::high_resolution_clock::now();
 }
 
-unsigned long int Timer::elapsed()
+long long int Timer::elapsed()
 {
     return std::chrono::duration_cast<std::chrono::milliseconds>(m_stop - m_start).count();
 }

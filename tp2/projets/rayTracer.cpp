@@ -2,17 +2,17 @@
 
 Material init_default_material()
 {
-	Material mat = Material(Color(1.0, 0.0, 0.5));//Pink color
-	mat.specular = Color(1.0, 1.0, 1.0);
+	Material mat = Material(Color(1.0f, 0.0f, 0.5f));//Pink color
+	mat.specular = Color(1.0f, 1.0f, 1.0f);
 	mat.ns = 15;
 
 	return mat;
 }
 
 Material RayTracer::DEFAULT_MATERIAL = init_default_material();
-Color RayTracer::AMBIENT_COLOR = Color(0.1, 0.1, 0.1);
+Color RayTracer::AMBIENT_COLOR = Color(0.1f, 0.1f, 0.1f);
 
-RayTracer::RayTracer(unsigned int width, unsigned int height, Scene scene) : _width(width), _height(height),
+RayTracer::RayTracer(int width, int height, Scene scene) : _width(width), _height(height),
 	_image(Image(width, height)), _scene(scene) {}
 
 Image* RayTracer::getImage()
@@ -60,11 +60,11 @@ bool RayTracer::isShadowed(const Vector& inter_point, const Vector& light_positi
 void RayTracer::trace()
 {
 #pragma omp parallel for
-	for (unsigned int py = 0; py < _height; py++)
+	for (int py = 0; py < _height; py++)
 	{
 		float y_world = (float)py / _height * 2 - 1;
 
-		for (unsigned int px = 0; px < _width; px++)
+		for (int px = 0; px < _width; px++)
 		{
 			float x_world = (float)px / _width * 2 - 1;
 			x_world *= (float)_width / _height;

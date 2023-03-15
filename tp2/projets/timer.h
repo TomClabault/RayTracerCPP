@@ -6,7 +6,7 @@ public:
     void start();
     void stop();
 
-    unsigned long int elapsed();
+    long long int elapsed();
 
 private:
     std::chrono::time_point<std::chrono::high_resolution_clock> m_start;
