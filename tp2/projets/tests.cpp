@@ -52,8 +52,6 @@ void barycentric_coordinates_tests()
     Triangle triangleE(Vector(-3, 0, -4), Vector(-2, 0, -4), Vector(-2, 1, -4));
     Triangle triangleF(Vector(-3, 0, -4), Vector(-2, 0, -4), Vector(-3, 1, -4));
 
-    float a, b, c;
-
     testBarycentric(triangleA, Vector(0, 0, 0), 0.0, 0.0, true);
     testBarycentric(triangleE, Vector(-3, 0, -4), 0.0, 0.0, true);
     testBarycentric(triangleF, Vector(-4, 1, -4), 0.0, 0.0, false);
@@ -61,44 +59,46 @@ void barycentric_coordinates_tests()
     std::cout << "OK!" << std::endl << std::endl;
 }
 
-//void triangle_intersections_tests()
-//{
-//    std::cout << "Testing triangle intersections... ";
-//
-//    MeshIOData rubikData 
-//    std::vector<Triangle> rubik = ObjUtils::readObj("data/rubik.obj", Vector(-15, -20, -30));
-//    std::vector<Triangle> robot = ObjUtils::readObj("data/robot.obj", Vector(0, -2, -4));
-//
-//    Triangle triangleA(Vector(0, 0, 0), Vector(1, 0, 0), Vector(0, 1, 0));
-//    Triangle triangleB(Vector(1, -1, -9), Vector(-1, -1, -9), Vector(-1, -1, -11));
-//    Triangle triangleC(Vector(-1, 1, -11), Vector(-1, 1, -9), Vector(1, 1, -9));
-//
-//    Ray ray00(Vector(0, 0, 0), Vector(-0.577350259, 0.577350259, -0.577350259));
-//    Ray ray(Vector(0, 0, -1), Vector(0, 0, 1));
-//    Ray ray2(Vector(0, 0, 0), Vector(0.103264742, 0.312963158, -0.944134772));
-//    Ray rayOut(Vector(-2, 0, -1), Vector(0, 0, 1));
-//    Ray ray200x200(Vector(0, 0, 0), normalize(Vector(200.0 / 1919.0 * 2 - 1, (1079 - 200.0) / 1079.0 * 2 - 1, -1)));
-//
-//    float t, trash;
-//
-//    assert_true(triangleA.intersect(ray, t, trash, trash), ray << " intersecting " << triangleA << " but shouldn't because of back face culling\n");
-//    assert_true(t == 1.0, "Intersection distance of " << ray << " with " << triangleA << " should be -1 but is " << t);
-//
-//    assert_true(!triangleA.intersect(rayOut, t, trash, trash), rayOut << " intersecting " << triangleA << " but shouldn't\n");
-//    assert_true(!triangleB.intersect(ray00, t, trash, trash), ray00 << " intersecting " << triangleB << " but shouldn't\n");
-//    assert_true(!triangleC.intersect(ray00, t, trash, trash), ray00 << " intersecting " << triangleC << " but shouldn't\n");
-//
-//    float u, v, c;
-//    for (Triangle& triangle : rubik) {
-//        assert_true(!triangle.intersect(ray200x200, t, u, v), "Ray " << ray200x200 << " intersected with the triangle " << triangle << " of the rubik but shouldn't have." << std::endl);
-//    }
-//
-//    for (Triangle& triangle : robot) {
-//        assert_true(!triangle.intersect(ray200x200, t, u, v), "Ray " << ray200x200 << " intersected with the triangle " << triangle << " of the robot but shouldn't have." << std::endl);
-//    }
-//
-//    std::cout << "OK!" << std::endl << std::endl;
-//}
+void triangle_intersections_tests()
+{
+    std::cout << "Testing triangle intersections... ";
+
+    MeshIOData rubikData = read_meshio_data("data/rubik.obj");
+    MeshIOData robotData = read_meshio_data("data/robot.obj");
+
+    std::vector<Triangle> rubik = MeshIOUtils::create_triangles(rubikData, Translation(Vector(-15, -20, -30)));
+    std::vector<Triangle> robot = MeshIOUtils::create_triangles(robotData, Translation(Vector(0, -2, -4)));
+
+    Triangle triangleA(Vector(0, 0, 0), Vector(1, 0, 0), Vector(0, 1, 0));
+    Triangle triangleB(Vector(1, -1, -9), Vector(-1, -1, -9), Vector(-1, -1, -11));
+    Triangle triangleC(Vector(-1, 1, -11), Vector(-1, 1, -9), Vector(1, 1, -9));
+
+    Ray ray00(Vector(0, 0, 0), Vector(-0.577350259, 0.577350259, -0.577350259));
+    Ray ray(Vector(0, 0, -1), Vector(0, 0, 1));
+    Ray ray2(Vector(0, 0, 0), Vector(0.103264742, 0.312963158, -0.944134772));
+    Ray rayOut(Vector(-2, 0, -1), Vector(0, 0, 1));
+    Ray ray200x200(Vector(0, 0, 0), normalize(Vector(200.0 / 1919.0 * 2 - 1, (1079 - 200.0) / 1079.0 * 2 - 1, -1)));
+
+    float t, trash;
+
+    assert_true(triangleA.intersect(ray, t, trash, trash), ray << " intersecting " << triangleA << " but shouldn't because of back face culling\n");
+    assert_true(t == 1.0, "Intersection distance of " << ray << " with " << triangleA << " should be -1 but is " << t);
+
+    assert_true(!triangleA.intersect(rayOut, t, trash, trash), rayOut << " intersecting " << triangleA << " but shouldn't\n");
+    assert_true(!triangleB.intersect(ray00, t, trash, trash), ray00 << " intersecting " << triangleB << " but shouldn't\n");
+    assert_true(!triangleC.intersect(ray00, t, trash, trash), ray00 << " intersecting " << triangleC << " but shouldn't\n");
+
+    float u, v, c;
+    for (Triangle& triangle : rubik) {
+        assert_true(!triangle.intersect(ray200x200, t, u, v), "Ray " << ray200x200 << " intersected with the triangle " << triangle << " of the rubik but shouldn't have." << std::endl);
+    }
+
+    for (Triangle& triangle : robot) {
+        assert_true(!triangle.intersect(ray200x200, t, u, v), "Ray " << ray200x200 << " intersected with the triangle " << triangle << " of the robot but shouldn't have." << std::endl);
+    }
+
+    std::cout << "OK!" << std::endl << std::endl;
+}
 
 void SIMD_implementations_tests()
 {

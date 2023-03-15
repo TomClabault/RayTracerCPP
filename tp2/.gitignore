@@ -10,3 +10,4 @@ out/
 build/
 .vs
 CMakeLists.txt.user
+CMakeSettings.json

@@ -8,8 +8,6 @@
 class MeshIOUtils
 {
 public:
-	static MeshIOData read_mesh_data(const char* filepath);
-
 	static std::vector<Triangle> create_triangles(MeshIOData meshData, Transform meshTransform);
 };
 
