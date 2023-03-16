@@ -8,7 +8,7 @@
 #include "mesh_io.h"
 #include "meshIOUtils.h"
 #include "objUtils.h"
-#include "rayTracer.h"
+#include "renderer.h"
 #include "scene.h"
 #include "settings.h"
 #include "timer.h"
@@ -39,18 +39,18 @@ int main()
     Scene scene(Camera(Vector(0, 0, 0)), triangles, meshData.materials, PointLight(Vector(2, 0, 2)));
 
     Timer timer;
-    Renderer rayTracer(IMAGE_WIDTH, IMAGE_HEIGHT, scene);
+    Renderer renderer(IMAGE_WIDTH, IMAGE_HEIGHT, scene);
 
     timer.start();
-    rayTracer.rasterTrace();
+    renderer.rasterTrace();
     timer.stop();
     
     std::cout << timer.elapsed() << "ms\n";
     
     // enregistre l'image, de plusieurs manieres...
-    write_image_png(*rayTracer.getImage(), "image.png");
-    //write_image_bmp(*rayTracer.getImage(), "image.bmp");
-    //write_image_hdr(image, "image.hdr");
+    write_image_png(*renderer.getImage(), "image.png");
+    //write_image_bmp(*renderer.getImage(), "image.bmp");
+    //write_image_hdr(*renderer.getImage(), "image.hdr");
     
     return 0;
 }
