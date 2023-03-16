@@ -42,12 +42,12 @@ Image* Renderer::getImage()
 	return &_image;
 }
 
-Color Renderer::computeDiffuse(const Material& hitMaterial, const Vector& normal, const Vector& direction_to_light)
+Color Renderer::computeDiffuse(const Material& hitMaterial, const Vector& normal, const Vector& direction_to_light) const
 {
 	return hitMaterial.diffuse * std::max(0.0f, dot(normal, direction_to_light));
 }
 
-Color Renderer::computeSpecular(const Material& hit_material, const Vector& ray_direction, const Vector& normal, const Vector& direction_to_light)
+Color Renderer::computeSpecular(const Material& hit_material, const Vector& ray_direction, const Vector& normal, const Vector& direction_to_light) const
 {
 	Vector incident_direction = -direction_to_light;
 	Vector reflection_ray = incident_direction - 2 * dot(normal, incident_direction) * normal;
@@ -55,7 +55,7 @@ Color Renderer::computeSpecular(const Material& hit_material, const Vector& ray_
 	return hit_material.specular * std::max(0.0f, std::pow(dot(reflection_ray, -ray_direction), hit_material.ns));
 }
 
-bool Renderer::isShadowed(const Vector& inter_point, const Vector& light_position)
+bool Renderer::isShadowed(const Vector& inter_point, const Vector& light_position) const
 {
 	Ray ray(inter_point, light_position - inter_point);
 	HitInfo hitInfo;
@@ -79,9 +79,44 @@ bool Renderer::isShadowed(const Vector& inter_point, const Vector& light_positio
 	return false;
 }
 
-float edgeFunction(const Vector& a, const Vector& b, const Vector& c)
+Color Renderer::traceTriangle(const Ray& ray, const Triangle& triangle) const
 {
-	return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
+	HitInfo hit_info;
+	Color finalColor = Color(0, 0, 0);
+
+	if (triangle.intersect(ray, hit_info))
+	{
+#if SHADING
+		Vector inter_point = ray._origin + ray._direction * (hit_info.t + Renderer::EPSILON);
+		Vector direction_to_light = normalize(_scene._point_light._position - inter_point);
+		Vector normal = normalize(hit_info.normal_at_intersection);
+
+		Material hit_material;
+		if (hit_info.mat_index == -1)
+			hit_material = Renderer::DEFAULT_MATERIAL;
+		else
+			hit_material = _scene._materials(hit_info.mat_index);
+
+		finalColor = finalColor + computeDiffuse(hit_material, normal, direction_to_light);
+		finalColor = finalColor + computeSpecular(hit_material, ray._direction, normal, direction_to_light);
+		if (isShadowed(inter_point, _scene._point_light._position))
+			finalColor = finalColor * Color(Renderer::SHADOW_INTENSITY);
+
+		finalColor = finalColor + Renderer::AMBIENT_COLOR;
+#else
+#if COLOR_NORMAL_OR_BARYCENTRIC //Color triangles with normal
+		Vector normalized_normal = normalize(finalHitInfo.normal_at_intersection);
+		finalColor = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
+#else //Color triangles with barycentric coordinates
+		float u = finalHitInfo.u;
+		float v = finalHitInfo.v;
+
+		finalColor = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
+#endif
+#endif
+	}
+
+	return finalColor;
 }
 
 void Renderer::rasterTrace()
@@ -98,50 +133,7 @@ void Renderer::rasterTrace()
 
 				Triangle NDC_triangle = Triangle(triangle._a / -triangle._a.z, triangle._b / -triangle._b.z, triangle._c / -triangle._c.z);
 				if (NDC_triangle.inside_outside_2D(Vector(image_x, image_y, -1)))
-				{
-					Vector image_plane_point = Vector(image_x, image_y, -1);
-
-					Vector camera_position = _scene._camera._position;
-					Vector ray_direction = normalize(Vector(image_plane_point - camera_position));
-					Ray ray(camera_position, ray_direction);
-
-					HitInfo hit_info;
-					Color finalColor = Color(0, 0, 0);
-
-					if (triangle.intersect(ray, hit_info))
-					{
-#if SHADING
-						Vector inter_point = ray._origin + ray._direction * (hit_info.t + Renderer::EPSILON);
-						Vector direction_to_light = normalize(_scene._point_light._position - inter_point);
-						Vector normal = normalize(hit_info.normal_at_intersection);
-
-						Material hit_material;
-						if (hit_info.mat_index == -1)
-							hit_material = Renderer::DEFAULT_MATERIAL;
-						else
-							hit_material = _scene._materials(hit_info.mat_index);
-
-						finalColor = finalColor + computeDiffuse(hit_material, normal, direction_to_light);
-						finalColor = finalColor + computeSpecular(hit_material, ray._direction, normal, direction_to_light);
-						if (isShadowed(inter_point, _scene._point_light._position))
-							finalColor = finalColor * Color(Renderer::SHADOW_INTENSITY);
-
-						finalColor = finalColor + Renderer::AMBIENT_COLOR;
-#else
-#if COLOR_NORMAL_OR_BARYCENTRIC //Color triangles with normal
-						Vector normalized_normal = normalize(finalHitInfo.normal_at_intersection);
-						finalColor = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
-#else //Color triangles with barycentric coordinates
-						float u = finalHitInfo.u;
-						float v = finalHitInfo.v;
-
-						finalColor = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
-#endif
-#endif
-					}
-
-					_image(px, py) = finalColor;
-				}
+					_image(px, py) = traceTriangle(Ray(_scene._camera._position, normalize(Vector(image_x, image_y, -1) - _scene._camera._position)), triangle);
 			}
 		}
 	}
