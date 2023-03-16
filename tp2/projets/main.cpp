@@ -42,7 +42,11 @@ int main()
     Renderer renderer(IMAGE_WIDTH, IMAGE_HEIGHT, scene);
 
     timer.start();
+#if HYBRID_RASTERIZATION_TRACING
     renderer.rasterTrace();
+#else
+    renderer.trace();
+#endif
     timer.stop();
     
     std::cout << timer.elapsed() << "ms\n";
