@@ -110,6 +110,23 @@ bool Triangle::barycentric_coordinates(const Vector& point, float& u, float& v) 
     return true;
 }
 
+bool Triangle::inside_outside_2D(const Vector& point) const
+{
+    float abSide = (_b.x - _a.x) * (point.y - _a.y) - (_b.y - _a.y) * (point.x - _a.x);
+    if (abSide < 0)
+        return false;
+
+    float bcSide = (_c.x - _b.x) * (point.y - _b.y) - (_c.y - _b.y) * (point.x - _b.x);
+    if (bcSide < 0)
+        return false;
+
+    float caSide = (_a.x - _c.x) * (point.y - _c.y) - (_a.y - _c.y) * (point.x - _c.x);
+    if (caSide < 0)
+        return false;
+
+    return true;
+}
+
 std::ostream& operator << (std::ostream& os, const Triangle& triangle)
 {
     os << "[" << triangle._a << ", " << triangle._b << ", " << triangle._c << "]";

@@ -33,6 +33,12 @@ public:
     bool intersect(const Ray& ray, HitInfo& hitInfo) const;
     bool intersect(const Ray& ray, float& t, float& u, float& v) const;
 
+    /*
+     * Inside/outside test considering the triangle's vertices to all have equal z coordinates.
+     * This test essentially ignores the z coordinates of the triangle's vertices
+     */
+    bool inside_outside_2D(const Vector& point) const;
+
     bool barycentric_coordinates(const Vector& point, float& u, float& v) const;
 
     friend std::ostream& operator << (std::ostream& os, const Triangle& triangle);

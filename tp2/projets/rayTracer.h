@@ -5,7 +5,7 @@
 #include "scene.h"
 #include "settings.h"
 
-class RayTracer
+class Renderer
 {
 public:
 	static constexpr float EPSILON = 1.0e-4f;
@@ -13,11 +13,18 @@ public:
 	static Material DEFAULT_MATERIAL;
 	static Color AMBIENT_COLOR;
 
-	RayTracer(int width, int height, Scene scene);
+	Renderer(int width, int height, Scene scene);
 
 	Image* getImage();
 
-	void trace();
+	/*
+	 * Renders the image using an hybrid rasterization / ray-tracing approach
+	 */
+	void rasterTrace();
+	/*
+	 * Renders the image full ray tracing
+	 */
+	void rayTrace();
 
 private:
 	/*
@@ -36,6 +43,8 @@ private:
 	int _width, _height;
 
 	Image _image;
+
+	float** _z_buffer;
 
 	Scene _scene;
 };
