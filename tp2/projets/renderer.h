@@ -5,6 +5,13 @@
 #include "scene.h"
 #include "settings.h"
 
+struct ClippingPlane
+{
+	Vector _normal;
+
+	float d;
+};
+
 class Renderer
 {
 public:
@@ -12,8 +19,10 @@ public:
 	static constexpr float SHADOW_INTENSITY = 0.5f;
 	static Material DEFAULT_MATERIAL;
 	static Color AMBIENT_COLOR;
+	static std::array<ClippingPlane, 5> CLIPPING_PLANES;
 
 	Renderer(int width, int height, Scene scene);
+	~Renderer();
 
 	Image* getImage();
 

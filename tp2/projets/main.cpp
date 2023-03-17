@@ -23,15 +23,15 @@ int main()
     //meshData = read_meshio_data("data/geometry.obj");
     //triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(-1, -2, -7)) * RotationY(160) * Scale(0.02));
 
-    meshData = read_meshio_data("data/robot.obj");
-    triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(0, -2, -4)));
+    //meshData = read_meshio_data("data/robot.obj");
+    //triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(0, -2, -4)));
    
     //meshData = read_meshio_data("data/sphere_low.obj");
     //meshData = read_meshio_data("data/sphere_fat.obj");
     //triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(0, 0, 0)));
 
-    //meshData = read_meshio_data("data/bottom_green_with_color.obj");
-    //triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(1, -1, -4)));
+    meshData = read_meshio_data("data/burger01.obj");
+    triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(1, -1, -6)));
 
     //Triangle triangle = Triangle(Vector(-1, 0, -2), Vector(1, 0, -2), Vector(0, 1, -2));
     //triangles.push_back(triangle);
@@ -45,7 +45,7 @@ int main()
 #if HYBRID_RASTERIZATION_TRACING
     renderer.rasterTrace();
 #else
-    renderer.trace();
+    renderer.rayTrace();
 #endif
     timer.stop();
     

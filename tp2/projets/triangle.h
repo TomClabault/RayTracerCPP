@@ -39,6 +39,8 @@ public:
      */
     bool inside_outside_2D(const Vector& point) const;
 
+    static float edge_function(const Vector& point, const Vector& A, const Vector& b);
+
     bool barycentric_coordinates(const Vector& point, float& u, float& v) const;
 
     friend std::ostream& operator << (std::ostream& os, const Triangle& triangle);

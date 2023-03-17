@@ -20,8 +20,13 @@ bool Triangle::intersect(const Ray& ray, HitInfo& hitInfo) const
     Vector minusDcrossOA = cross(-ray._direction, OA);
 
     float Mdet = dot(_normal, -ray._direction);
-    if (Mdet == 0)//If Mdet > 0, triangle back-facing. If == 0, ray parallel to triangle
+#if BACKFACE_CULLING
+    if (Mdet <= 0)//If Mdet < 0, triangle back-facing. If == 0, ray parallel to triangle
         return false;
+#else
+    if (Mdet == 0)//If == 0, ray parallel to triangle
+        return false;
+#endif
 
     Mdet = 1 / Mdet;//Inverting the determinant once and for all
 
@@ -125,6 +130,11 @@ bool Triangle::inside_outside_2D(const Vector& point) const
         return false;
 
     return true;
+}
+
+float Triangle::edge_function(const Vector& point, const Vector& a, const Vector& b)
+{
+    return (b.x - a.x) * (point.y - a.y) - (b.y - a.y) * (point.x - a.x);
 }
 
 std::ostream& operator << (std::ostream& os, const Triangle& triangle)

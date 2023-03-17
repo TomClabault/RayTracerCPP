@@ -11,13 +11,18 @@ Material init_default_material()
 
 Material Renderer::DEFAULT_MATERIAL = init_default_material();
 Color Renderer::AMBIENT_COLOR = Color(0.1f, 0.1f, 0.1f);
+std::array<ClippingPlane, 5> Renderer::CLIPPING_PLANES = { ClippingPlane{Vector(0, 0, -1), 1},
+														   ClippingPlane{Vector(0, 0, -1), 1},
+														   ClippingPlane{Vector(0, 0, -1), 1},
+														   ClippingPlane{Vector(0, 0, -1), 1},
+														   ClippingPlane{Vector(0, 0, -1), 1} };
 
 Renderer::Renderer(int width, int height, Scene scene) : _width(width), _height(height),
 	_image(Image(width, height)), _scene(scene) 
 {
 #if HYBRID_RASTERIZATION_TRACING
-	_z_buffer = (float**)std::malloc(sizeof(float*) * height);
-	if (_z_buffer == NULL)
+	_z_buffer = new float*[height];
+	if (_z_buffer == nullptr)
 	{
 		std::cout << "Not enough memory to allocate the ZBuffer of the ray tracer..." << std::endl;
 		std::exit(-1);
@@ -25,15 +30,26 @@ Renderer::Renderer(int width, int height, Scene scene) : _width(width), _height(
 
 	for (int i = 0; i < height; i++)
 	{
-		_z_buffer[i] = (float*)std::malloc(sizeof(float) * width);
-		if (_z_buffer[i] == NULL)
+		_z_buffer[i] = new float[width];
+		if (_z_buffer[i] == nullptr)
 		{
 			std::cout << "Not enough memory to allocate the ZBuffer of the ray tracer..." << std::endl;
 			std::exit(-1);
 		}
 
-		std::memset(_z_buffer[i], std::numeric_limits<float>::max(), width * sizeof(float));
+		for (int j = 0; j < width; j++)
+			_z_buffer[i][j] = -INFINITY;
 	}
+#endif
+}
+
+Renderer::~Renderer()
+{
+#if HYBRID_RASTERIZATION_TRACING
+	for (int i = 0; i < _height; i++)
+		delete[] _z_buffer[i];
+
+	delete[] _z_buffer;
 #endif
 }
 
@@ -105,7 +121,7 @@ Color Renderer::traceTriangle(const Ray& ray, const Triangle& triangle) const
 		finalColor = finalColor + Renderer::AMBIENT_COLOR;
 #else
 #if COLOR_NORMAL_OR_BARYCENTRIC //Color triangles with normal
-		Vector normalized_normal = normalize(finalHitInfo.normal_at_intersection);
+		Vector normalized_normal = normalize(hit_info.normal_at_intersection);
 		finalColor = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
 #else //Color triangles with barycentric coordinates
 		float u = finalHitInfo.u;
@@ -119,21 +135,95 @@ Color Renderer::traceTriangle(const Ray& ray, const Triangle& triangle) const
 	return finalColor;
 }
 
+#define DEBUG 0
+#define DEBUG_X 380
+#define DEBUG_Y 146
+#define INDEX 1315
 void Renderer::rasterTrace()
 {
-	for (const Triangle& triangle : _scene._triangles)
+	int index = 0;
+	for (const Triangle& trianglee : _scene._triangles)
 	{
-#pragma omp parallel for
-		for (int py = 0; py < _height; py++)
+		Triangle triangle = _scene._triangles.at(188353);
+
+		index++;//TODO remove
+		std::cout << "index: "<< index << "\n";
+
+		//Projection of the triangle on the image plane
+		float invAZ = 1 / -triangle._a.z;
+		float invBZ = 1 / -triangle._b.z;
+		float invCZ = 1 / -triangle._c.z;
+
+		Vector a_image_plane = Vector(triangle._a.x * invAZ, triangle._a.y * invAZ, 0);
+		Vector b_image_plane = Vector(triangle._b.x * invBZ, triangle._b.y * invBZ, 0);
+		Vector c_image_plane = Vector(triangle._c.x * invCZ, triangle._c.y * invCZ, 0);
+
+		//Computing the bounding box of the triangle so that next, we only test pixels that are in the bounding box of the triangle
+		float boundingMinX = std::min(a_image_plane.x, std::min(b_image_plane.x, c_image_plane.x));
+		float boundingMinY = std::min(a_image_plane.y, std::min(b_image_plane.y, c_image_plane.y));
+		float boundingMaxX = std::max(a_image_plane.x, std::max(b_image_plane.x, c_image_plane.x));
+		float boundingMaxY = std::max(a_image_plane.y, std::max(b_image_plane.y, c_image_plane.y));
+
+		int minXPixels = (boundingMinX + 1) / 2 * IMAGE_WIDTH;
+		int minYPixels = (boundingMinY + 1) / 2 * IMAGE_HEIGHT;
+		int maxXPixels = (boundingMaxX + 1) / 2 * IMAGE_WIDTH;
+		int maxYPixels = (boundingMaxY + 1) / 2 * IMAGE_HEIGHT;
+
+		if (maxXPixels == IMAGE_WIDTH)
+			maxXPixels--;
+		if (maxYPixels == IMAGE_HEIGHT)
+			maxYPixels--;
+
+//#pragma omp parallel for
+		for (int py = minYPixels; py <= maxYPixels; py++)
 		{
 			float image_y = py / (float)_height * 2 - 1;
-			for (int px = 0; px < _width; px++)
+
+			for (int px = minXPixels; px <= maxXPixels; px++)
 			{
 				float image_x = px / (float)_width * 2 - 1;
 
-				Triangle NDC_triangle = Triangle(triangle._a / -triangle._a.z, triangle._b / -triangle._b.z, triangle._c / -triangle._c.z);
-				if (NDC_triangle.inside_outside_2D(Vector(image_x, image_y, -1)))
-					_image(px, py) = traceTriangle(Ray(_scene._camera._position, normalize(Vector(image_x, image_y, -1) - _scene._camera._position)), triangle);
+				Vector pixel_point(image_x, image_y, -1);
+
+				//We don't care about the z coordinate here
+				float invTriangleArea = 1 / ((b_image_plane.x - a_image_plane.x) * (c_image_plane.y - a_image_plane.y) - (b_image_plane.y - a_image_plane.y) * (c_image_plane.x - a_image_plane.x));
+
+				float u = Triangle::edge_function(pixel_point, c_image_plane, a_image_plane);
+				if (u < 0)
+					continue;
+
+				float v = Triangle::edge_function(pixel_point, a_image_plane, b_image_plane);
+				if (v < 0)
+					continue;
+
+				float w = Triangle::edge_function(pixel_point, b_image_plane, c_image_plane);
+				if (w < 0)
+					continue;
+
+				u *= invTriangleArea;
+				v *= invTriangleArea;
+				w *= invTriangleArea;
+
+				//Depth of the point on the "real" triangle in 3D camera space
+				float inv = (w * -invAZ + u * -invBZ + v * -invCZ);
+				float zCameraSpace = 1 / inv;
+
+				if (zCameraSpace > _z_buffer[py][px])
+				{
+					_z_buffer[py][px] = zCameraSpace;
+
+#if SHADING
+					_image(px, py) = traceTriangle(Ray(_scene._camera._position, normalize(pixel_point - _scene._camera._position)), triangle);
+#elif COLOR_NORMAL_OR_BARYCENTRIC
+					Vector normalized_normal = normalize(cross(triangle._b - triangle._a, triangle._c - triangle._a));
+					_image(px, py) = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
+#else //Color triangles with barycentric coordinates
+					float u = finalHitInfo.u;
+					float v = finalHitInfo.v;
+
+					finalColor = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
+#endif
+				}
 			}
 		}
 	}
