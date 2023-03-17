@@ -144,6 +144,11 @@ std::ostream& operator << (std::ostream& os, const Triangle& triangle)
     return os;
 }
 
+Triangle operator +(const Triangle& triangle, const Vector& vec)
+{
+    return Triangle(triangle._a + vec, triangle._b + vec, triangle._c + vec);
+}
+
 std::ostream& operator <<(std::ostream& os, const HitInfo& infos)
 {
     os << "HitInfo[t="<< infos.t << ", u, v=(" << infos.u << ", " << infos.v << "), normal=" << infos.normal_at_intersection << "]";

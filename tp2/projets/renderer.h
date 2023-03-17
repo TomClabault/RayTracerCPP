@@ -11,7 +11,7 @@ struct ClippingPlane
 {
 	Vector _normal;
 
-	float d;
+	float _d;
 };
 
 class Renderer
@@ -29,6 +29,20 @@ public:
 	Image* getImage();
 
 	/*
+	 * Clips the non-visible triangles of the scene
+	 * 
+	 * @returns Nothing but directly modifies the triangles of the scene
+	 */
+	void clip();
+
+	/*
+	 * Clips the non-visible triangles of the given triangle vector
+	 *
+	 * @returns The visible triangles
+	 */
+	std::vector<Triangle> clip(const std::vector<Triangle>& triangles);
+
+	/*
 	 * Ray traces only one triangle and returns its color given a ray
 	 */
 	Color traceTriangle(const Ray& ray, const Triangle& triangle) const;
@@ -43,6 +57,12 @@ public:
 	void rayTrace();
 
 private:
+	/*
+	 * When a triangle isn't completely inside or outside the volume defined by a plane, it must be clipped and produce new triangles. This functions does that.
+	 * a_inside, b_inside and c_inside are boolean defining whether or not the vertex a, b and c respectively are inside or outside the volume defined by the plane
+	 */
+	std::vector<Triangle> clip_triangle_against_plane(const Triangle& triangle, const ClippingPlane& plane, bool a_inside, bool b_inside, bool c_inside);
+
 	/*
 	 * @return Returns the diffuse color of the material given the intersection normal and the direction to the light source
 	 */

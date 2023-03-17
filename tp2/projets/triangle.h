@@ -44,6 +44,7 @@ public:
     bool barycentric_coordinates(const Vector& point, float& u, float& v) const;
 
     friend std::ostream& operator << (std::ostream& os, const Triangle& triangle);
+    friend Triangle operator +(const Triangle& triangle, const Vector& vec);
 
 public:
     Vector _a, _b, _c;
