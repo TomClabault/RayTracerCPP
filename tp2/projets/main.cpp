@@ -31,7 +31,7 @@ int main()
     //triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(0, 0, 0)));
 
     meshData = read_meshio_data("data/burger01.obj");
-    triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(1, -1, -6)));
+    triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(1, -1, -4)));
 
     //Triangle triangle = Triangle(Vector(-1, 0, -2), Vector(1, 0, -2), Vector(0, 1, -2));
     //triangles.push_back(triangle);

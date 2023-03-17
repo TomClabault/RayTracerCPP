@@ -1,6 +1,8 @@
 #ifndef RAY_TRACER_H
 #define RAY_TRACER_H
 
+#include <array>
+
 #include "image.h"
 #include "scene.h"
 #include "settings.h"
