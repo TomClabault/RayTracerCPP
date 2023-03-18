@@ -40,8 +40,11 @@ int main()
     //meshData = read_meshio_data("data/armadillo.obj");
     //triangles = MeshIOUtils::create_triangles(meshData, Translation(0, -0.8, -3) * RotationY(180) * RotationX(90));
 
-    meshData = read_meshio_data("data/xyzrgb_dragon.obj");
-    triangles = MeshIOUtils::create_triangles(meshData, Translation(0.25, 0, -3) * RotationY(22.5 + 180) * RotationX(90) * Scale(1.3, 1.3, 1.3));
+    //meshData = read_meshio_data("data/xyzrgb_dragon.obj");
+    //triangles = MeshIOUtils::create_triangles(meshData, Translation(0.25, 0, -3) * RotationY(22.5 + 180) * RotationX(90) * Scale(1.3, 1.3, 1.3));
+
+    meshData = read_meshio_data("data/stanford_bunny.obj");
+    triangles = MeshIOUtils::create_triangles(meshData, Translation(0, -2, -3) * RotationX(90));
 
     //triangles.push_back(Triangle(Vector(-1, 0, -2), Vector(1, 0, -2), Vector(0, 1, -2)));
      //triangles.push_back(Triangle(Vector(-1, 0, -2), Vector(1, -0.5, -3), Vector(1, 0, -3)) + Vector(0, 1, 0));
