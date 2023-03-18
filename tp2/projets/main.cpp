@@ -23,8 +23,8 @@ int main()
     //meshData = read_meshio_data("data/geometry.obj");
     //triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(-1, -2, -7)) * RotationY(160) * Scale(0.02));
 
-    //meshData = read_meshio_data("data/robot.obj");
-    //triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(0, -2, -4)));
+    meshData = read_meshio_data("data/robot.obj");
+    triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(0, -2, -4)));
    
     //meshData = read_meshio_data("data/sphere_low.obj");
     //meshData = read_meshio_data("data/sphere_fat.obj");
@@ -34,9 +34,11 @@ int main()
     //triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(1, -1, -4)));
 
     //triangles.push_back(Triangle(Vector(-1, 0, -2), Vector(1, 0, -2), Vector(0, 1, -2)));
+     //triangles.push_back(Triangle(Vector(-1, 0, -2), Vector(1, -0.5, -3), Vector(1, 0, -3)) + Vector(0, 1, 0));
+    //triangles.push_back(Triangle(Vector(-1, -1, -1), Vector(0, -1, -1), Vector(-1, 0, -1)) + Vector(-0.2, 0, 0));
     //triangles.push_back(Triangle(Vector(-1, 0, 2), Vector(1, 0, 2), Vector(0, 1, 2)));
     //triangles.push_back(Triangle(Vector(-1, 0, 2), Vector(1, 0, -2), Vector(0, 1, -2)));
-    triangles.push_back(Triangle(Vector(-0.5, -0.5, -2), Vector(0, -0.5, 3), Vector(0.5, -0.5, -2)));
+    //triangles.push_back(Triangle(Vector(-0.5, -0.5, -2), Vector(0, -0.5, 3), Vector(0.5, -0.5, -2)));
 
     Scene scene(Camera(Vector(0, 0, 0)), triangles, meshData.materials, PointLight(Vector(2, 0, 2)));
 
@@ -45,11 +47,11 @@ int main()
 
     float totalTime = 0.0;
     timer.start();
-    renderer.clip();
+    //renderer.clip();
     timer.stop();
     totalTime += timer.elapsed();
     std::cout << "Clipping time: " << timer.elapsed() << "ms\n";
-    std::exit(0);
+    //std::exit(0);
 
     timer.start();
 #if HYBRID_RASTERIZATION_TRACING

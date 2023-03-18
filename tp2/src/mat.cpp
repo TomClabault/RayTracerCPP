@@ -300,6 +300,7 @@ Transform Perspective( const float fov, const float aspect, const float znear, c
     float itan= 1 / tanf(radians(fov) * 0.5f);
     float id= 1 / (znear - zfar);
 
+    //column major
     return Transform(
         itan/aspect,    0,               0,                 0,
                   0, itan,               0,                 0,
