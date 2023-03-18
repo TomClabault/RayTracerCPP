@@ -21,3 +21,8 @@ std::vector<Triangle> MeshIOUtils::create_triangles(MeshIOData meshData, Transfo
 
 	return _triangles;
 }
+
+std::vector<Triangle> MeshIOUtils::create_triangles(MeshIOData meshData)
+{
+	return MeshIOUtils::create_triangles(meshData, Identity());
+}

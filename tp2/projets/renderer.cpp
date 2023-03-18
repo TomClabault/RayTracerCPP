@@ -298,82 +298,8 @@ Color Renderer::traceTriangle(const Ray& ray, const Triangle& triangle) const
 }
 
 //TODO utiliser les proper Point et Vector là où il faut plutôt que Vector partout
-
-//// compute screen coordinates first
-//#define M_PI 3.141592
-//void gluPerspective(
-//	const float& angleOfView,
-//	const float& imageAspectRatio,
-//	const float& n, const float& f,
-//	float& b, float& t, float& l, float& r)
-//{
-//	float scale = tan(angleOfView * 0.5 * M_PI / 180) * n;
-//	r = imageAspectRatio * scale, l = -r;
-//	t = scale, b = -t;
-//}
-//
-//// set the OpenGL perspective projection matrix
-//void glFrustum(
-//	const float& b, const float& t, const float& l, const float& r,
-//	const float& n, const float& f,
-//	Transform& M)
-//{
-//	// set OpenGL perspective projection matrix
-//	M.m[0][0] = 2 * n / (r - l);
-//	M.m[0][1] = 0;
-//	M.m[0][2] = 0;
-//	M.m[0][3] = 0;
-//
-//	M.m[1][0] = 0;
-//	M.m[1][1] = 2 * n / (t - b);
-//	M.m[1][2] = 0;
-//	M.m[1][3] = 0;
-//
-//	M.m[2][0] = (r + l) / (r - l);
-//	M.m[2][1] = (t + b) / (t - b);
-//	M.m[2][2] = -(f + n) / (f - n);
-//	M.m[2][3] = -1;
-//
-//	M.m[3][0] = 0;
-//	M.m[3][1] = 0;
-//	M.m[3][2] = -2 * f * n / (f - n);
-//	M.m[3][3] = 0;
-//}
-//
-//void multPointMatrix(const Point& in, Point& out, const Transform& M)
-//{
-//	//out = in * Mproj;
-//	out.x = in.x * M.m[0][0] + in.y * M.m[1][0] + in.z * M.m[2][0] + /* in.z = 1 */ M.m[3][0];
-//	out.y = in.x * M.m[0][1] + in.y * M.m[1][1] + in.z * M.m[2][1] + /* in.z = 1 */ M.m[3][1];
-//	out.z = in.x * M.m[0][2] + in.y * M.m[1][2] + in.z * M.m[2][2] + /* in.z = 1 */ M.m[3][2];
-//	float w = in.x * M.m[0][3] + in.y * M.m[1][3] + in.z * M.m[2][3] + /* in.z = 1 */ M.m[3][3];
-//
-//	// normalize if w is different than 1 (convert from homogeneous to Cartesian coordinates)
-//	if (w != 1) {
-//		out.x /= w;
-//		out.y /= w;
-//		out.z /= w;
-//	}
-//}
-//
-///*float t, b, l, r;
-//		float n = 1, f = 1000;;
-//		gluPerspective(90, (float)_width / _height, 1, 1000, b, t, l, r);
-//		Transform perspective_projection;
-//		glFrustum(b, t, l, r, n, f, perspective_projection);
-//
-//		Point a_image_plane_p, b_image_plane_p, c_image_plane_p;
-//		Vector a_image_plane, b_image_plane, c_image_plane;
-//		multPointMatrix(Point(triangle._a), a_image_plane_p, perspective_projection);
-//		multPointMatrix(Point(triangle._b), b_image_plane_p, perspective_projection);
-//		multPointMatrix(Point(triangle._c), c_image_plane_p, perspective_projection);
-//		a_image_plane = Vector(a_image_plane_p);
-//		b_image_plane = Vector(b_image_plane_p);
-//		c_image_plane = Vector(c_image_plane_p);*/
-
 void Renderer::rasterTrace()
 {
-	int index = 0;//TODO remove
 #pragma omp parallel for
 	for (int triangle_index = 0; triangle_index < _scene._triangles.size(); triangle_index++)
 	{
@@ -384,20 +310,10 @@ void Renderer::rasterTrace()
 		float invBZ = 1 / -triangle._b.z;
 		float invCZ = 1 / -triangle._c.z;
 
-		//Vector a_image_plane = Vector(triangle._a.x * invAZ, triangle._a.y * invAZ, 0);
-		//Vector b_image_plane = Vector(triangle._b.x * invBZ, triangle._b.y * invBZ, 0);
-		//Vector c_image_plane = Vector(triangle._c.x * invCZ, triangle._c.y * invCZ, 0);
-
-		Transform perspective_projection = Perspective(50, (float)_width / _height, 1, 1000);
+		Transform perspective_projection = Perspective(90, (float)_width / _height, 1, 1000);
 		Vector a_image_plane = Vector(perspective_projection(Point(triangle._a)));
 		Vector b_image_plane = Vector(perspective_projection(Point(triangle._b)));
 		Vector c_image_plane = Vector(perspective_projection(Point(triangle._c)));
-
-		//std::cout << perspective_projection << std::endl << std::endl;
-		//std::cout << perspective_projection.inverse() << std::endl;
-		//std::exit(0);
-
-		//std::cout << a_image_plane << std::endl << b_image_plane << std::endl << c_image_plane << std::endl;
 
 		//Computing the bounding box of the triangle so that next, we only test pixels that are in the bounding box of the triangle
 		float boundingMinX = std::min(a_image_plane.x, std::min(b_image_plane.x, c_image_plane.x));
@@ -408,13 +324,10 @@ void Renderer::rasterTrace()
 		if (boundingMinX < -1 || boundingMinY < -1 || boundingMaxX > 1 || boundingMaxY > 1)
 			continue;//Completely clipping the triangle //TODO Should be replaced by a proper polygon clipping algorithm !!!!
 		
-		//std::cout << "bounding box: " << "[" << boundingMinX << ", " << boundingMinY << "] | [" << boundingMaxX << ", " << boundingMaxY << "]\n";
-
 		int minXPixels = (boundingMinX + 1) * 0.5 * IMAGE_WIDTH;
 		int minYPixels = (boundingMinY + 1) * 0.5 * IMAGE_HEIGHT;
 		int maxXPixels = (boundingMaxX + 1) * 0.5 * IMAGE_WIDTH;
 		int maxYPixels = (boundingMaxY + 1) * 0.5 * IMAGE_HEIGHT;
-
 
 		//TODO remplacer ces ifs là par un std::min dans le calcul de min/maxXPixels au desuss
 		if (maxXPixels == IMAGE_WIDTH)
@@ -460,22 +373,7 @@ void Renderer::rasterTrace()
 					_z_buffer[py][px] = zCameraSpace;
 
 #if SHADING
-					index++;
-
-					//float ratio = (float)_width / _height;
-					//Vector came_pos = _scene._camera._position;
-					//came_pos.x = came_pos.x * ratio;
-					////came_pos.y /= tan(60 * 3.141592 / 180);
-
-					//pixel_point.x = pixel_point.x * ratio;
-					////pixel_point.y /= tan(60 * 3.141592 / 180);
-					//Vector ray_dir = normalize(pixel_point - came_pos);
-
-					//Vector came_pos = Vector(perspective_projection(Point(_scene._camera._position)));
-					//Vector ray_dir = normalize(Vector(perspective_projection(Point(normalize(pixel_point - came_pos)))));
-
 					_image(px, py) = traceTriangle(Ray(_scene._camera._position, normalize(normalize(Vector(perspective_projection.inverse()(Point(pixel_point)))) - _scene._camera._position)), triangle);
-					//_image(px, py) = traceTriangle(Ray(came_pos, ray_dir), triangle);
 #elif COLOR_NORMAL_OR_BARYCENTRIC
 					Vector normalized_normal = normalize(cross(triangle._b - triangle._a, triangle._c - triangle._a));
 					_image(px, py) = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
@@ -486,13 +384,9 @@ void Renderer::rasterTrace()
 					finalColor = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
 #endif
 				}
-				//else
-					//_image(px, py) = Color(0, 1.0, 0);
 			}
 		}
 	}
-
-	std::cout << index << std::endl;
 }
 
 void Renderer::rayTrace()
