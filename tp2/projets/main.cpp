@@ -15,6 +15,8 @@
 #include "triangle.h"
 #include "mat.h"
 
+void loadOBJ(MeshIOData& meshData, std::vector<Triangle>& triangles);
+
 int main()
 {
     float totalTime = 0.0;
@@ -24,13 +26,49 @@ int main()
     std::vector<Triangle> triangles;
 
     timer.start();
+    loadOBJ(meshData, triangles);
+    timer.stop();
+    totalTime += timer.elapsed();
+    std::cout << "OBJ Loading time: " << timer.elapsed() << "ms\n";
+
+    Scene scene(Camera(Vector(0, 0, 0), 50), triangles, meshData.materials, PointLight(Vector(2, 0, 2)));
+
+    Renderer renderer(IMAGE_WIDTH, IMAGE_HEIGHT, scene);
+    std::cout << "\nRender resolution: " << IMAGE_WIDTH << "*" << IMAGE_HEIGHT << "\n";
+
+    timer.start();
+#if HYBRID_RASTERIZATION_TRACING
+    renderer.rasterTrace();
+#else
+    renderer.rayTrace();
+#endif
+    timer.stop();
+    totalTime += timer.elapsed();
+    std::cout << "Render time: " << timer.elapsed() << "ms\n";
+    
+    
+    // enregistre l'image, de plusieurs manieres...
+    timer.start();
+    //write_image_png(*renderer.getImage(), "image.png");
+    timer.stop();
+    totalTime += timer.elapsed();
+    std::cout << "Image writing time: " << timer.elapsed() << "ms\n";
+    //write_image_bmp(*renderer.getImage(), "image.bmp");
+    //write_image_hdr(*renderer.getImage(), "image.hdr");
+
+    std::cout << "\nTotal time: " << totalTime << "ms\n";
+    
+    return 0;
+}
+
+void loadOBJ(MeshIOData& meshData, std::vector<Triangle>& triangles)
+{
     //meshData = read_meshio_data("data/geometry.obj");
     //triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(-1, -2, -7)) * RotationY(160) * Scale(0.02));
 
     meshData = read_meshio_data("data/robot.obj");
     triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(0, -2, -4)));
-    triangles.push_back(Triangle(Vector(-4, 0, -2), Vector(-3.9, 0, -2), Vector(-3.95, 1, -2)));
-   
+
     //meshData = read_meshio_data("data/sphere_low.obj");
     //meshData = read_meshio_data("data/sphere_fat.obj");
     //triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(0, 0, 0)));
@@ -53,38 +91,4 @@ int main()
     //triangles.push_back(Triangle(Vector(-1, 0, 2), Vector(1, 0, 2), Vector(0, 1, 2)));
     //triangles.push_back(Triangle(Vector(-1, 0, 2), Vector(1, 0, -2), Vector(0, 1, -2)));
     //triangles.push_back(Triangle(Vector(-0.5, -0.5, -2), Vector(0, -0.5, 3), Vector(0.5, -0.5, -2)));
-    timer.stop();
-    totalTime += timer.elapsed();
-
-    std::cout << "OBJ Loading time: " << timer.elapsed() << "ms\n";
-
-    Scene scene(Camera(Vector(0, 0, 0)), triangles, meshData.materials, PointLight(Vector(2, 0, 2)));
-
-    Renderer renderer(IMAGE_WIDTH, IMAGE_HEIGHT, scene);
-
-    std::cout << "\nRender resolution: " << IMAGE_WIDTH << "*" << IMAGE_HEIGHT << "\n";
-    timer.start();
-#if HYBRID_RASTERIZATION_TRACING
-    renderer.rasterTrace();
-#else
-    renderer.rayTrace();
-#endif
-    timer.stop();
-    totalTime += timer.elapsed();
-    std::cout << "Render time: " << timer.elapsed() << "ms\n";
-    
-    
-    // enregistre l'image, de plusieurs manieres...
-    timer.start();
-    write_image_png(*renderer.getImage(), "image.png");
-    timer.stop();
-    totalTime += timer.elapsed();
-    std::cout << "Image writing time: " << timer.elapsed() << "ms\n";
-    //write_image_bmp(*renderer.getImage(), "image.bmp");
-    //write_image_hdr(*renderer.getImage(), "image.hdr");
-
-    std::cout << "\nTotal time: " << totalTime << "ms\n";
-    
-    return 0;
 }
-

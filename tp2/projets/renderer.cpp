@@ -13,11 +13,6 @@ Material init_default_material()
 
 Material Renderer::DEFAULT_MATERIAL = init_default_material();
 Color Renderer::AMBIENT_COLOR = Color(0.1f, 0.1f, 0.1f);
-std::array<ClippingPlane, 5> Renderer::CLIPPING_PLANES = { ClippingPlane{Vector(0, 0, -1), 1} };//, //Near clipping plane
-														   //ClippingPlane{Vector(1 / std::sqrt(2), 0, -1 / std::sqrt(2)), 0}, //Left
-														   //ClippingPlane{Vector(-1 / std::sqrt(2), 0, -1 / std::sqrt(2)), 0},//Right
-														   //ClippingPlane{Vector(0, 1 / std::sqrt(2), -1 / std::sqrt(2)), 0},//Bottom
-														   //ClippingPlane{Vector(0, -1 / std::sqrt(2), -1 / std::sqrt(2)), 0} };//Top
 
 Renderer::Renderer(int width, int height, Scene scene) : _width(width), _height(height),
 	_image(Image(width, height)), _scene(scene) 
@@ -42,6 +37,8 @@ Renderer::Renderer(int width, int height, Scene scene) : _width(width), _height(
 		for (int j = 0; j < width; j++)
 			_z_buffer[i][j] = -INFINITY;
 	}
+
+	_scene._camera.init_perspec_proj_mat((float)_width / _height);//Perspective projection matrix from camera space to NDC space
 #endif
 }
 
@@ -58,166 +55,6 @@ Renderer::~Renderer()
 Image* Renderer::getImage()
 {
 	return &_image;
-}
-
-std::vector<Triangle> Renderer::clip_triangle_against_plane(const Triangle& triangle, const ClippingPlane& plane, bool a_inside, bool b_inside, bool c_inside)
-{
-	std::vector<Triangle> new_triangles;
-
-	int sum = a_inside + b_inside + c_inside;
-
-	if (sum == 1)//Only one vertex inside, we're going to clip the triangle and create a new one
-	{
-		Vector inside_vertex, outside_1, outside_2;
-		if (a_inside)
-		{
-			inside_vertex = triangle._a;
-			outside_1 = triangle._b;
-			outside_2 = triangle._c;
-		}
-		else if (b_inside)
-		{
-			inside_vertex = triangle._b;
-			outside_1 = triangle._a;
-			outside_2 = triangle._c;
-		}
-		else
-		{
-			inside_vertex = triangle._c;
-			outside_1 = triangle._a;
-			outside_2 = triangle._b;
-		}
-
-		float NIn = dot(plane._normal, inside_vertex);
-
-		//Intersection between the segment [inside_vertex, outside_1] and the plane
-		Vector segment_1 = outside_1 - inside_vertex;
-		float tP1 = (-plane._d - NIn) / dot(plane._normal, segment_1);
-		Vector P1 = inside_vertex + tP1 * segment_1;
-
-		//Intersection between the segment [inside_vertex, outside_2] and the plane
-		Vector segment_2 = outside_2 - inside_vertex;
-		float tP2 = (-plane._d - NIn) / dot(plane._normal, segment_2);
-		Vector P2 = inside_vertex + tP2 * segment_2;
-
-		new_triangles.push_back(Triangle(inside_vertex, P1, P2));
-	}
-	else if (sum == 2)//Two vertices are inside, we're going to clip the triangle and create two new ones
-	{
-		std::vector<Triangle> clippedNewTriangles;
-
-		Vector outside_vertex, inside_1, inside_2;
-
-		if (!a_inside)
-		{
-			outside_vertex = triangle._a;
-			inside_1 = triangle._b;
-			inside_2 = triangle._c;
-		}
-		else if (!b_inside)
-		{
-			outside_vertex = triangle._b;
-			inside_1 = triangle._a;
-			inside_2 = triangle._c;
-		}
-		else if (!c_inside)
-		{
-			outside_vertex = triangle._c;
-			inside_1 = triangle._a;
-			inside_2 = triangle._b;//TODO maybe swap les deux inside ici pour avoir un triangle bien orienté ?
-		}
-
-		//Now computing the points that are going to be used to make 2 new triangles
-
-		float NOut = dot(plane._normal, outside_vertex);
-
-		Vector segment_1 = outside_vertex - inside_1;
-		float tP1 = (-plane._d - NOut) / dot(plane._normal, segment_1);
-		Vector P1 = inside_1 + tP1 * segment_1;
-
-		Vector segment_2 = outside_vertex - inside_2;
-		float tP2 = (-plane._d - NOut) / dot(plane._normal, segment_2);
-		Vector P2 = inside_2 + tP2 * segment_2;
-
-		new_triangles.push_back(Triangle(inside_1, P1, inside_2));
-		new_triangles.push_back(Triangle(inside_2, P1, P2));
-	}
-
-	return new_triangles;
-}
-
-void Renderer::clip()
-{
-	_scene._triangles = clip(_scene._triangles);
-}
-
-std::vector<Triangle> Renderer::clip(const std::vector<Triangle>& triangles)
-{
-	std::vector<Triangle> visible_triangles;
-	visible_triangles.reserve(triangles.size());
-
-	std::cout << sizeof(std::vector<Triangle>::iterator) << std::endl;
-
-	int kept = 0;
-	int clipped = 0;
-	int removed = 0;
-
-	std::vector<Triangle> clipped_triangles;//Triangles that have been clipped and that need to be checked against the planes again
-	for (const Triangle& triangle : triangles)
-	{
-
-		for (const ClippingPlane& plane : Renderer::CLIPPING_PLANES)
-		{
-			bool a_inside = dot(plane._normal, triangle._a) - plane._d > 0;
-			bool b_inside = dot(plane._normal, triangle._b) - plane._d > 0;
-			bool c_inside = dot(plane._normal, triangle._c) - plane._d > 0;
-			int sum = a_inside + b_inside + c_inside;
-
-			if (sum == 3)
-				visible_triangles.push_back(triangle);
-			else if (sum != 0)//One or two vertices are outside the volume defined by the plane
-			{
-				std::vector<Triangle> new_triangles = clip_triangle_against_plane(triangle, plane, a_inside, b_inside, c_inside);
-				for (const Triangle& triangle : new_triangles)
-					clipped_triangles.push_back(triangle + plane._normal * Triangle::EPSILON);//TODO modifier ça pour éviter les copies dans tous les sens
-			}
-		}
-	}
-
-	//Clipping the triangles further
-	while (clipped_triangles.size() > 0)
-	{
-		std::vector<Triangle> new_clipped_triangles;
-
-		for (const Triangle& triangle : clipped_triangles)
-		{
-			for (const ClippingPlane& plane : Renderer::CLIPPING_PLANES)
-			{
-				bool a_inside = dot(plane._normal, triangle._a) - plane._d > 0;
-				bool b_inside = dot(plane._normal, triangle._b) - plane._d > 0;
-				bool c_inside = dot(plane._normal, triangle._c) - plane._d > 0;
-				int sum = a_inside + b_inside + c_inside;
-
-				if (sum == 3)
-					visible_triangles.push_back(triangle);
-				else if (sum != 0)//One or two vertices are outside the volume defined by the plane
-				{
-					std::vector<Triangle> new_triangles = clip_triangle_against_plane(triangle, plane, a_inside, b_inside, c_inside);
-					for (const Triangle& triangle : new_triangles)
-						new_clipped_triangles.push_back(triangle);//TODO modifier ça pour éviter les copies dans tous les sens
-				}
-			}
-		}
-
-		clipped_triangles = new_clipped_triangles;
-	}
-
-	std::cout << removed << " triangles completely clipped\n";
-	std::cout << clipped << " triangles partially clipped\n";
-	std::cout << kept << " triangles kept\n";
-
-	visible_triangles.shrink_to_fit();
-	return visible_triangles;
 }
 
 Color Renderer::computeDiffuse(const Material& hitMaterial, const Vector& normal, const Vector& direction_to_light) const
@@ -310,7 +147,7 @@ void Renderer::rasterTrace()
 		float invBZ = 1 / -triangle._b.z;
 		float invCZ = 1 / -triangle._c.z;
 
-		Transform perspective_projection = Perspective(30, (float)_width / _height, 1, 1000);//TODO mettre ça dans la classe Camera
+		Transform perspective_projection = _scene._camera._perspective_proj_mat;
 		Vector a_image_plane = Vector(perspective_projection(Point(triangle._a)));
 		Vector b_image_plane = Vector(perspective_projection(Point(triangle._b)));
 		Vector c_image_plane = Vector(perspective_projection(Point(triangle._c)));
@@ -320,23 +157,13 @@ void Renderer::rasterTrace()
 		float boundingMinY = std::min(a_image_plane.y, std::min(b_image_plane.y, c_image_plane.y));
 		float boundingMaxX = std::max(a_image_plane.x, std::max(b_image_plane.x, c_image_plane.x));
 		float boundingMaxY = std::max(a_image_plane.y, std::max(b_image_plane.y, c_image_plane.y));
-
-		//if (boundingMinX < -1 || boundingMinY < -1 || boundingMaxX > 1 || boundingMaxY > 1)
-			//continue;//Completely clipping the triangle //TODO Should be replaced by a proper polygon clipping algorithm !!!!
 		
-		int minXPixels = (boundingMinX + 1) * 0.5 * IMAGE_WIDTH;
-		int minYPixels = (boundingMinY + 1) * 0.5 * IMAGE_HEIGHT;
-		int maxXPixels = (boundingMaxX + 1) * 0.5 * IMAGE_WIDTH;
-		int maxYPixels = (boundingMaxY + 1) * 0.5 * IMAGE_HEIGHT;
+		int minXPixels = (boundingMinX + 1) * 0.5 * _width;
+		int minYPixels = (boundingMinY + 1) * 0.5 * _height;
+		int maxXPixels = (boundingMaxX + 1) * 0.5 * _width;
+		int maxYPixels = (boundingMaxY + 1) * 0.5 * _height;
 
-		//TODO remplacer ces ifs là par un std::min dans le calcul de min/maxXPixels au desuss
-		/*if (maxXPixels == IMAGE_WIDTH)
-			maxXPixels--;
-		if (maxYPixels == IMAGE_HEIGHT)
-			maxYPixels--;*/
-
-
-		//TODO remplace l'utilisatrlion de IMAGE_WIDTH  et height par _width rey _height
+		//TODO proper clipping algorithm
 		minXPixels = std::max(0, minXPixels);
 		minYPixels = std::max(0, minYPixels);
 		maxXPixels = std::min(_width - 1, maxXPixels);
@@ -380,7 +207,7 @@ void Renderer::rasterTrace()
 					_z_buffer[py][px] = zCameraSpace;
 
 #if SHADING
-					_image(px, py) = traceTriangle(Ray(_scene._camera._position, normalize(normalize(Vector(perspective_projection.inverse()(Point(pixel_point)))) - _scene._camera._position)), triangle);
+					_image(px, py) = traceTriangle(Ray(_scene._camera._position, normalize(Vector(perspective_projection.inverse()(Point(pixel_point))) - _scene._camera._position)), triangle);
 #elif COLOR_NORMAL_OR_BARYCENTRIC
 					Vector normalized_normal = normalize(cross(triangle._b - triangle._a, triangle._c - triangle._a));
 					_image(px, py) = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
