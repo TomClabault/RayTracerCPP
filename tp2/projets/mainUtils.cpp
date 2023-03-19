@@ -40,8 +40,8 @@ float loadOBJ(MeshIOData& meshData, std::vector<Triangle>& triangles)
     Timer timer;
 
     timer.start();
-    meshData = read_meshio_data("data/geometry.obj");
-    triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(-1, -2, -7)) * RotationY(160) * Scale(0.02));
+    //meshData = read_meshio_data("data/geometry.obj");
+    //triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(-1, -2, -7)) * RotationY(160) * Scale(0.02));
 
     //meshData = read_meshio_data("data/robot.obj");
     //triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(0, -2, -4)));
@@ -63,11 +63,7 @@ float loadOBJ(MeshIOData& meshData, std::vector<Triangle>& triangles)
     //triangles = MeshIOUtils::create_triangles(meshData, Translation(0, -2, -3) * RotationX(90));
 
     //triangles.push_back(Triangle(Vector(-1, 0, -2), Vector(1, 0, -2), Vector(0, 1, -2)));
-     //triangles.push_back(Triangle(Vector(-1, 0, -2), Vector(1, -0.5, -3), Vector(1, 0, -3)) + Vector(0, 1, 0));
-    //triangles.push_back(Triangle(Vector(-1, -1, -1), Vector(0, -1, -1), Vector(-1, 0, -1)) + Vector(-0.2, 0, 0));
-    //triangles.push_back(Triangle(Vector(-1, 0, 2), Vector(1, 0, 2), Vector(0, 1, 2)));
-    //triangles.push_back(Triangle(Vector(-1, 0, 2), Vector(1, 0, -2), Vector(0, 1, -2)));
-    //triangles.push_back(Triangle(Vector(-0.5, -0.5, -2), Vector(0, -0.5, 3), Vector(0.5, -0.5, -2)));
+    triangles.push_back(Triangle(Vector(-1, -1, -2), Vector(0, -1, -2), Vector(-0.5, 1, -2)));
     timer.stop();
 
     std::cout << "\nOBJ Loading time: " << timer.elapsed() << "ms\n";

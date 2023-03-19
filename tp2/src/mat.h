@@ -50,6 +50,8 @@ struct Transform
     Vector operator() ( const Vector& v ) const;
     //! renvoie le point/vecteur homogene transforme.
     vec4 operator() ( const vec4& v ) const;
+    //! renvoie le triangle avec tous ses vertex transformes.
+    Triangle operator() (const Triangle& v) const;
     
     //! renvoie la composition de la transformation this et b, t = this * b. permet de transformer un point sans "ambiguite" Point q= a(b(c(p)));
     Transform operator() ( const Transform& b ) const;

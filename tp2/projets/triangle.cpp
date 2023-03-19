@@ -8,6 +8,18 @@ Triangle::Triangle() :  _a(Vector(0, 0, 0)),
 
 Triangle::Triangle(Vector a, Vector b, Vector c) : _a(a), _b(b), _c(c), _normal(cross(_b - _a, _c - _a)), _materialIndex(-1) {};
 
+Triangle::Triangle(Triangle4 triangle) 
+{
+    float iaw, ibw, icw;
+    iaw = 1.0f / triangle._a.w;
+    ibw = 1.0f / triangle._b.w;
+    icw = 1.0f / triangle._c.w;
+
+    _a = Vector(triangle._a.x * iaw, triangle._a.y * iaw, triangle._a.y * iaw);
+    _b = Vector(triangle._b.x * iaw, triangle._b.y * iaw, triangle._b.y * iaw);
+    _c = Vector(triangle._c.x * iaw, triangle._c.y * iaw, triangle._c.y * iaw);
+}
+
 bool Triangle::intersect(const Ray& ray, HitInfo& hitInfo) const
 {
     //Common variables to both algorithms

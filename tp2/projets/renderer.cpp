@@ -139,11 +139,47 @@ Color Renderer::traceTriangle(const Ray& ray, const Triangle& triangle) const
 	return finalColor;
 }
 
+int clip_triangle(const vec4& a, const vec4& b, const vec4& c, std::array<ClippingPlane, 6>& clipping_planes, std::array<Triangle4, 12>& clipped_triangles)
+{
+	for (int i = 0; i < 1; i++)
+	{
+		bool a_inside = 
+	}
+}
+
+struct ClippingPlane
+{
+	ClippingPlane() {}
+	ClippingPlane(Vector normal, float d) : _normal(normal), _d(d) {}
+	ClippingPlane(vec4 ABCD) : _normal(Vector(ABCD.x, ABCD.y, ABCD.z)), _d(ABCD.w) {}
+
+	Vector _normal;
+	float _d;
+};
+
 //TODO utiliser les proper Point et Vector là où il faut plutôt que Vector partout
 void Renderer::rasterTrace()
 {
 	Transform perspective_projection = _scene._camera._perspective_proj_mat;
 	Transform perspective_projection_inv = _scene._camera._perspective_proj_mat_inv;
+
+	vec4 left = vec4(vec3(-perspective_projection[0] + perspective_projection[3]), perspective_projection.m[3][0] + perspective_projection.m[3][3]);
+	vec4 right = vec4(vec3(-perspective_projection[0] + perspective_projection[3]), -perspective_projection.m[3][0] + perspective_projection.m[3][3]);
+	vec4 bottom = vec4(vec3(perspective_projection[1] + perspective_projection[3]), perspective_projection.m[3][1] + perspective_projection.m[3][3]);
+	vec4 top = vec4(vec3(-perspective_projection[1] + perspective_projection[3]), -perspective_projection.m[3][1] + perspective_projection.m[3][3]);
+	vec4 near = vec4(vec3(perspective_projection[2] + perspective_projection[3]), perspective_projection.m[3][2] + perspective_projection.m[3][3]);
+	vec4 far = vec4(vec3(-perspective_projection[2] + perspective_projection[3]), -perspective_projection.m[3][2] + perspective_projection.m[3][3]);
+	vec4 minus05X = vec4(vec3(1, 0, 0), -0.5);
+
+	std::array<struct ClippingPlane, 6> clipping_planes = {
+		ClippingPlane(minus05X),//TODO to remove
+		ClippingPlane(left),//Left plane
+		ClippingPlane(right),//Right plane
+		ClippingPlane(bottom),//Bottom plane
+		ClippingPlane(top),//Top plane
+		ClippingPlane(near),//Near plane
+		//ClippingPlane(far)//Far plane
+	};
 
 #pragma omp parallel for
 	for (int triangle_index = 0; triangle_index < _scene._triangles.size(); triangle_index++)
@@ -155,75 +191,88 @@ void Renderer::rasterTrace()
 		float invBZ = 1 / -triangle._b.z;
 		float invCZ = 1 / -triangle._c.z;
 
-		Vector a_image_plane = Vector(perspective_projection(Point(triangle._a)));
-		Vector b_image_plane = Vector(perspective_projection(Point(triangle._b)));
-		Vector c_image_plane = Vector(perspective_projection(Point(triangle._c)));
+		vec4 a_image_plane4 = perspective_projection(vec4(Point(triangle._a)));//TODO remove unecessary conversion
+		vec4 b_image_plane4 = perspective_projection(vec4(Point(triangle._b)));
+		vec4 c_image_plane4 = perspective_projection(vec4(Point(triangle._c)));
 
-		//Computing the bounding box of the triangle so that next, we only test pixels that are in the bounding box of the triangle
-		float boundingMinX = std::min(a_image_plane.x, std::min(b_image_plane.x, c_image_plane.x));
-		float boundingMinY = std::min(a_image_plane.y, std::min(b_image_plane.y, c_image_plane.y));
-		float boundingMaxX = std::max(a_image_plane.x, std::max(b_image_plane.x, c_image_plane.x));
-		float boundingMaxY = std::max(a_image_plane.y, std::max(b_image_plane.y, c_image_plane.y));
-		
-		int minXPixels = (boundingMinX + 1) * 0.5 * _width;
-		int minYPixels = (boundingMinY + 1) * 0.5 * _height;
-		int maxXPixels = (boundingMaxX + 1) * 0.5 * _width;
-		int maxYPixels = (boundingMaxY + 1) * 0.5 * _height;
+		std::array<Triangle4, 12> clipped_triangles;
+		int nb_clipped = clip_triangle(a_image_plane4, b_image_plane4, c_image_plane4, clipping_planes, clipped_triangles);
 
 		//TODO proper clipping algorithm
-		minXPixels = std::max(0, minXPixels);
-		minYPixels = std::max(0, minYPixels);
-		maxXPixels = std::min(_width - 1, maxXPixels);
-		maxYPixels = std::min(_height - 1, maxYPixels);
+		//minXPixels = std::max(0, minXPixels);
+		//minYPixels = std::max(0, minYPixels);
+		//maxXPixels = std::min(_width - 1, maxXPixels);
+		//maxYPixels = std::min(_height - 1, maxYPixels);
 
-		for (int py = minYPixels; py <= maxYPixels; py++)
+		for (const Triangle4& clipped_triangle : clipped_triangles)
 		{
-			float image_y = py / (float)_height * 2 - 1;
+			Triangle clipped_triangle_NDC(clipped_triangle);
 
-			for (int px = minXPixels; px <= maxXPixels; px++)
+			Vector a_image_plane = clipped_triangle_NDC._a;
+			Vector b_image_plane = clipped_triangle_NDC._b;
+			Vector c_image_plane = clipped_triangle_NDC._c;
+
+			//Computing the bounding box of the triangle so that next, we only test pixels that are in the bounding box of the triangle
+			float boundingMinX = std::min(a_image_plane.x, std::min(b_image_plane.x, c_image_plane.x));
+			float boundingMinY = std::min(a_image_plane.y, std::min(b_image_plane.y, c_image_plane.y));
+			float boundingMaxX = std::max(a_image_plane.x, std::max(b_image_plane.x, c_image_plane.x));
+			float boundingMaxY = std::max(a_image_plane.y, std::max(b_image_plane.y, c_image_plane.y));
+		
+			int minXPixels = (boundingMinX + 1) * 0.5 * _width;
+			int minYPixels = (boundingMinY + 1) * 0.5 * _height;
+			int maxXPixels = (boundingMaxX + 1) * 0.5 * _width;
+			int maxYPixels = (boundingMaxY + 1) * 0.5 * _height;
+
+			for (int py = minYPixels; py <= maxYPixels; py++)
 			{
-				float image_x = px / (float)_width * 2 - 1;
+				float image_y = py / (float)_height * 2 - 1;
 
-				Vector pixel_point(image_x, image_y, -1);
-
-				//We don't care about the z coordinate here
-				float invTriangleArea = 1 / ((b_image_plane.x - a_image_plane.x) * (c_image_plane.y - a_image_plane.y) - (b_image_plane.y - a_image_plane.y) * (c_image_plane.x - a_image_plane.x));
-
-				float u = Triangle::edge_function(pixel_point, c_image_plane, a_image_plane);
-				if (u < 0)
-					continue;
-
-				float v = Triangle::edge_function(pixel_point, a_image_plane, b_image_plane);
-				if (v < 0)
-					continue;
-
-				float w = Triangle::edge_function(pixel_point, b_image_plane, c_image_plane);
-				if (w < 0)
-					continue;
-
-				u *= invTriangleArea;
-				v *= invTriangleArea;
-				w *= invTriangleArea;
-
-				//Depth of the point on the "real" triangle in 3D camera space
-				float inv = (w * -invAZ + u * -invBZ + v * -invCZ);
-				float zCameraSpace = 1 / inv;
-
-				if (zCameraSpace > _z_buffer[py][px])
+				for (int px = minXPixels; px <= maxXPixels; px++)
 				{
-					_z_buffer[py][px] = zCameraSpace;
+					float image_x = px / (float)_width * 2 - 1;
+
+					Vector pixel_point(image_x, image_y, -1);
+
+					//We don't care about the z coordinate here
+					float invTriangleArea = 1 / ((b_image_plane.x - a_image_plane.x) * (c_image_plane.y - a_image_plane.y) - (b_image_plane.y - a_image_plane.y) * (c_image_plane.x - a_image_plane.x));
+
+					float u = Triangle::edge_function(pixel_point, c_image_plane, a_image_plane);
+					if (u < 0)
+						continue;
+
+					float v = Triangle::edge_function(pixel_point, a_image_plane, b_image_plane);
+					if (v < 0)
+						continue;
+
+					float w = Triangle::edge_function(pixel_point, b_image_plane, c_image_plane);
+					if (w < 0)
+						continue;
+
+					u *= invTriangleArea;
+					v *= invTriangleArea;
+					w *= invTriangleArea;
+
+					//Depth of the point on the "real" triangle in 3D camera space
+					float inv = (w * -invAZ + u * -invBZ + v * -invCZ);
+					float zCameraSpace = 1 / inv;
+
+					if (zCameraSpace > _z_buffer[py][px])
+					{
+						_z_buffer[py][px] = zCameraSpace;
 
 #if SHADING
-					_image(px, py) = traceTriangle(Ray(_scene._camera._position, normalize(Vector(perspective_projection_inv(Point(pixel_point))) - _scene._camera._position)), triangle);
+						//TODO remove unecessary point/vector conversion
+						_image(px, py) = traceTriangle(Ray(_scene._camera._position, normalize(Vector(perspective_projection_inv(Point(pixel_point))) - _scene._camera._position)), perspective_projection_inv(clipped_triangle_NDC));
 #elif COLOR_NORMAL_OR_BARYCENTRIC
-					Vector normalized_normal = normalize(cross(triangle._b - triangle._a, triangle._c - triangle._a));
-					_image(px, py) = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
+						Vector normalized_normal = normalize(cross(triangle._b - triangle._a, triangle._c - triangle._a));
+						_image(px, py) = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
 #else //Color triangles with barycentric coordinates
-					float u = finalHitInfo.u;
-					float v = finalHitInfo.v;
+						float u = finalHitInfo.u;
+						float v = finalHitInfo.v;
 
-					finalColor = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
+						finalColor = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
 #endif
+					}
 				}
 			}
 		}
@@ -245,7 +294,7 @@ void Renderer::rayTrace()
 			Vector image_plane_point = Vector(x_world, y_world, -1);
 
 			Vector camera_position = _scene._camera._position;
-			Vector ray_direction = normalize(Vector(image_plane_point - camera_position));
+			Vector ray_direction = normalize(Vector(image_plane_point - camera_position));//TODO remove unecessary conversion
 			Ray ray(camera_position, ray_direction);
 
 			HitInfo finalHitInfo;

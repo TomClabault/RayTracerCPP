@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include "mat.h"
+#include "triangle.h"
 
 #ifndef M_PI
 #define M_PI 3.141592653589793
@@ -127,6 +128,15 @@ vec4 Transform::operator() ( const vec4& v ) const
     float wt= m[3][0] * x + m[3][1] * y + m[3][2] * z + m[3][3] * w;    // dot(vec4(m[3]), v)
 
     return vec4(xt, yt, zt, wt);
+}
+
+Triangle Transform::operator() (const Triangle& v) const
+{
+    Vector at = Vector(this->operator()(Point(v._a)));
+    Vector bt = Vector(this->operator()(Point(v._b)));
+    Vector ct = Vector(this->operator()(Point(v._c)));
+
+    return Triangle(at, bt, ct);
 }
 
 //! renvoie la transposee de la matrice.

@@ -22,6 +22,15 @@ struct HitInfo
     friend std::ostream& operator <<(std::ostream& os, const HitInfo& infos);
 };
 
+//Triangle with homogeneous coordinates vertices
+struct Triangle4
+{
+    Triangle4() {}
+    Triangle4(vec4 a, vec4 b, vec4 c) : _a(a), _b(b), _c(c) {}
+
+    vec4 _a, _b, _c;
+};
+
 class Triangle
 {
 public:
@@ -29,6 +38,11 @@ public:
 
     Triangle();
     Triangle(Vector a, Vector b, Vector c);
+
+    /*
+     * Converts a triangle 4 in homogeneous coordinates to a cartesian triangle by dividing each verte by their homogeneous w component
+     */
+    Triangle(Triangle4 triangle);
 
     bool intersect(const Ray& ray, HitInfo& hitInfo) const;
     bool intersect(const Ray& ray, float& t, float& u, float& v) const;
