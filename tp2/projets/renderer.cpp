@@ -310,7 +310,7 @@ void Renderer::rasterTrace()
 		float invBZ = 1 / -triangle._b.z;
 		float invCZ = 1 / -triangle._c.z;
 
-		Transform perspective_projection = Perspective(90, (float)_width / _height, 1, 1000);
+		Transform perspective_projection = Perspective(30, (float)_width / _height, 1, 1000);//TODO mettre ça dans la classe Camera
 		Vector a_image_plane = Vector(perspective_projection(Point(triangle._a)));
 		Vector b_image_plane = Vector(perspective_projection(Point(triangle._b)));
 		Vector c_image_plane = Vector(perspective_projection(Point(triangle._c)));
@@ -321,8 +321,8 @@ void Renderer::rasterTrace()
 		float boundingMaxX = std::max(a_image_plane.x, std::max(b_image_plane.x, c_image_plane.x));
 		float boundingMaxY = std::max(a_image_plane.y, std::max(b_image_plane.y, c_image_plane.y));
 
-		if (boundingMinX < -1 || boundingMinY < -1 || boundingMaxX > 1 || boundingMaxY > 1)
-			continue;//Completely clipping the triangle //TODO Should be replaced by a proper polygon clipping algorithm !!!!
+		//if (boundingMinX < -1 || boundingMinY < -1 || boundingMaxX > 1 || boundingMaxY > 1)
+			//continue;//Completely clipping the triangle //TODO Should be replaced by a proper polygon clipping algorithm !!!!
 		
 		int minXPixels = (boundingMinX + 1) * 0.5 * IMAGE_WIDTH;
 		int minYPixels = (boundingMinY + 1) * 0.5 * IMAGE_HEIGHT;
@@ -330,10 +330,17 @@ void Renderer::rasterTrace()
 		int maxYPixels = (boundingMaxY + 1) * 0.5 * IMAGE_HEIGHT;
 
 		//TODO remplacer ces ifs là par un std::min dans le calcul de min/maxXPixels au desuss
-		if (maxXPixels == IMAGE_WIDTH)
+		/*if (maxXPixels == IMAGE_WIDTH)
 			maxXPixels--;
 		if (maxYPixels == IMAGE_HEIGHT)
-			maxYPixels--;
+			maxYPixels--;*/
+
+
+		//TODO remplace l'utilisatrlion de IMAGE_WIDTH  et height par _width rey _height
+		minXPixels = std::max(0, minXPixels);
+		minYPixels = std::max(0, minYPixels);
+		maxXPixels = std::min(_width - 1, maxXPixels);
+		maxYPixels = std::min(_height - 1, maxYPixels);
 
 		for (int py = minYPixels; py <= maxYPixels; py++)
 		{
