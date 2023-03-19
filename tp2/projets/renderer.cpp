@@ -145,7 +145,7 @@ void Renderer::rasterTrace()
 	Transform perspective_projection = _scene._camera._perspective_proj_mat;
 	Transform perspective_projection_inv = _scene._camera._perspective_proj_mat_inv;
 
-//#pragma omp parallel for
+#pragma omp parallel for
 	for (int triangle_index = 0; triangle_index < _scene._triangles.size(); triangle_index++)
 	{
 		Triangle& triangle = _scene._triangles[triangle_index];
