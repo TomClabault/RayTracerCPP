@@ -66,8 +66,13 @@ Color Renderer::computeSpecular(const Material& hit_material, const Vector& ray_
 {
 	Vector incident_direction = -direction_to_light;
 	Vector reflection_ray = incident_direction - 2 * dot(normal, incident_direction) * normal;
+	float angle = dot(reflection_ray, -ray_direction);
 
-	return hit_material.specular * std::max(0.0f, std::pow(dot(reflection_ray, -ray_direction), hit_material.ns));
+	//Specular optimization to avoid computing the exponentiation when not necessary (i.e. when it corresponds to a negligeable visual impact)
+	if (angle <= hit_material.specular_threshold)//We're below the visibility threshold so we're not going to notice the specular anyway, returning no specular
+		return Color(0, 0, 0);
+	else
+		return hit_material.specular * std::powf(std::max(0.0f, angle), hit_material.ns);
 }
 
 bool Renderer::isShadowed(const Vector& inter_point, const Vector& light_position) const
@@ -137,7 +142,10 @@ Color Renderer::traceTriangle(const Ray& ray, const Triangle& triangle) const
 //TODO utiliser les proper Point et Vector là où il faut plutôt que Vector partout
 void Renderer::rasterTrace()
 {
-#pragma omp parallel for
+	Transform perspective_projection = _scene._camera._perspective_proj_mat;
+	Transform perspective_projection_inv = _scene._camera._perspective_proj_mat_inv;
+
+//#pragma omp parallel for
 	for (int triangle_index = 0; triangle_index < _scene._triangles.size(); triangle_index++)
 	{
 		Triangle& triangle = _scene._triangles[triangle_index];
@@ -147,7 +155,6 @@ void Renderer::rasterTrace()
 		float invBZ = 1 / -triangle._b.z;
 		float invCZ = 1 / -triangle._c.z;
 
-		Transform perspective_projection = _scene._camera._perspective_proj_mat;
 		Vector a_image_plane = Vector(perspective_projection(Point(triangle._a)));
 		Vector b_image_plane = Vector(perspective_projection(Point(triangle._b)));
 		Vector c_image_plane = Vector(perspective_projection(Point(triangle._c)));
@@ -207,7 +214,7 @@ void Renderer::rasterTrace()
 					_z_buffer[py][px] = zCameraSpace;
 
 #if SHADING
-					_image(px, py) = traceTriangle(Ray(_scene._camera._position, normalize(Vector(perspective_projection.inverse()(Point(pixel_point))) - _scene._camera._position)), triangle);
+					_image(px, py) = traceTriangle(Ray(_scene._camera._position, normalize(Vector(perspective_projection_inv(Point(pixel_point))) - _scene._camera._position)), triangle);
 #elif COLOR_NORMAL_OR_BARYCENTRIC
 					Vector normalized_normal = normalize(cross(triangle._b - triangle._a, triangle._c - triangle._a));
 					_image(px, py) = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
