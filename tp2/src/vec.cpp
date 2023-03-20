@@ -120,6 +120,26 @@ Vector operator/ ( const Vector& v, const float k )
     return kk * v;
 }
 
+vec4 operator+ (const vec4& u, const vec4& v)
+{
+    return vec4(u.x + v.x, u.y + v.y, u.z + v.z, u.w + v.w);
+}
+
+vec4 operator- (const vec4& u, const vec4& v)
+{
+    return vec4(u.x - v.x, u.y - v.y, u.z - v.z, u.w - v.w);
+}
+
+vec4 operator* (const vec4& u, float t)
+{
+    return vec4(u.x * t, u.y * t, u.z * t, u.w * t);
+}
+
+vec4 operator* (float t, const vec4& u)
+{
+    return u * t;
+}
+
 Vector normalize( const Vector& v )
 {
     float kk= 1 / length(v);

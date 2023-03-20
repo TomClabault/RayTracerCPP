@@ -43,8 +43,8 @@ float loadOBJ(MeshIOData& meshData, std::vector<Triangle>& triangles)
     //meshData = read_meshio_data("data/geometry.obj");
     //triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(-1, -2, -7)) * RotationY(160) * Scale(0.02));
 
-    //meshData = read_meshio_data("data/robot.obj");
-    //triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(0, -2, -4)));
+    meshData = read_meshio_data("data/robot.obj");
+    triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(-5.5, -2, -4)));
 
     //meshData = read_meshio_data("data/sphere_low.obj");
     //meshData = read_meshio_data("data/sphere_fat.obj");
@@ -63,7 +63,8 @@ float loadOBJ(MeshIOData& meshData, std::vector<Triangle>& triangles)
     //triangles = MeshIOUtils::create_triangles(meshData, Translation(0, -2, -3) * RotationX(90));
 
     //triangles.push_back(Triangle(Vector(-1, 0, -2), Vector(1, 0, -2), Vector(0, 1, -2)));
-    triangles.push_back(Triangle(Vector(-1, -1, -2), Vector(0, -1, -2), Vector(-0.5, 1, -2)));
+    //triangles.push_back(Triangle(Vector(-1, -1, -2), Vector(0, -1, -2), Vector(-0.5, 1, -2)) + Vector(-3, 0, 0));
+    //triangles.push_back(Triangle(Vector(-6.38484, -0.240091, -3.76875), Vector(-6.47219, -0.554191, -3.50085), Vector(-6.4422, -0.662066, -3.60034)));//Triangle of the robot not getting clipped properly
     timer.stop();
 
     std::cout << "\nOBJ Loading time: " << timer.elapsed() << "ms\n";

@@ -2,6 +2,7 @@
 #ifndef _MAT_H
 #define _MAT_H
 
+#include "triangle.h"
 #include "vec.h"
 
 

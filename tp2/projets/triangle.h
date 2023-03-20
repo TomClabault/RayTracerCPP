@@ -37,12 +37,12 @@ public:
     constexpr static double EPSILON = 1.0e-4;
 
     Triangle();
-    Triangle(Vector a, Vector b, Vector c);
+    Triangle(Vector a, Vector b, Vector c, int material_index = -1);
 
     /*
      * Converts a triangle 4 in homogeneous coordinates to a cartesian triangle by dividing each verte by their homogeneous w component
      */
-    Triangle(Triangle4 triangle);
+    Triangle(Triangle4 triangle, int material_index = -1);
 
     bool intersect(const Ray& ray, HitInfo& hitInfo) const;
     bool intersect(const Ray& ray, float& t, float& u, float& v) const;

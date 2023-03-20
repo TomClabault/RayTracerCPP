@@ -136,7 +136,7 @@ Triangle Transform::operator() (const Triangle& v) const
     Vector bt = Vector(this->operator()(Point(v._b)));
     Vector ct = Vector(this->operator()(Point(v._c)));
 
-    return Triangle(at, bt, ct);
+    return Triangle(at, bt, ct, v._materialIndex);
 }
 
 //! renvoie la transposee de la matrice.

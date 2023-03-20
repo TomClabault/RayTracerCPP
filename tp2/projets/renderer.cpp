@@ -139,23 +139,133 @@ Color Renderer::traceTriangle(const Ray& ray, const Triangle& triangle) const
 	return finalColor;
 }
 
-int clip_triangle(const vec4& a, const vec4& b, const vec4& c, std::array<ClippingPlane, 6>& clipping_planes, std::array<Triangle4, 12>& clipped_triangles)
+//TODO doc
+//TODO compress this function's code
+int clip_triangle_to_plane(int plane_index, int plane_sign, std::array<Triangle4, 12>& to_clip, int nb_triangles, std::array<Triangle4, 12>& out_clipped)
 {
-	for (int i = 0; i < 1; i++)
+	int sum_inside;
+	bool a_inside, b_inside, c_inside;
+
+	int triangles_added = 0;//Used as an index in the out_clipped array to know where to store clipped triangles
+
+	for (int triangle_index = 0; triangle_index < nb_triangles; triangle_index++)
 	{
-		bool a_inside = 
+		Triangle4 triangle_4 = to_clip[triangle_index];
+		if (plane_index == 0)//Left and right planes
+		{
+			a_inside = (plane_sign == 1 && (triangle_4._a.x < triangle_4._a.w)) || (plane_sign == -1 && (triangle_4._a.x > -triangle_4._a.w));
+			b_inside = (plane_sign == 1 && (triangle_4._b.x < triangle_4._b.w)) || (plane_sign == -1 && (triangle_4._b.x > -triangle_4._b.w));
+			c_inside = (plane_sign == 1 && (triangle_4._c.x < triangle_4._c.w)) || (plane_sign == -1 && (triangle_4._c.x > -triangle_4._c.w));
+			sum_inside = a_inside + b_inside + c_inside;
+
+
+			if (sum_inside == 3)//All vertices inside, nothing to clip. Keeping the triangle as is
+				out_clipped[triangles_added++] = triangle_4;
+			else if (sum_inside == 1)
+			{
+				vec4 inside_vertex, outside_1, outside_2;
+				if (a_inside)
+				{
+					inside_vertex = triangle_4._a;
+					outside_1 = triangle_4._b;
+					outside_2 = triangle_4._c;
+				}
+				else if (b_inside)
+				{
+					inside_vertex = triangle_4._b;
+					outside_1 = triangle_4._c;
+					outside_2 = triangle_4._a;
+				}
+				else if (c_inside)
+				{
+					inside_vertex = triangle_4._c;
+					outside_1 = triangle_4._a;
+					outside_2 = triangle_4._b;
+				}
+
+				//We're going to create one new triangle
+				float inside_dist_to_plane = (inside_vertex.x - -inside_vertex.w);
+				float outside_1_dist_to_plane = (outside_1.x - -outside_1.w);
+				float outside_2_dist_to_plane = (outside_2.x - -outside_2.w);
+
+				float tP1 = outside_1_dist_to_plane / (outside_1_dist_to_plane - inside_dist_to_plane);//distance from inside_vertex to the first clipping point in the direction of insde_vertex
+				float tP2 = outside_2_dist_to_plane / (outside_2_dist_to_plane - inside_dist_to_plane);//distance from inside_vertex to the second clipping point in the direction of insde_vertex
+
+				vec4 P1 = outside_1 + tP1 * (inside_vertex - outside_1);
+				vec4 P2 = outside_2 + tP2 * (inside_vertex - outside_2);
+
+				//Creating the new triangle
+				out_clipped[triangles_added++] = Triangle4(inside_vertex, P1, P2);
+			}
+			else if (sum_inside == 2)
+			{
+				vec4 inside_1, inside_2, outside_vertex;
+				if (!a_inside)
+				{
+					outside_vertex = triangle_4._a;
+					inside_1 = triangle_4._b;
+					inside_2 = triangle_4._c;
+				}
+				else if (!b_inside)
+				{
+					outside_vertex = triangle_4._b;
+					inside_1 = triangle_4._c;
+					inside_2 = triangle_4._a;
+				}
+				else if (!c_inside)
+				{
+					outside_vertex = triangle_4._c;
+					inside_1 = triangle_4._a;
+					inside_2 = triangle_4._b;
+				}
+
+				float inside_1_dist_to_plane = (inside_1.x - -inside_1.w);
+				float inside_2_dist_to_plane = (inside_2.x - -inside_2.w);
+				float outside_dist_to_plane = (outside_vertex.x - -outside_vertex.w);
+
+				//distance from the outside vertex the first clipping point the direction of the inside vertex
+				float tP1 = outside_dist_to_plane / (outside_dist_to_plane - inside_1_dist_to_plane);
+				//distance from the outside vertex the second clipping point the direction of the inside vertex
+				float tP2 = outside_dist_to_plane / (outside_dist_to_plane - inside_2_dist_to_plane);
+
+				vec4 P1 = outside_vertex + tP1 * (inside_1 - outside_vertex);
+				vec4 P2 = outside_vertex + tP2 * (inside_2 - outside_vertex);
+
+				//Creating the 2 new triangles
+				out_clipped[triangles_added++] = Triangle4(inside_1, inside_2, P2);
+				out_clipped[triangles_added++] = Triangle4(inside_1, P2, P1);
+			}
+		}
+		else if (plane_index == 1)//Top and bottom planes
+		{
+
+		}
+		else if (plane_index == 2)//Near and far planes
+		{
+		}
 	}
+
+	return triangles_added;
 }
 
-struct ClippingPlane
+int clip_triangle(const Triangle4& to_clip_triangle, std::array<Triangle4, 12>& clipped_triangles)
 {
-	ClippingPlane() {}
-	ClippingPlane(Vector normal, float d) : _normal(normal), _d(d) {}
-	ClippingPlane(vec4 ABCD) : _normal(Vector(ABCD.x, ABCD.y, ABCD.z)), _d(ABCD.w) {}
+	int nb_triangles = 1;
 
-	Vector _normal;
-	float _d;
-};
+	std::array<Triangle4, 12> temp = { to_clip_triangle };
+	std::array<Triangle4, 12> out_clipped;
+	
+	nb_triangles = clip_triangle_to_plane(0, -1, temp, nb_triangles, clipped_triangles);
+	//nb_triangles = clip_triangle_to_plane(0, 1, temp, clipped_triangles);
+	//clip_triangle_to_plane(1, 1, temp, out_clipped);
+	//clip_triangle_to_plane(1, -1, out_clipped, temp);
+	//clip_triangle_to_plane(2, 1, temp, out_clipped);
+	//nb_triangles = clip_triangle_to_plane(2, -1, out_clipped, temp);
+
+	//clipped_triangles = temp;
+
+	return nb_triangles;
+}
 
 //TODO utiliser les proper Point et Vector là où il faut plutôt que Vector partout
 void Renderer::rasterTrace()
@@ -163,25 +273,24 @@ void Renderer::rasterTrace()
 	Transform perspective_projection = _scene._camera._perspective_proj_mat;
 	Transform perspective_projection_inv = _scene._camera._perspective_proj_mat_inv;
 
-	vec4 left = vec4(vec3(-perspective_projection[0] + perspective_projection[3]), perspective_projection.m[3][0] + perspective_projection.m[3][3]);
-	vec4 right = vec4(vec3(-perspective_projection[0] + perspective_projection[3]), -perspective_projection.m[3][0] + perspective_projection.m[3][3]);
-	vec4 bottom = vec4(vec3(perspective_projection[1] + perspective_projection[3]), perspective_projection.m[3][1] + perspective_projection.m[3][3]);
-	vec4 top = vec4(vec3(-perspective_projection[1] + perspective_projection[3]), -perspective_projection.m[3][1] + perspective_projection.m[3][3]);
-	vec4 near = vec4(vec3(perspective_projection[2] + perspective_projection[3]), perspective_projection.m[3][2] + perspective_projection.m[3][3]);
-	vec4 far = vec4(vec3(-perspective_projection[2] + perspective_projection[3]), -perspective_projection.m[3][2] + perspective_projection.m[3][3]);
-	vec4 minus05X = vec4(vec3(1, 0, 0), -0.5);
+	vec4 left = vec4(normalize(vec3(-perspective_projection[0] + perspective_projection[3])), perspective_projection.m[3][0] + perspective_projection.m[3][3]);
+	vec4 right = vec4(normalize(vec3(-perspective_projection[0] + perspective_projection[3])), -perspective_projection.m[3][0] + perspective_projection.m[3][3]);
+	vec4 bottom = vec4(normalize(vec3(perspective_projection[1] + perspective_projection[3])), perspective_projection.m[3][1] + perspective_projection.m[3][3]);
+	vec4 top = vec4(normalize(vec3(-perspective_projection[1] + perspective_projection[3])), -perspective_projection.m[3][1] + perspective_projection.m[3][3]);
+	vec4 near = vec4(normalize(vec3(perspective_projection[2] + perspective_projection[3])), perspective_projection.m[3][2] + perspective_projection.m[3][3]);
+	vec4 far = vec4(normalize(vec3(-perspective_projection[2] + perspective_projection[3])), -perspective_projection.m[3][2] + perspective_projection.m[3][3]);
+	//vec4 minus05X = vec4(vec3(1, 0, 0), -0.5);
 
 	std::array<struct ClippingPlane, 6> clipping_planes = {
-		ClippingPlane(minus05X),//TODO to remove
 		ClippingPlane(left),//Left plane
 		ClippingPlane(right),//Right plane
 		ClippingPlane(bottom),//Bottom plane
 		ClippingPlane(top),//Top plane
 		ClippingPlane(near),//Near plane
-		//ClippingPlane(far)//Far plane
+		ClippingPlane(far)//Far plane
 	};
 
-#pragma omp parallel for
+//#pragma omp parallel for
 	for (int triangle_index = 0; triangle_index < _scene._triangles.size(); triangle_index++)
 	{
 		Triangle& triangle = _scene._triangles[triangle_index];
@@ -191,12 +300,14 @@ void Renderer::rasterTrace()
 		float invBZ = 1 / -triangle._b.z;
 		float invCZ = 1 / -triangle._c.z;
 
-		vec4 a_image_plane4 = perspective_projection(vec4(Point(triangle._a)));//TODO remove unecessary conversion
+		vec4 a_image_plane4 = perspective_projection(vec4(Point(triangle._a)));//TODO remove unecessary conversion Point(...)
 		vec4 b_image_plane4 = perspective_projection(vec4(Point(triangle._b)));
 		vec4 c_image_plane4 = perspective_projection(vec4(Point(triangle._c)));
 
 		std::array<Triangle4, 12> clipped_triangles;
-		int nb_clipped = clip_triangle(a_image_plane4, b_image_plane4, c_image_plane4, clipping_planes, clipped_triangles);
+		int nb_clipped = clip_triangle(Triangle4(a_image_plane4, b_image_plane4, c_image_plane4), clipped_triangles);
+		//int nb_clipped = 1;
+		//clipped_triangles[0] = Triangle4(a_image_plane4, b_image_plane4, c_image_plane4);//No clipping
 
 		//TODO proper clipping algorithm
 		//minXPixels = std::max(0, minXPixels);
@@ -204,9 +315,10 @@ void Renderer::rasterTrace()
 		//maxXPixels = std::min(_width - 1, maxXPixels);
 		//maxYPixels = std::min(_height - 1, maxYPixels);
 
-		for (const Triangle4& clipped_triangle : clipped_triangles)
+		for (int clipped_triangle_index = 0; clipped_triangle_index < nb_clipped; clipped_triangle_index++)
 		{
-			Triangle clipped_triangle_NDC(clipped_triangle);
+			Triangle4 clipped_triangle = clipped_triangles[clipped_triangle_index];
+			Triangle clipped_triangle_NDC(clipped_triangle, triangle._materialIndex);
 
 			Vector a_image_plane = clipped_triangle_NDC._a;
 			Vector b_image_plane = clipped_triangle_NDC._b;

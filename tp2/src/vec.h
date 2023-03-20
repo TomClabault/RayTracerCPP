@@ -182,6 +182,11 @@ struct vec4
     float operator() ( const unsigned int i ) const { return (&x)[i]; }
     float& operator() ( const unsigned int i ) { return (&x)[i]; }
 
+    friend vec4 operator+ (const vec4& u, const vec4& v);
+    friend vec4 operator- (const vec4& u, const vec4& v);
+    friend vec4 operator* (const vec4& u, float t);
+    friend vec4 operator* (float t, const vec4& u);
+
     float x, y, z, w;
 };
 
