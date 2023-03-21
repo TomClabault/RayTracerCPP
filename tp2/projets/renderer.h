@@ -45,7 +45,7 @@ private:
 	/*
 	 * @return Returns true if the point is shadowed by another object, false otherwise.
 	 */
-	bool isShadowed(const Vector& inter_point, const Vector& light_position) const;
+	bool is_shadowed(const Vector& inter_point, const Vector& light_position) const;
 
 private:
 	int _width, _height;

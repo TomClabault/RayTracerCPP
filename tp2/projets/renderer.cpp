@@ -75,8 +75,9 @@ Color Renderer::computeSpecular(const Material& hit_material, const Vector& ray_
 		return hit_material.specular * std::powf(std::max(0.0f, angle), hit_material.ns);
 }
 
-bool Renderer::isShadowed(const Vector& inter_point, const Vector& light_position) const
+bool Renderer::is_shadowed(const Vector& inter_point, const Vector& light_position) const
 {
+#if SHADOWS
 	Ray ray(inter_point, light_position - inter_point);
 	HitInfo hitInfo;
 
@@ -96,6 +97,8 @@ bool Renderer::isShadowed(const Vector& inter_point, const Vector& light_positio
 	}
 
 	//We haven't found any object between the light source and the intersection point, the point isn't shadowed
+#endif
+
 	return false;
 }
 
@@ -119,8 +122,8 @@ Color Renderer::traceTriangle(const Ray& ray, const Triangle& triangle) const
 
 		finalColor = finalColor + computeDiffuse(hit_material, normal, direction_to_light);
 		finalColor = finalColor + computeSpecular(hit_material, ray._direction, normal, direction_to_light);
-		//if (isShadowed(inter_point, _scene._point_light._position))
-			//finalColor = finalColor * Color(Renderer::SHADOW_INTENSITY);
+		if (is_shadowed(inter_point, _scene._point_light._position))
+			finalColor = finalColor * Color(Renderer::SHADOW_INTENSITY);
 
 		finalColor = finalColor + Renderer::AMBIENT_COLOR;
 #else
@@ -140,10 +143,9 @@ Color Renderer::traceTriangle(const Ray& ray, const Triangle& triangle) const
 }
 
 //TODO doc
-//TODO compress this function's code
 int clip_triangles_to_plane(int plane_index, int plane_sign, std::array<Triangle4, 12>& to_clip, int nb_triangles, std::array<Triangle4, 12>& out_clipped)
 {
-	const static float CLIPPING_EPSILON = 1.0e-5;
+	const static float CLIPPING_EPSILON = 1.0e-5f;
 
 	int sum_inside;
 	bool a_inside, b_inside, c_inside;
@@ -242,13 +244,14 @@ int clip_triangles_to_plane(int plane_index, int plane_sign, std::array<Triangle
 	return triangles_added;
 }
 
-std::array<Triangle4, 12> temp;
 int clip_triangle(const Triangle4& to_clip_triangle, std::array<Triangle4, 12>& clipped_triangles)
 {
 	int nb_triangles = 1;
 
 #if CLIPPING
-	temp[0] = {to_clip_triangle};//TODO size 12 ? calculer le worst case scenario
+	//TODO profiler le clipping pour continuer sur ce que je faisais
+	//TODO opti ? pour ne pas redéclarer le tableau à chaque appel de la fonction 
+	std::array<Triangle4, 12> temp = {to_clip_triangle};//TODO size 12 ? calculer le worst case scenario
 	
 	nb_triangles = clip_triangles_to_plane(0, 1, temp, nb_triangles, clipped_triangles);//right plane
 	nb_triangles = clip_triangles_to_plane(0, -1, clipped_triangles, nb_triangles, temp);//left plane
@@ -415,7 +418,7 @@ void Renderer::rayTrace()
 
 				finalColor = finalColor + computeDiffuse(hit_material, normal, direction_to_light);
 				finalColor = finalColor + computeSpecular(hit_material, ray._direction, normal, direction_to_light);
-				if (isShadowed(inter_point, _scene._point_light._position))
+				if (is_shadowed(inter_point, _scene._point_light._position))
 					finalColor = finalColor * Color(Renderer::SHADOW_INTENSITY);
 
 				finalColor = finalColor + Renderer::AMBIENT_COLOR;

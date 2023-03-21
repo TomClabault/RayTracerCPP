@@ -46,19 +46,15 @@ float loadOBJ(MeshIOData& meshData, std::vector<Triangle>& triangles)
     //meshData = read_meshio_data("data/robot.obj");
     //triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(-5.5, -2, -4)));
 
-    //meshData = read_meshio_data("data/sphere_low.obj");
-    //meshData = read_meshio_data("data/sphere_fat.obj");
-    //triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(0, 0, 0)));
-
-    //meshData = read_meshio_data("data/burger01.obj");
+    //meshData = read_meshio_data("data/burger01_light.obj");
     //triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(1, -1, -4)));
+
+    //meshData = read_meshio_data("data/blender_final_colored_heavy2.obj");
+    //triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(1, -1, -4)));
+
+    meshData = read_meshio_data("data/untitled.obj");//TODO remove
+    triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(0, 10, -100)) * RotationY(45));
     
-    meshData = read_meshio_data("data/blender_final_colored.obj");
-    triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(1, -1, -4)));
-
-    //meshData = read_meshio_data("data/armadillo.obj");
-    //triangles = MeshIOUtils::create_triangles(meshData, Translation(0, -0.8, -3) * RotationY(180) * RotationX(90));
-
     //meshData = read_meshio_data("data/xyzrgb_dragon.obj");
     //triangles = MeshIOUtils::create_triangles(meshData, Translation(0.25, 0, -3) * RotationY(22.5 + 180) * RotationX(90) * Scale(1.3, 1.3, 1.3));
 
