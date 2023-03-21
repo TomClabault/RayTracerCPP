@@ -7,16 +7,6 @@
 #include "scene.h"
 #include "settings.h"
 
-struct ClippingPlane
-{
-	ClippingPlane() {}
-	ClippingPlane(Vector normal, float d) : _normal(normal), _d(d) {}
-	ClippingPlane(vec4 ABCD) : _normal(Vector(ABCD.x, ABCD.y, ABCD.z)), _d(ABCD.w) {}
-
-	Vector _normal;
-	float _d;
-};
-
 class Renderer
 {
 public:
