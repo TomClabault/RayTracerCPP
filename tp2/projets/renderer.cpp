@@ -151,312 +151,90 @@ int clip_triangle_to_plane(int plane_index, int plane_sign, std::array<Triangle4
 	for (int triangle_index = 0; triangle_index < nb_triangles; triangle_index++)
 	{
 		Triangle4 triangle_4 = to_clip[triangle_index];
-		if (plane_index == 0)//Left and right planes
+
+		a_inside = (plane_sign == 1 && (triangle_4._a(plane_index) < triangle_4._a.w)) || (plane_sign == -1 && (triangle_4._a(plane_index) > -triangle_4._a.w));
+		b_inside = (plane_sign == 1 && (triangle_4._b(plane_index) < triangle_4._b.w)) || (plane_sign == -1 && (triangle_4._b(plane_index) > -triangle_4._b.w));
+		c_inside = (plane_sign == 1 && (triangle_4._c(plane_index) < triangle_4._c.w)) || (plane_sign == -1 && (triangle_4._c(plane_index) > -triangle_4._c.w));
+		sum_inside = a_inside + b_inside + c_inside;
+
+		if (sum_inside == 3)//All vertices inside, nothing to clip. Keeping the triangle as is
+			out_clipped[triangles_added++] = triangle_4;
+		else if (sum_inside == 1)
 		{
-			a_inside = (plane_sign == 1 && (triangle_4._a.x < triangle_4._a.w)) || (plane_sign == -1 && (triangle_4._a.x > -triangle_4._a.w));
-			b_inside = (plane_sign == 1 && (triangle_4._b.x < triangle_4._b.w)) || (plane_sign == -1 && (triangle_4._b.x > -triangle_4._b.w));
-			c_inside = (plane_sign == 1 && (triangle_4._c.x < triangle_4._c.w)) || (plane_sign == -1 && (triangle_4._c.x > -triangle_4._c.w));
-			sum_inside = a_inside + b_inside + c_inside;
-
-
-			if (sum_inside == 3)//All vertices inside, nothing to clip. Keeping the triangle as is
-				out_clipped[triangles_added++] = triangle_4;
-			else if (sum_inside == 1)
+			vec4 inside_vertex, outside_1, outside_2;
+			if (a_inside)
 			{
-				vec4 inside_vertex, outside_1, outside_2;
-				if (a_inside)
-				{
-					inside_vertex = triangle_4._a;
-					outside_1 = triangle_4._b;
-					outside_2 = triangle_4._c;
-				}
-				else if (b_inside)
-				{
-					inside_vertex = triangle_4._b;
-					outside_1 = triangle_4._c;
-					outside_2 = triangle_4._a;
-				}
-				else if (c_inside)
-				{
-					inside_vertex = triangle_4._c;
-					outside_1 = triangle_4._a;
-					outside_2 = triangle_4._b;
-				}
-
-				//We're going to create one new triangle
-				float inside_dist_to_plane = (inside_vertex.x - inside_vertex.w * plane_sign);
-				float outside_1_dist_to_plane = (outside_1.x - outside_1.w * plane_sign);
-				float outside_2_dist_to_plane = (outside_2.x - outside_2.w * plane_sign);
-
-				/*
-				x = -1:
-				w = 2
-				outside = -3
-				inside = 1.5
-
-				x = -1
-				inside_dist = > 0
-				dist_outside = < 0
-
-				x = 1
-				inside_dist = < 0
-				dist_outside = > 0
-				*/
-
-				float tP1 = outside_1_dist_to_plane / (outside_1_dist_to_plane - inside_dist_to_plane);//distance from inside_vertex to the first clipping point in the direction of insde_vertex
-				float tP2 = outside_2_dist_to_plane / (outside_2_dist_to_plane - inside_dist_to_plane);//distance from inside_vertex to the second clipping point in the direction of insde_vertex
-
-				//Adding EPSILON to avoid artifacts on the edges of the image where triangles are clipped
-				vec4 P1 = outside_1 + (tP1 - Triangle::EPSILON) * (inside_vertex - outside_1);
-				vec4 P2 = outside_2 + (tP2 - Triangle::EPSILON) * (inside_vertex - outside_2);
-
-				//Creating the new triangle
-				out_clipped[triangles_added++] = Triangle4(inside_vertex, P1, P2);
+				inside_vertex = triangle_4._a;
+				outside_1 = triangle_4._b;
+				outside_2 = triangle_4._c;
 			}
-			else if (sum_inside == 2)
+			else if (b_inside)
 			{
-				vec4 inside_1, inside_2, outside_vertex;
-				if (!a_inside)
-				{
-					outside_vertex = triangle_4._a;
-					inside_1 = triangle_4._b;
-					inside_2 = triangle_4._c;
-				}
-				else if (!b_inside)
-				{
-					outside_vertex = triangle_4._b;
-					inside_1 = triangle_4._c;
-					inside_2 = triangle_4._a;
-				}
-				else if (!c_inside)
-				{
-					outside_vertex = triangle_4._c;
-					inside_1 = triangle_4._a;
-					inside_2 = triangle_4._b;
-				}
-
-				float inside_1_dist_to_plane = (inside_1.x - inside_1.w * plane_sign);
-				float inside_2_dist_to_plane = (inside_2.x - inside_2.w * plane_sign);
-				float outside_dist_to_plane = (outside_vertex.x - outside_vertex.w * plane_sign);
-
-				//distance from the outside vertex the first clipping point the direction of the inside vertex
-				float tP1 = outside_dist_to_plane / (outside_dist_to_plane - inside_1_dist_to_plane);
-				//distance from the outside vertex the second clipping point the direction of the inside vertex
-				float tP2 = outside_dist_to_plane / (outside_dist_to_plane - inside_2_dist_to_plane);
-
-				//Adding EPSILON to avoid artifacts on the edges of the image where triangles are clipped
-				vec4 P1 = outside_vertex + (tP1 - Triangle::EPSILON) * (inside_1 - outside_vertex);
-				vec4 P2 = outside_vertex + (tP2 - Triangle::EPSILON) * (inside_2 - outside_vertex);
-
-				//Creating the 2 new triangles
-				out_clipped[triangles_added++] = Triangle4(inside_1, inside_2, P2);
-				out_clipped[triangles_added++] = Triangle4(inside_1, P2, P1);
+				inside_vertex = triangle_4._b;
+				outside_1 = triangle_4._c;
+				outside_2 = triangle_4._a;
 			}
+			else if (c_inside)
+			{
+				inside_vertex = triangle_4._c;
+				outside_1 = triangle_4._a;
+				outside_2 = triangle_4._b;
+			}
+
+			//We're going to create one new triangle
+			float inside_dist_to_plane = (inside_vertex(plane_index) - inside_vertex.w * plane_sign);
+			float outside_1_dist_to_plane = (outside_1(plane_index) - outside_1.w * plane_sign);
+			float outside_2_dist_to_plane = (outside_2(plane_index) - outside_2.w * plane_sign);
+
+			float tP1 = outside_1_dist_to_plane / (outside_1_dist_to_plane - inside_dist_to_plane);//distance from inside_vertex to the first clipping point in the direction of insde_vertex
+			float tP2 = outside_2_dist_to_plane / (outside_2_dist_to_plane - inside_dist_to_plane);//distance from inside_vertex to the second clipping point in the direction of insde_vertex
+
+			//Adding EPSILON to avoid artifacts on the edges of the image where triangles are clipped
+			vec4 P1 = outside_1 + (tP1 - Triangle::EPSILON) * (inside_vertex - outside_1);
+			vec4 P2 = outside_2 + (tP2 - Triangle::EPSILON) * (inside_vertex - outside_2);
+
+			//Creating the new triangle
+			out_clipped[triangles_added++] = Triangle4(inside_vertex, P1, P2);
 		}
-		else if (plane_index == 1)//Top and bottom planes
+		else if (sum_inside == 2)
 		{
-			a_inside = (plane_sign == 1 && (triangle_4._a.y < triangle_4._a.w)) || (plane_sign == -1 && (triangle_4._a.y > -triangle_4._a.w));
-			b_inside = (plane_sign == 1 && (triangle_4._b.y < triangle_4._b.w)) || (plane_sign == -1 && (triangle_4._b.y > -triangle_4._b.w));
-			c_inside = (plane_sign == 1 && (triangle_4._c.y < triangle_4._c.w)) || (plane_sign == -1 && (triangle_4._c.y > -triangle_4._c.w));
-			sum_inside = a_inside + b_inside + c_inside;
-
-
-			if (sum_inside == 3)//All vertices inside, nothing to clip. Keeping the triangle as is
-				out_clipped[triangles_added++] = triangle_4;
-			else if (sum_inside == 1)
+			vec4 inside_1, inside_2, outside_vertex;
+			if (!a_inside)
 			{
-				vec4 inside_vertex, outside_1, outside_2;
-				if (a_inside)
-				{
-					inside_vertex = triangle_4._a;
-					outside_1 = triangle_4._b;
-					outside_2 = triangle_4._c;
-				}
-				else if (b_inside)
-				{
-					inside_vertex = triangle_4._b;
-					outside_1 = triangle_4._c;
-					outside_2 = triangle_4._a;
-				}
-				else if (c_inside)
-				{
-					inside_vertex = triangle_4._c;
-					outside_1 = triangle_4._a;
-					outside_2 = triangle_4._b;
-				}
-
-				//We're going to create one new triangle
-				float inside_dist_to_plane = (inside_vertex.y - inside_vertex.w * plane_sign);
-				float outside_1_dist_to_plane = (outside_1.y - outside_1.w * plane_sign);
-				float outside_2_dist_to_plane = (outside_2.y - outside_2.w * plane_sign);
-
-				/*
-				x = -1:
-				w = 2
-				outside = -3
-				inside = 1.5
-
-				x = -1
-				inside_dist = > 0
-				dist_outside = < 0
-
-				x = 1
-				inside_dist = < 0
-				dist_outside = > 0
-				*/
-
-				float tP1 = outside_1_dist_to_plane / (outside_1_dist_to_plane - inside_dist_to_plane);//distance from inside_vertex to the first clipping point in the direction of insde_vertex
-				float tP2 = outside_2_dist_to_plane / (outside_2_dist_to_plane - inside_dist_to_plane);//distance from inside_vertex to the second clipping point in the direction of insde_vertex
-
-				//Adding EPSILON to avoid artifacts on the edges of the image where triangles are clipped
-				vec4 P1 = outside_1 + (tP1 - Triangle::EPSILON) * (inside_vertex - outside_1);
-				vec4 P2 = outside_2 + (tP2 - Triangle::EPSILON) * (inside_vertex - outside_2);
-
-				//Creating the new triangle
-				out_clipped[triangles_added++] = Triangle4(inside_vertex, P1, P2);
+				outside_vertex = triangle_4._a;
+				inside_1 = triangle_4._b;
+				inside_2 = triangle_4._c;
 			}
-			else if (sum_inside == 2)
+			else if (!b_inside)
 			{
-				vec4 inside_1, inside_2, outside_vertex;
-				if (!a_inside)
-				{
-					outside_vertex = triangle_4._a;
-					inside_1 = triangle_4._b;
-					inside_2 = triangle_4._c;
-				}
-				else if (!b_inside)
-				{
-					outside_vertex = triangle_4._b;
-					inside_1 = triangle_4._c;
-					inside_2 = triangle_4._a;
-				}
-				else if (!c_inside)
-				{
-					outside_vertex = triangle_4._c;
-					inside_1 = triangle_4._a;
-					inside_2 = triangle_4._b;
-				}
-
-				float inside_1_dist_to_plane = (inside_1.y - inside_1.w * plane_sign);
-				float inside_2_dist_to_plane = (inside_2.y - inside_2.w * plane_sign);
-				float outside_dist_to_plane = (outside_vertex.y - outside_vertex.w * plane_sign);
-
-				//distance from the outside vertex the first clipping point the direction of the inside vertex
-				float tP1 = outside_dist_to_plane / (outside_dist_to_plane - inside_1_dist_to_plane);
-				//distance from the outside vertex the second clipping point the direction of the inside vertex
-				float tP2 = outside_dist_to_plane / (outside_dist_to_plane - inside_2_dist_to_plane);
-
-				//Adding EPSILON to avoid artifacts on the edges of the image where triangles are clipped
-				vec4 P1 = outside_vertex + (tP1 - Triangle::EPSILON) * (inside_1 - outside_vertex);
-				vec4 P2 = outside_vertex + (tP2 - Triangle::EPSILON) * (inside_2 - outside_vertex);
-
-				//Creating the 2 new triangles
-				out_clipped[triangles_added++] = Triangle4(inside_1, inside_2, P2);
-				out_clipped[triangles_added++] = Triangle4(inside_1, P2, P1);
+				outside_vertex = triangle_4._b;
+				inside_1 = triangle_4._c;
+				inside_2 = triangle_4._a;
 			}
+			else if (!c_inside)
+			{
+				outside_vertex = triangle_4._c;
+				inside_1 = triangle_4._a;
+				inside_2 = triangle_4._b;
+			}
+
+			float inside_1_dist_to_plane = (inside_1(plane_index) - inside_1.w * plane_sign);
+			float inside_2_dist_to_plane = (inside_2(plane_index) - inside_2.w * plane_sign);
+			float outside_dist_to_plane = (outside_vertex(plane_index) - outside_vertex.w * plane_sign);
+
+			//distance from the outside vertex the first clipping point the direction of the inside vertex
+			float tP1 = outside_dist_to_plane / (outside_dist_to_plane - inside_1_dist_to_plane);
+			//distance from the outside vertex the second clipping point the direction of the inside vertex
+			float tP2 = outside_dist_to_plane / (outside_dist_to_plane - inside_2_dist_to_plane);
+
+			//Adding EPSILON to avoid artifacts on the edges of the image where triangles are clipped
+			vec4 P1 = outside_vertex + (tP1 - Triangle::EPSILON) * (inside_1 - outside_vertex);
+			vec4 P2 = outside_vertex + (tP2 - Triangle::EPSILON) * (inside_2 - outside_vertex);
+
+			//Creating the 2 new triangles
+			out_clipped[triangles_added++] = Triangle4(inside_1, inside_2, P2);
+			out_clipped[triangles_added++] = Triangle4(inside_1, P2, P1);
 		}
-		else if (plane_index == 2)//Near and far planes
-		{
-			a_inside = (plane_sign == 1 && (triangle_4._a.z < triangle_4._a.w)) || (plane_sign == -1 && (triangle_4._a.z > -triangle_4._a.w));
-			b_inside = (plane_sign == 1 && (triangle_4._b.z < triangle_4._b.w)) || (plane_sign == -1 && (triangle_4._b.z > -triangle_4._b.w));
-			c_inside = (plane_sign == 1 && (triangle_4._c.z < triangle_4._c.w)) || (plane_sign == -1 && (triangle_4._c.z > -triangle_4._c.w));
-			sum_inside = a_inside + b_inside + c_inside;
-
-
-			if (sum_inside == 3)//All vertices inside, nothing to clip. Keeping the triangle as is
-				out_clipped[triangles_added++] = triangle_4;
-			else if (sum_inside == 1)
-			{
-				vec4 inside_vertex, outside_1, outside_2;
-				if (a_inside)
-				{
-					inside_vertex = triangle_4._a;
-					outside_1 = triangle_4._b;
-					outside_2 = triangle_4._c;
-				}
-				else if (b_inside)
-				{
-					inside_vertex = triangle_4._b;
-					outside_1 = triangle_4._c;
-					outside_2 = triangle_4._a;
-				}
-				else if (c_inside)
-				{
-					inside_vertex = triangle_4._c;
-					outside_1 = triangle_4._a;
-					outside_2 = triangle_4._b;
-				}
-
-				//We're going to create one new triangle
-				float inside_dist_to_plane = (inside_vertex.z - inside_vertex.w * plane_sign);
-				float outside_1_dist_to_plane = (outside_1.z - outside_1.w * plane_sign);
-				float outside_2_dist_to_plane = (outside_2.z - outside_2.w * plane_sign);
-
-				/*
-				x = -1:
-				w = 2
-				outside = -3
-				inside = 1.5
-
-				x = -1
-				inside_dist = > 0
-				dist_outside = < 0
-
-				x = 1
-				inside_dist = < 0
-				dist_outside = > 0
-				*/
-
-				float tP1 = outside_1_dist_to_plane / (outside_1_dist_to_plane - inside_dist_to_plane);//distance from inside_vertex to the first clipping point in the direction of insde_vertex
-				float tP2 = outside_2_dist_to_plane / (outside_2_dist_to_plane - inside_dist_to_plane);//distance from inside_vertex to the second clipping point in the direction of insde_vertex
-
-				//Adding EPSILON to avoid artifacts on the edges of the image where triangles are clipped
-				vec4 P1 = outside_1 + (tP1 - Triangle::EPSILON) * (inside_vertex - outside_1);
-				vec4 P2 = outside_2 + (tP2 - Triangle::EPSILON) * (inside_vertex - outside_2);
-
-				//Creating the new triangle
-				out_clipped[triangles_added++] = Triangle4(inside_vertex, P1, P2);
-			}
-			else if (sum_inside == 2)
-			{
-				vec4 inside_1, inside_2, outside_vertex;
-				if (!a_inside)
-				{
-					outside_vertex = triangle_4._a;
-					inside_1 = triangle_4._b;
-					inside_2 = triangle_4._c;
-				}
-				else if (!b_inside)
-				{
-					outside_vertex = triangle_4._b;
-					inside_1 = triangle_4._c;
-					inside_2 = triangle_4._a;
-				}
-				else if (!c_inside)
-				{
-					outside_vertex = triangle_4._c;
-					inside_1 = triangle_4._a;
-					inside_2 = triangle_4._b;
-				}
-
-				float inside_1_dist_to_plane = (inside_1.z - inside_1.w * plane_sign);
-				float inside_2_dist_to_plane = (inside_2.z - inside_2.w * plane_sign);
-				float outside_dist_to_plane = (outside_vertex.z - outside_vertex.w * plane_sign);
-
-				//distance from the outside vertex the first clipping point the direction of the inside vertex
-				float tP1 = outside_dist_to_plane / (outside_dist_to_plane - inside_1_dist_to_plane);
-				//distance from the outside vertex the second clipping point the direction of the inside vertex
-				float tP2 = outside_dist_to_plane / (outside_dist_to_plane - inside_2_dist_to_plane);
-
-				//Adding EPSILON to avoid artifacts on the edges of the image where triangles are clipped
-				vec4 P1 = outside_vertex + (tP1 - Triangle::EPSILON) * (inside_1 - outside_vertex);
-				vec4 P2 = outside_vertex + (tP2 - Triangle::EPSILON) * (inside_2 - outside_vertex);
-
-				//Creating the 2 new triangles
-				out_clipped[triangles_added++] = Triangle4(inside_1, inside_2, P2);
-				out_clipped[triangles_added++] = Triangle4(inside_1, P2, P1);
-			}
-			}
 	}
 
 	return triangles_added;
@@ -486,15 +264,7 @@ void Renderer::rasterTrace()
 	Transform perspective_projection = _scene._camera._perspective_proj_mat;
 	Transform perspective_projection_inv = _scene._camera._perspective_proj_mat_inv;
 
-	//TODO remove
-	/*vec4 left = vec4(normalize(vec3(perspective_projection[0] + perspective_projection[3])), perspective_projection.m[3][0] + perspective_projection.m[3][3]);
-	vec4 right = vec4(normalize(vec3(-perspective_projection[0] + perspective_projection[3])), -perspective_projection.m[3][0] + perspective_projection.m[3][3]);
-	vec4 bottom = vec4(normalize(vec3(perspective_projection[1] + perspective_projection[3])), perspective_projection.m[3][1] + perspective_projection.m[3][3]);
-	vec4 top = vec4(normalize(vec3(-perspective_projection[1] + perspective_projection[3])), -perspective_projection.m[3][1] + perspective_projection.m[3][3]);
-	vec4 near = vec4(normalize(vec3(perspective_projection[2] + perspective_projection[3])), perspective_projection.m[3][2] + perspective_projection.m[3][3]);
-	vec4 far = vec4(normalize(vec3(-perspective_projection[2] + perspective_projection[3])), -perspective_projection.m[3][2] + perspective_projection.m[3][3]);*/
-
-//#pragma omp parallel for
+#pragma omp parallel for
 	for (int triangle_index = 0; triangle_index < _scene._triangles.size(); triangle_index++)
 	{
 		Triangle& triangle = _scene._triangles[triangle_index];
@@ -534,10 +304,10 @@ void Renderer::rasterTrace()
 			int maxXPixels = (boundingMaxX + 1) * 0.5 * _width;
 			int maxYPixels = (boundingMaxY + 1) * 0.5 * _height;
 
-			minXPixels = std::max(0, minXPixels);
+			/*minXPixels = std::max(0, minXPixels);
 			minYPixels = std::max(0, minYPixels);
 			maxXPixels = std::min(_width - 1, maxXPixels);
-			maxYPixels = std::min(_height - 1, maxYPixels);
+			maxYPixels = std::min(_height - 1, maxYPixels);*/
 
 			for (int py = minYPixels; py <= maxYPixels; py++)
 			{
