@@ -141,8 +141,10 @@ Color Renderer::traceTriangle(const Ray& ray, const Triangle& triangle) const
 
 //TODO doc
 //TODO compress this function's code
-int clip_triangle_to_plane(int plane_index, int plane_sign, std::array<Triangle4, 12>& to_clip, int nb_triangles, std::array<Triangle4, 12>& out_clipped)
+int clip_triangles_to_plane(int plane_index, int plane_sign, std::array<Triangle4, 12>& to_clip, int nb_triangles, std::array<Triangle4, 12>& out_clipped)
 {
+	const static float CLIPPING_EPSILON = 1.0e-5;
+
 	int sum_inside;
 	bool a_inside, b_inside, c_inside;
 
@@ -190,8 +192,8 @@ int clip_triangle_to_plane(int plane_index, int plane_sign, std::array<Triangle4
 			float tP2 = outside_2_dist_to_plane / (outside_2_dist_to_plane - inside_dist_to_plane);//distance from inside_vertex to the second clipping point in the direction of insde_vertex
 
 			//Adding EPSILON to avoid artifacts on the edges of the image where triangles are clipped
-			vec4 P1 = outside_1 + (tP1 - Triangle::EPSILON) * (inside_vertex - outside_1);
-			vec4 P2 = outside_2 + (tP2 - Triangle::EPSILON) * (inside_vertex - outside_2);
+			vec4 P1 = outside_1 + (tP1 - CLIPPING_EPSILON) * (inside_vertex - outside_1);
+			vec4 P2 = outside_2 + (tP2 - CLIPPING_EPSILON) * (inside_vertex - outside_2);
 
 			//Creating the new triangle
 			out_clipped[triangles_added++] = Triangle4(inside_vertex, P1, P2);
@@ -228,8 +230,8 @@ int clip_triangle_to_plane(int plane_index, int plane_sign, std::array<Triangle4
 			float tP2 = outside_dist_to_plane / (outside_dist_to_plane - inside_2_dist_to_plane);
 
 			//Adding EPSILON to avoid artifacts on the edges of the image where triangles are clipped
-			vec4 P1 = outside_vertex + (tP1 - Triangle::EPSILON) * (inside_1 - outside_vertex);
-			vec4 P2 = outside_vertex + (tP2 - Triangle::EPSILON) * (inside_2 - outside_vertex);
+			vec4 P1 = outside_vertex + (tP1 - CLIPPING_EPSILON) * (inside_1 - outside_vertex);
+			vec4 P2 = outside_vertex + (tP2 - CLIPPING_EPSILON) * (inside_2 - outside_vertex);
 
 			//Creating the 2 new triangles
 			out_clipped[triangles_added++] = Triangle4(inside_1, inside_2, P2);
@@ -240,20 +242,26 @@ int clip_triangle_to_plane(int plane_index, int plane_sign, std::array<Triangle4
 	return triangles_added;
 }
 
+std::array<Triangle4, 12> temp;
 int clip_triangle(const Triangle4& to_clip_triangle, std::array<Triangle4, 12>& clipped_triangles)
 {
 	int nb_triangles = 1;
 
-	std::array<Triangle4, 12> temp = { to_clip_triangle };//TODO size 12 ? calculer le worst case scenario
+#if CLIPPING
+	temp[0] = {to_clip_triangle};//TODO size 12 ? calculer le worst case scenario
 	
-	nb_triangles = clip_triangle_to_plane(0, -1, temp, nb_triangles, clipped_triangles);
-	nb_triangles = clip_triangle_to_plane(0, 1, clipped_triangles, nb_triangles, temp);
-	nb_triangles = clip_triangle_to_plane(1, 1, temp, nb_triangles, clipped_triangles);
-	nb_triangles = clip_triangle_to_plane(1, -1, clipped_triangles, nb_triangles, temp);
-	nb_triangles = clip_triangle_to_plane(2, 1, temp, nb_triangles, clipped_triangles);
-	nb_triangles = clip_triangle_to_plane(2, -1, clipped_triangles, nb_triangles, temp);
+	nb_triangles = clip_triangles_to_plane(0, 1, temp, nb_triangles, clipped_triangles);//right plane
+	nb_triangles = clip_triangles_to_plane(0, -1, clipped_triangles, nb_triangles, temp);//left plane
+	nb_triangles = clip_triangles_to_plane(1, 1, temp, nb_triangles, clipped_triangles);//top plane
+	nb_triangles = clip_triangles_to_plane(1, -1, clipped_triangles, nb_triangles, temp);//bottom plane
+	nb_triangles = clip_triangles_to_plane(2, 1, temp, nb_triangles, clipped_triangles);//far plane
+	nb_triangles = clip_triangles_to_plane(2, -1, clipped_triangles, nb_triangles, temp);//near plane
 
 	clipped_triangles = temp;
+
+#else
+	clipped_triangles[0] = to_clip_triangle;
+#endif
 
 	return nb_triangles;
 }
@@ -275,14 +283,6 @@ void Renderer::rasterTrace()
 
 		std::array<Triangle4, 12> clipped_triangles;
 		int nb_clipped = clip_triangle(Triangle4(a_image_plane4, b_image_plane4, c_image_plane4), clipped_triangles);
-		//int nb_clipped = 1;
-		//clipped_triangles[0] = Triangle4(a_image_plane4, b_image_plane4, c_image_plane4);//No clipping
-
-		//TODO proper clipping algorithm
-		//minXPixels = std::max(0, minXPixels);
-		//minYPixels = std::max(0, minYPixels);
-		//maxXPixels = std::min(_width - 1, maxXPixels);
-		//maxYPixels = std::min(_height - 1, maxYPixels);
 
 		for (int clipped_triangle_index = 0; clipped_triangle_index < nb_clipped; clipped_triangle_index++)
 		{
@@ -304,10 +304,8 @@ void Renderer::rasterTrace()
 			int maxXPixels = (boundingMaxX + 1) * 0.5 * _width;
 			int maxYPixels = (boundingMaxY + 1) * 0.5 * _height;
 
-			/*minXPixels = std::max(0, minXPixels);
-			minYPixels = std::max(0, minYPixels);
 			maxXPixels = std::min(_width - 1, maxXPixels);
-			maxYPixels = std::min(_height - 1, maxYPixels);*/
+			maxYPixels = std::min(_height - 1, maxYPixels);
 
 			for (int py = minYPixels; py <= maxYPixels; py++)
 			{
@@ -315,6 +313,10 @@ void Renderer::rasterTrace()
 
 				for (int px = minXPixels; px <= maxXPixels; px++)
 				{
+					//NOTE If there are still issues with the clipping algorithm creating new points just a little over the edge of the view frustum, consider using a simple std::max(0, ...)
+					assert(px >= 0 && px < _width);
+					assert(py >= 0 && py < _height);
+
 					float image_x = px / (float)_width * 2 - 1;
 
 					Vector pixel_point(image_x, image_y, -1);
