@@ -64,7 +64,7 @@ float loadOBJ(MeshIOData& meshData, std::vector<Triangle>& triangles)
 
     //triangles.push_back(Triangle(Vector(-1, 0, -2), Vector(1, 0, -2), Vector(0, 1, -2)));
     //triangles.push_back(Triangle(Vector(-1, -1, -2), Vector(0, -1, -2), Vector(-0.5, 1, -2)) + Vector(-3, 0, 0));
-    //triangles.push_back(Triangle(Vector(-6.38484, -0.240091, -3.76875), Vector(-6.47219, -0.554191, -3.50085), Vector(-6.4422, -0.662066, -3.60034)));//Triangle of the robot not getting clipped properly
+    //triangles.push_back(Triangle(Vector(-5.46759, 0.763173, -5.07584), Vector(-5.55594, 0.887663, -2.90412), Vector(-6.0791, 0.855624, -3.02897)));//Triangle of the robot not getting clipped properly
     timer.stop();
 
     std::cout << "\nOBJ Loading time: " << timer.elapsed() << "ms\n";

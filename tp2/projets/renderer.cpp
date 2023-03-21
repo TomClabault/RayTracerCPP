@@ -273,7 +273,7 @@ void Renderer::rasterTrace()
 	Transform perspective_projection = _scene._camera._perspective_proj_mat;
 	Transform perspective_projection_inv = _scene._camera._perspective_proj_mat_inv;
 
-	vec4 left = vec4(normalize(vec3(-perspective_projection[0] + perspective_projection[3])), perspective_projection.m[3][0] + perspective_projection.m[3][3]);
+	vec4 left = vec4(normalize(vec3(perspective_projection[0] + perspective_projection[3])), perspective_projection.m[3][0] + perspective_projection.m[3][3]);
 	vec4 right = vec4(normalize(vec3(-perspective_projection[0] + perspective_projection[3])), -perspective_projection.m[3][0] + perspective_projection.m[3][3]);
 	vec4 bottom = vec4(normalize(vec3(perspective_projection[1] + perspective_projection[3])), perspective_projection.m[3][1] + perspective_projection.m[3][3]);
 	vec4 top = vec4(normalize(vec3(-perspective_projection[1] + perspective_projection[3])), -perspective_projection.m[3][1] + perspective_projection.m[3][3]);
@@ -295,11 +295,6 @@ void Renderer::rasterTrace()
 	{
 		Triangle& triangle = _scene._triangles[triangle_index];
 
-		//Projection of the triangle on the image plane
-		float invAZ = 1 / -triangle._a.z;
-		float invBZ = 1 / -triangle._b.z;
-		float invCZ = 1 / -triangle._c.z;
-
 		vec4 a_image_plane4 = perspective_projection(vec4(Point(triangle._a)));//TODO remove unecessary conversion Point(...)
 		vec4 b_image_plane4 = perspective_projection(vec4(Point(triangle._b)));
 		vec4 c_image_plane4 = perspective_projection(vec4(Point(triangle._c)));
@@ -320,6 +315,11 @@ void Renderer::rasterTrace()
 			Triangle4 clipped_triangle = clipped_triangles[clipped_triangle_index];
 			Triangle clipped_triangle_NDC(clipped_triangle, triangle._materialIndex);
 
+			//Projection of the triangle on the image plane
+			float invAZ = clipped_triangle_NDC._a.z;
+			float invBZ = clipped_triangle_NDC._b.z;
+			float invCZ = clipped_triangle_NDC._c.z;
+
 			Vector a_image_plane = clipped_triangle_NDC._a;
 			Vector b_image_plane = clipped_triangle_NDC._b;
 			Vector c_image_plane = clipped_triangle_NDC._c;
@@ -335,6 +335,11 @@ void Renderer::rasterTrace()
 			int maxXPixels = (boundingMaxX + 1) * 0.5 * _width;
 			int maxYPixels = (boundingMaxY + 1) * 0.5 * _height;
 
+			minXPixels = std::max(0, minXPixels);
+			minYPixels = std::max(0, minYPixels);
+			maxXPixels = std::min(_width - 1, maxXPixels);
+			maxYPixels = std::min(_height - 1, maxYPixels);
+
 			for (int py = minYPixels; py <= maxYPixels; py++)
 			{
 				float image_y = py / (float)_height * 2 - 1;
@@ -348,6 +353,7 @@ void Renderer::rasterTrace()
 					//We don't care about the z coordinate here
 					float invTriangleArea = 1 / ((b_image_plane.x - a_image_plane.x) * (c_image_plane.y - a_image_plane.y) - (b_image_plane.y - a_image_plane.y) * (c_image_plane.x - a_image_plane.x));
 
+					//TODO optimiser la edge function commee dit sur scratchapixel en ne recalculant pas la partie qui utilise la position du pixel en y pour chaque pixel en X puisque la position du pixel en Y ne change pas pour chaque position en X
 					float u = Triangle::edge_function(pixel_point, c_image_plane, a_image_plane);
 					if (u < 0)
 						continue;
@@ -366,7 +372,7 @@ void Renderer::rasterTrace()
 
 					//Depth of the point on the "real" triangle in 3D camera space
 					float inv = (w * -invAZ + u * -invBZ + v * -invCZ);
-					float zCameraSpace = 1 / inv;
+					float zCameraSpace = inv;
 
 					if (zCameraSpace > _z_buffer[py][px])
 					{
@@ -374,7 +380,14 @@ void Renderer::rasterTrace()
 
 #if SHADING
 						//TODO remove unecessary point/vector conversion
-						_image(px, py) = traceTriangle(Ray(_scene._camera._position, normalize(Vector(perspective_projection_inv(Point(pixel_point))) - _scene._camera._position)), perspective_projection_inv(clipped_triangle_NDC));
+						Color trace_color = traceTriangle(Ray(_scene._camera._position, normalize(Vector(perspective_projection_inv(Point(pixel_point))) - _scene._camera._position)), perspective_projection_inv(clipped_triangle_NDC));
+						_image(px, py) = trace_color;
+
+						if (px == 198 && py == (_height - 428))
+						{
+							std::cout << triangle_index << ": " << triangle << ", " << trace_color << std::endl;
+						}
+
 #elif COLOR_NORMAL_OR_BARYCENTRIC
 						Vector normalized_normal = normalize(cross(triangle._b - triangle._a, triangle._c - triangle._a));
 						_image(px, py) = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
