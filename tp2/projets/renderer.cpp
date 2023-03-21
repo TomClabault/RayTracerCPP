@@ -191,8 +191,8 @@ int clip_triangle_to_plane(int plane_index, int plane_sign, std::array<Triangle4
 				float tP1 = outside_1_dist_to_plane / (outside_1_dist_to_plane - inside_dist_to_plane);//distance from inside_vertex to the first clipping point in the direction of insde_vertex
 				float tP2 = outside_2_dist_to_plane / (outside_2_dist_to_plane - inside_dist_to_plane);//distance from inside_vertex to the second clipping point in the direction of insde_vertex
 
-				vec4 P1 = outside_1 + tP1 * (inside_vertex - outside_1);
-				vec4 P2 = outside_2 + tP2 * (inside_vertex - outside_2);
+				vec4 P1 = outside_1 + (tP1 - Triangle::EPSILON) * (inside_vertex - outside_1);
+				vec4 P2 = outside_2 + (tP2 - Triangle::EPSILON) * (inside_vertex - outside_2);
 
 				//Creating the new triangle
 				out_clipped[triangles_added++] = Triangle4(inside_vertex, P1, P2);
@@ -228,8 +228,8 @@ int clip_triangle_to_plane(int plane_index, int plane_sign, std::array<Triangle4
 				//distance from the outside vertex the second clipping point the direction of the inside vertex
 				float tP2 = outside_dist_to_plane / (outside_dist_to_plane - inside_2_dist_to_plane);
 
-				vec4 P1 = outside_vertex + tP1 * (inside_1 - outside_vertex);
-				vec4 P2 = outside_vertex + tP2 * (inside_2 - outside_vertex);
+				vec4 P1 = outside_vertex + (tP1 - Triangle::EPSILON) * (inside_1 - outside_vertex);
+				vec4 P2 = outside_vertex + (tP2 - Triangle::EPSILON) * (inside_2 - outside_vertex);
 
 				//Creating the 2 new triangles
 				out_clipped[triangles_added++] = Triangle4(inside_1, inside_2, P2);
@@ -315,11 +315,6 @@ void Renderer::rasterTrace()
 			Triangle4 clipped_triangle = clipped_triangles[clipped_triangle_index];
 			Triangle clipped_triangle_NDC(clipped_triangle, triangle._materialIndex);
 
-			//Projection of the triangle on the image plane
-			float invAZ = clipped_triangle_NDC._a.z;
-			float invBZ = clipped_triangle_NDC._b.z;
-			float invCZ = clipped_triangle_NDC._c.z;
-
 			Vector a_image_plane = clipped_triangle_NDC._a;
 			Vector b_image_plane = clipped_triangle_NDC._b;
 			Vector c_image_plane = clipped_triangle_NDC._c;
@@ -370,10 +365,8 @@ void Renderer::rasterTrace()
 					v *= invTriangleArea;
 					w *= invTriangleArea;
 
-					//Depth of the point on the "real" triangle in 3D camera space
-					float inv = (w * -invAZ + u * -invBZ + v * -invCZ);
-					float zCameraSpace = inv;
-
+					//Z coordinate of the point on the triangle by interpolating the z coordinates of the 3 vertices
+					float zCameraSpace = (w * -clipped_triangle_NDC._a.z + u * -clipped_triangle_NDC._b.z + v * -clipped_triangle_NDC._c.z);
 					if (zCameraSpace > _z_buffer[py][px])
 					{
 						_z_buffer[py][px] = zCameraSpace;
