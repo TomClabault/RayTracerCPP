@@ -75,7 +75,7 @@ Color Renderer::computeSpecular(const Material& hit_material, const Vector& ray_
 		return hit_material.specular * std::powf(std::max(0.0f, angle), hit_material.ns);
 }
 
-bool Renderer::is_shadowed(const Vector& inter_point, const Vector& light_position) const
+bool Renderer::is_shadowed(const Point& inter_point, const Point& light_position) const
 {
 #if SHADOWS
 	Ray ray(inter_point, light_position - inter_point);
@@ -85,7 +85,7 @@ bool Renderer::is_shadowed(const Vector& inter_point, const Vector& light_positi
 	{
 		if (triangle.intersect(ray, hitInfo))
 		{
-			Vector new_inter_point = ray._origin + ray._direction * hitInfo.t;
+			Point new_inter_point = ray._origin + ray._direction * hitInfo.t;
 
 			if (distance(Point(inter_point), Point(new_inter_point)) < distance(Point(inter_point), Point(light_position)))
 			{
@@ -110,7 +110,7 @@ Color Renderer::traceTriangle(const Ray& ray, const Triangle& triangle) const
 	if (triangle.intersect(ray, hit_info))
 	{
 #if SHADING
-		Vector inter_point = ray._origin + ray._direction * (hit_info.t + Renderer::EPSILON);
+		Point inter_point = ray._origin + ray._direction * (hit_info.t + Renderer::EPSILON);
 		Vector direction_to_light = normalize(_scene._point_light._position - inter_point);
 		Vector normal = normalize(hit_info.normal_at_intersection);
 
@@ -131,8 +131,8 @@ Color Renderer::traceTriangle(const Ray& ray, const Triangle& triangle) const
 		Vector normalized_normal = normalize(hit_info.normal_at_intersection);
 		finalColor = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
 #else //Color triangles with barycentric coordinates
-		float u = finalHitInfo.u;
-		float v = finalHitInfo.v;
+		float u = hit_info.u;
+		float v = hit_info.v;
 
 		finalColor = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
 #endif
@@ -142,6 +142,7 @@ Color Renderer::traceTriangle(const Ray& ray, const Triangle& triangle) const
 	return finalColor;
 }
 
+//TODO mettre cette fonction dans la classe triangle maybe ?
 /*
  * Clips triangles given in @to_clip against the plane defined by the given @plane_index and @plane_sign and
  * stores the result in @out_clipped
@@ -292,9 +293,9 @@ void Renderer::rasterTrace()
 	{
 		Triangle& triangle = _scene._triangles[triangle_index];
 
-		vec4 a_image_plane4 = perspective_projection(vec4(Point(triangle._a)));//TODO remove unecessary conversion Point(...)
-		vec4 b_image_plane4 = perspective_projection(vec4(Point(triangle._b)));
-		vec4 c_image_plane4 = perspective_projection(vec4(Point(triangle._c)));
+		vec4 a_image_plane4 = perspective_projection(vec4(triangle._a));//TODO remove unecessary conversion Point(...)
+		vec4 b_image_plane4 = perspective_projection(vec4(triangle._b));
+		vec4 c_image_plane4 = perspective_projection(vec4(triangle._c));
 
 		std::array<Triangle4, 12> clipped_triangles;
 		int nb_clipped = clip_triangle(Triangle4(a_image_plane4, b_image_plane4, c_image_plane4), clipped_triangles);
@@ -304,9 +305,9 @@ void Renderer::rasterTrace()
 			Triangle4 clipped_triangle = clipped_triangles[clipped_triangle_index];
 			Triangle clipped_triangle_NDC(clipped_triangle, triangle._materialIndex);
 
-			Vector a_image_plane = clipped_triangle_NDC._a;
-			Vector b_image_plane = clipped_triangle_NDC._b;
-			Vector c_image_plane = clipped_triangle_NDC._c;
+			Point a_image_plane = clipped_triangle_NDC._a;
+			Point b_image_plane = clipped_triangle_NDC._b;
+			Point c_image_plane = clipped_triangle_NDC._c;
 
 			//Computing the bounding box of the triangle so that next, we only test pixels that are in the bounding box of the triangle
 			float boundingMinX = std::min(a_image_plane.x, std::min(b_image_plane.x, c_image_plane.x));
@@ -322,6 +323,7 @@ void Renderer::rasterTrace()
 			maxXPixels = std::min(_width - 1, maxXPixels);
 			maxYPixels = std::min(_height - 1, maxYPixels);
 
+			//TODO anti-aliasing
 			for (int py = minYPixels; py <= maxYPixels; py++)
 			{
 				float image_y = py / (float)_height * 2 - 1;
@@ -334,7 +336,7 @@ void Renderer::rasterTrace()
 
 					float image_x = px / (float)_width * 2 - 1;
 
-					Vector pixel_point(image_x, image_y, -1);
+					Point pixel_point(image_x, image_y, -1);
 
 					//We don't care about the z coordinate here
 					float invTriangleArea = 1 / ((b_image_plane.x - a_image_plane.x) * (c_image_plane.y - a_image_plane.y) - (b_image_plane.y - a_image_plane.y) * (c_image_plane.x - a_image_plane.x));
@@ -362,19 +364,17 @@ void Renderer::rasterTrace()
 					{
 						_z_buffer[py][px] = zCameraSpace;
 
+						Color final_color;
 #if SHADING
 						//TODO remove unecessary point/vector conversion
-						Color trace_color = traceTriangle(Ray(_scene._camera._position, normalize(Vector(perspective_projection_inv(Point(pixel_point))) - _scene._camera._position)), perspective_projection_inv(clipped_triangle_NDC));
-						_image(px, py) = trace_color;
+						final_color = traceTriangle(Ray(_scene._camera._position, normalize(Vector(perspective_projection_inv(pixel_point) - _scene._camera._position))), perspective_projection_inv(clipped_triangle_NDC));
 #elif COLOR_NORMAL_OR_BARYCENTRIC
 						Vector normalized_normal = normalize(cross(triangle._b - triangle._a, triangle._c - triangle._a));
-						_image(px, py) = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
+						final_color = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
 #else //Color triangles with barycentric coordinates
-						float u = finalHitInfo.u;
-						float v = finalHitInfo.v;
-
-						finalColor = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
+						final_color = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
 #endif
+						_image(px, py) = final_color;
 					}
 				}
 			}
@@ -384,6 +384,7 @@ void Renderer::rasterTrace()
 
 void Renderer::rayTrace()
 {
+	//TODO anti-aliasing
 #pragma omp parallel for
 	for (int py = 0; py < _height; py++)
 	{
@@ -394,9 +395,9 @@ void Renderer::rayTrace()
 			float x_world = (float)px / _width * 2 - 1;
 			x_world *= (float)_width / _height;
 
-			Vector image_plane_point = Vector(x_world, y_world, -1);
+			Point image_plane_point = Point(x_world, y_world, -1);
 
-			Vector camera_position = _scene._camera._position;
+			Point camera_position = _scene._camera._position;
 			Vector ray_direction = normalize(Vector(image_plane_point - camera_position));//TODO remove unecessary conversion
 			Ray ray(camera_position, ray_direction);
 
@@ -412,7 +413,7 @@ void Renderer::rayTrace()
 			if (finalHitInfo.t > 0)//We found an intersection
 			{
 #if SHADING
-				Vector inter_point = ray._origin + ray._direction * (finalHitInfo.t + Renderer::EPSILON);
+				Point inter_point = ray._origin + ray._direction * (finalHitInfo.t + Renderer::EPSILON);
 				Vector direction_to_light = normalize(_scene._point_light._position - inter_point);
 				Vector normal = normalize(finalHitInfo.normal_at_intersection);
 

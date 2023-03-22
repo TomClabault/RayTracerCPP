@@ -1,12 +1,12 @@
 #include "triangle.h"
 
-Triangle::Triangle() :  _a(Vector(0, 0, 0)),
-                        _b(Vector(1, 0, 0)),
-                        _c(Vector(0, 1, 0)),
+Triangle::Triangle() :  _a(Point(0, 0, 0)),
+                        _b(Point(1, 0, 0)),
+                        _c(Point(0, 1, 0)),
                         _normal(cross(_b - _a, _c - _a)),
                         _materialIndex(-1) {}
 
-Triangle::Triangle(Vector a, Vector b, Vector c, int material_index) : _a(a), _b(b), _c(c), _normal(cross(_b - _a, _c - _a)), _materialIndex(material_index) {};
+Triangle::Triangle(Point a, Point b, Point c, int material_index) : _a(a), _b(b), _c(c), _normal(cross(_b - _a, _c - _a)), _materialIndex(material_index) {};
 
 Triangle::Triangle(Triangle4 triangle, int material_index) : _materialIndex(material_index)
 {
@@ -15,9 +15,9 @@ Triangle::Triangle(Triangle4 triangle, int material_index) : _materialIndex(mate
     ibw = 1.0f / triangle._b.w;
     icw = 1.0f / triangle._c.w;
 
-    _a = Vector(triangle._a.x * iaw, triangle._a.y * iaw, triangle._a.z * iaw);
-    _b = Vector(triangle._b.x * ibw, triangle._b.y * ibw, triangle._b.z * ibw);
-    _c = Vector(triangle._c.x * icw, triangle._c.y * icw, triangle._c.z * icw);
+    _a = Point(triangle._a.x * iaw, triangle._a.y * iaw, triangle._a.z * iaw);
+    _b = Point(triangle._b.x * ibw, triangle._b.y * ibw, triangle._b.z * ibw);
+    _c = Point(triangle._c.x * icw, triangle._c.y * icw, triangle._c.z * icw);
 }
 
 bool Triangle::intersect(const Ray& ray, HitInfo& hitInfo) const
@@ -99,7 +99,7 @@ bool Triangle::intersect(const Ray& ray, float& t, float& u, float& v) const
     return returned;
 }
 
-bool Triangle::barycentric_coordinates(const Vector& point, float& u, float& v) const
+bool Triangle::barycentric_coordinates(const Point& point, float& u, float& v) const
 {
     Vector ab = _b - _a;
     Vector ac = _c - _a;
@@ -128,7 +128,7 @@ bool Triangle::barycentric_coordinates(const Vector& point, float& u, float& v) 
     return true;
 }
 
-bool Triangle::inside_outside_2D(const Vector& point) const
+bool Triangle::inside_outside_2D(const Point& point) const
 {
     float abSide = (_b.x - _a.x) * (point.y - _a.y) - (_b.y - _a.y) * (point.x - _a.x);
     if (abSide < 0)
@@ -145,7 +145,7 @@ bool Triangle::inside_outside_2D(const Vector& point) const
     return true;
 }
 
-float Triangle::edge_function(const Vector& point, const Vector& a, const Vector& b)
+float Triangle::edge_function(const Point& point, const Point& a, const Point& b)
 {
     return (b.x - a.x) * (point.y - a.y) - (b.y - a.y) * (point.x - a.x);
 }

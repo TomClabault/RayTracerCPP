@@ -132,9 +132,9 @@ vec4 Transform::operator() ( const vec4& v ) const
 
 Triangle Transform::operator() (const Triangle& v) const
 {
-    Vector at = Vector(this->operator()(Point(v._a)));
-    Vector bt = Vector(this->operator()(Point(v._b)));
-    Vector ct = Vector(this->operator()(Point(v._c)));
+    Point at = this->operator()(v._a);
+    Point bt = this->operator()(v._b);
+    Point ct = this->operator()(v._c);
 
     return Triangle(at, bt, ct, v._materialIndex);
 }

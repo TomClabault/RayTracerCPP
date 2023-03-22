@@ -12,9 +12,9 @@ std::vector<Triangle> MeshIOUtils::create_triangles(MeshIOData meshData, Transfo
 		int index1 = meshData.indices[i + 1];
 		int index2 = meshData.indices[i + 2];
 
-		Triangle triangle(Vector(meshTransform(meshData.positions[index0])),
-						  Vector(meshTransform(meshData.positions[index1])),
-						  Vector(meshTransform(meshData.positions[index2])));
+		Triangle triangle(Point(meshTransform(meshData.positions[index0])),
+						  Point(meshTransform(meshData.positions[index1])),
+						  Point(meshTransform(meshData.positions[index2])));
 		triangle._materialIndex = meshData.material_indices[i / 3];
 		_triangles.push_back(triangle);
 	}

@@ -37,7 +37,7 @@ public:
     constexpr static double EPSILON = 1.0e-4;
 
     Triangle();
-    Triangle(Vector a, Vector b, Vector c, int material_index = -1);
+    Triangle(Point a, Point b, Point c, int material_index = -1);
 
     /*
      * Converts a triangle 4 in homogeneous coordinates to a cartesian triangle by dividing each verte by their homogeneous w component
@@ -51,17 +51,17 @@ public:
      * Inside/outside test considering the triangle's vertices to all have equal z coordinates.
      * This test essentially ignores the z coordinates of the triangle's vertices
      */
-    bool inside_outside_2D(const Vector& point) const;
+    bool inside_outside_2D(const Point& point) const;
 
-    static float edge_function(const Vector& point, const Vector& A, const Vector& b);
+    static float edge_function(const Point& point, const Point& a, const Point& b);
 
-    bool barycentric_coordinates(const Vector& point, float& u, float& v) const;
+    bool barycentric_coordinates(const Point& point, float& u, float& v) const;
 
     friend std::ostream& operator << (std::ostream& os, const Triangle& triangle);
     friend Triangle operator +(const Triangle& triangle, const Vector& vec);
 
 public:
-    Vector _a, _b, _c;
+    Point _a, _b, _c;
     Vector _normal;
 
     int _materialIndex;

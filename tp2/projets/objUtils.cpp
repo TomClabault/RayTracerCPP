@@ -40,7 +40,7 @@ std::vector<Triangle> ObjUtils::readObj(const char* filePath, const Transform tr
             positions[ i +2 ]
         };
 
-        _triangles.push_back(Triangle(Vector(p[0]), Vector(p[1]), Vector(p[2])));
+        _triangles.push_back(Triangle(p[0], p[1], p[2]));
     }
 
     return _triangles;

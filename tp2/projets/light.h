@@ -5,9 +5,9 @@
 
 struct PointLight
 {
-	PointLight(Vector position) : _position(position) {}
+	PointLight(Point position) : _position(position) {}
 
-	Vector _position;
+	Point _position;
 };
 
 #endif

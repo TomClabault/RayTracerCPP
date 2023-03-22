@@ -18,7 +18,7 @@ int main()
     totalTime += loadOBJ(meshData, triangles);
     precompute_materials(meshData.materials);
 
-    Scene scene(Camera(Vector(0, 0, 0), 90), triangles, meshData.materials, PointLight(Vector(2, 0, 2)));
+    Scene scene(Camera(Point(0, 0, 0), 90), triangles, meshData.materials, PointLight(Point(2, 0, 2)));
     Renderer renderer(IMAGE_WIDTH, IMAGE_HEIGHT, scene);
     std::cout << "\nRender resolution: " << IMAGE_WIDTH << "*" << IMAGE_HEIGHT << "\n";
 
