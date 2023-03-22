@@ -10,7 +10,7 @@
 #include "m256Triangles.h"
 #include "m256Vector.h"
 
-#define EPSILON 1.0e-5
+#define EPSILON 1.0e-5f
 
 #define assert_true(predicate, messageOnError) if(!(predicate)) { std::cout << messageOnError; std::exit(0); }
 
@@ -29,7 +29,7 @@ bool vector_equal(const Vector & a, const Vector & b, float threshold)
     return float_equal(a.x, b.x, threshold) && float_equal(a.y, b.y, threshold) && float_equal(a.z, b.z, threshold);
 }
 
-void testBarycentric(Triangle triangle, Vector point, float expected_u, float expected_v, bool expected_in_triangle)
+void testBarycentric(Triangle triangle, Point point, float expected_u, float expected_v, bool expected_in_triangle)
 {
     float u, v;
 
@@ -49,18 +49,18 @@ void barycentric_coordinates_tests()
 {
     std::cout << "Testing barycentric coordinates... ";
 
-    Triangle triangleA(Vector(0, 0, 0), Vector(1, 0, 0), Vector(0, 1, 0));
-    Triangle triangleE(Vector(-3, 0, -4), Vector(-2, 0, -4), Vector(-2, 1, -4));
-    Triangle triangleF(Vector(-3, 0, -4), Vector(-2, 0, -4), Vector(-3, 1, -4));
+    Triangle triangleA(Point(0, 0, 0), Point(1, 0, 0), Point(0, 1, 0));
+    Triangle triangleE(Point(-3, 0, -4), Point(-2, 0, -4), Point(-2, 1, -4));
+    Triangle triangleF(Point(-3, 0, -4), Point(-2, 0, -4), Point(-3, 1, -4));
 
-    testBarycentric(triangleA, Vector(0, 0, 0), 0.0, 0.0, true);
-    testBarycentric(triangleE, Vector(-3, 0, -4), 0.0, 0.0, true);
-    testBarycentric(triangleF, Vector(-4, 1, -4), 0.0, 0.0, false);
+    testBarycentric(triangleA, Point(0, 0, 0), 0.0, 0.0, true);
+    testBarycentric(triangleE, Point(-3, 0, -4), 0.0, 0.0, true);
+    testBarycentric(triangleF, Point(-4, 1, -4), 0.0, 0.0, false);
 
     std::cout << "OK!" << std::endl;
 }
 
-float edgeFunction(const Vector& a, const Vector& b, const Vector& c)
+float edgeFunction(const Point& a, const Point& b, const Point& c)
 {
     return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
 }
@@ -69,75 +69,17 @@ void inside_outside_2D_tests()
 {
     std::cout << "Testing inside/outside 2D... ";
 
-    Vector A = Vector(0, 0, 0);
-    Vector B = Vector(1, 0, 0);
-    Vector C = Vector(0, 1, 0);
+    Point A = Point(0, 0, 0);
+    Point B = Point(1, 0, 0);
+    Point MinusB = Point(-1, 0, 0);
+    Point C = Point(0, 1, 0);
 
     Triangle triangle(A, B, C);
     assert_true(triangle.inside_outside_2D(A * 0.5 + B * 0.5), "The point " << (A * 0.5 + B * 0.5) << " wasn't in the triangle " << triangle << " but should have been.");
     assert_true(triangle.inside_outside_2D(B * 0.5), "The point " << (B * 0.5) << " wasn't in the triangle " << triangle << " but should have been.");
     assert_true(triangle.inside_outside_2D(A), "The point " << A << " wasn't in the triangle " << triangle << " but should have been.");
     assert_true(triangle.inside_outside_2D(B), "The point " << B << " wasn't in the triangle " << triangle << " but should have been.");
-    assert_true(!triangle.inside_outside_2D(-B), "The point " << -B << " was in the triangle " << triangle << " but shouldn't have been.");
-
-    //srand(time(NULL));
-    ////We're going to generate 1000 random triangles and then 100 random points in and out of these triangles for testing purposes
-    //for (int i = 0; i < 1000; i++)
-    //{
-    //    Vector p1, p2, p3;
-
-    //    //As long as we're getting a 'flat' triangle (that has two of its sides colinear)
-    //    bool colinear = false;
-    //    bool bad_orientation = false;
-    //    do
-    //    {
-    //        p1 = Vector((2 * rand() / (float)RAND_MAX) - 1, (2 * rand() / (float)RAND_MAX) - 1, (2 * rand() / (float)RAND_MAX) - 1);
-    //        p2 = Vector((2 * rand() / (float)RAND_MAX) - 1, (2 * rand() / (float)RAND_MAX) - 1, (2 * rand() / (float)RAND_MAX) - 1);
-    //        p3 = Vector((2 * rand() / (float)RAND_MAX) - 1, (2 * rand() / (float)RAND_MAX) - 1, (2 * rand() / (float)RAND_MAX) - 1);
-
-    //        float p2p1p3p2 = (1 - dot(normalize(p2 - p1), normalize(p3 - p2)));
-    //        float p3p2p1p3 = (1 - dot(normalize(p3 - p2), normalize(p1 - p3)));
-    //        float p1p3p2p1 = (1 - dot(normalize(p1 - p3), normalize(p2 - p1)));
-
-    //        colinear |= (p2p1p3p2 > -EPSILON && p2p1p3p2 < EPSILON);
-    //        colinear |= (p3p2p1p3> -EPSILON && p3p2p1p3< EPSILON);
-    //        colinear |= (p1p3p2p1> -EPSILON && p1p3p2p1< EPSILON);
-
-    //        Vector p2p1 = p2 - p1;
-    //        Vector p3p1 = p3 - p1;
-    //        bad_orientation = (p2p1.x * p3p1.y - p2p1.y * p3p1.x) < 0;
-    //    } while (colinear || bad_orientation);
-
-    //    //TODO enlever les messages de debug de load obj avec un paramètre
-
-    //    //We now how a non-flat random triangle
-    //    Triangle random_triangle = Triangle(p1, p2, p3);
-
-    //    //Generating 100 points inside and outside the triangle
-    //    for (int j = 0; j < 100; j++)
-    //    {
-    //        float u, v;
-    //    
-    //        //Generating u and v inside
-    //        u = rand() / (float)RAND_MAX;
-    //        v = (rand() / (float)RAND_MAX) * (1 - u);
-    //        ///std::cout << u << ", " << v << std::endl;
-    //        Vector inside_point = p1 + u * (p2 - p1) + v * (p3 - p1);
-
-    //        //Generating u and v outside
-    //        u = rand() / (float)RAND_MAX;
-    //        v = rand() / (float)RAND_MAX + (1 - u) + EPSILON;//We're now sure that u + v > 1
-    //        Vector outside_point = p1 + u * (p2 - p1) + v * (p3 - p1);
-
-    //        //assert_true(random_triangle.inside_outside_2D(inside_point), "The point " << inside_point << " wasn't in the triangle:" << random_triangle << " according to the inside/outside 2D test but should have been.");
-    //        //assert_true(!random_triangle.inside_outside_2D(outside_point), "The point " << outside_point << " was in the triangle:" << random_triangle << " according to the inside/outside 2D test but shouldn't have been.");
-
-    //        assert_true(edgeFunction(p1, p2, inside_point), "The point " << inside_point << " wasn't in the triangle:" << random_triangle << " according to the inside/outside 2D test but should have been.");
-    //        //assert_true(!edgeFunction(p1, p2, outside_point), "The point " << outside_point << " was in the triangle:" << random_triangle << " according to the inside/outside 2D test but shouldn't have been.");
-    //    }
-
-    //    //Generating 50 points outside the triangle
-    //}
+    assert_true(!triangle.inside_outside_2D(MinusB), "The point " << MinusB << " was in the triangle " << triangle << " but shouldn't have been.");
 
     std::cout << "OK!" << std::endl;
 }
@@ -152,21 +94,19 @@ void triangle_intersections_tests()
     std::vector<Triangle> rubik = MeshIOUtils::create_triangles(rubikData, Translation(Vector(-15, -20, -30)));
     std::vector<Triangle> robot = MeshIOUtils::create_triangles(robotData, Translation(Vector(0, -2, -4)));
 
-    Triangle triangleA(Vector(0, 0, 0), Vector(1, 0, 0), Vector(0, 1, 0));
-    Triangle triangleB(Vector(1, -1, -9), Vector(-1, -1, -9), Vector(-1, -1, -11));
-    Triangle triangleC(Vector(-1, 1, -11), Vector(-1, 1, -9), Vector(1, 1, -9));
+    Triangle triangleA(Point(0, 0, 0), Point(1, 0, 0), Point(0, 1, 0));
+    Triangle triangleB(Point(1, -1, -9), Point(-1, -1, -9), Point(-1, -1, -11));
+    Triangle triangleC(Point(-1, 1, -11), Point(-1, 1, -9), Point(1, 1, -9));
 
-    Ray ray00(Vector(0, 0, 0), Vector(-0.577350259, 0.577350259, -0.577350259));
-    Ray ray(Vector(0, 0, -1), Vector(0, 0, 1));
-    Ray ray2(Vector(0, 0, 0), Vector(0.103264742, 0.312963158, -0.944134772));
-    Ray rayOut(Vector(-2, 0, -1), Vector(0, 0, 1));
-    Ray ray200x200(Vector(0, 0, 0), normalize(Vector(200.0 / 1919.0 * 2 - 1, (1079 - 200.0) / 1079.0 * 2 - 1, -1)));
+    Ray ray00(Point(0, 0, 0), Vector(-0.577350259f, 0.577350259f, -0.577350259f));
+    Ray ray(Point(0, 0, -1), Vector(0, 0, 1));
+    Ray ray2(Point(0, 0, 0), Vector(0.103264742f, 0.312963158f, -0.944134772f));
+    Ray rayOut(Point(-2, 0, -1), Vector(0, 0, 1));
+    Ray ray200x200(Point(0, 0, 0), normalize(Vector(200.0f / 1919.0f * 2 - 1, (1079 - 200.0f) / 1079.0f * 2 - 1, -1)));
 
     float t, trash;
 
-    assert_true(triangleA.intersect(ray, t, trash, trash), ray << " intersecting " << triangleA << " but shouldn't because of back face culling\n");
-    assert_true(t == 1.0, "Intersection distance of " << ray << " with " << triangleA << " should be -1 but is " << t);
-
+    assert_true(!triangleA.intersect(ray, t, trash, trash), ray << " intersecting " << triangleA << " but shouldn't because of back face culling\n");
     assert_true(!triangleA.intersect(rayOut, t, trash, trash), rayOut << " intersecting " << triangleA << " but shouldn't\n");
     assert_true(!triangleB.intersect(ray00, t, trash, trash), ray00 << " intersecting " << triangleB << " but shouldn't\n");
     assert_true(!triangleC.intersect(ray00, t, trash, trash), ray00 << " intersecting " << triangleC << " but shouldn't\n");
@@ -188,8 +128,8 @@ void SIMD_implementations_tests()
     Vector a = Vector(1, 0, 0);
     Vector b = Vector(0, 1, 0);
     Vector c = Vector(0, 0, 1);
-    Vector d = Vector(-0.577350259, 0.577350259, -0.577350259);
-    Vector e = Vector(0.103264742, 0.312963158, -0.944134772);
+    Vector d = Vector(-0.577350259f, 0.577350259f, -0.577350259f);
+    Vector e = Vector(0.103264742f, 0.312963158f, -0.944134772f);
     Vector f = Vector(-1, 1, -11);
     Vector g = Vector(-1, 1, -9);
     Vector h = Vector(1, 1, -9);
@@ -206,8 +146,8 @@ void SIMD_implementations_tests()
     __m256Vector __a(a, b, c, d, e, f, g, h);
     __m256Vector __b(i, j, k, l, m, n, o, p);
 
-    srand(time(NULL));
-    float random_float = (rand() / (float)RAND_MAX) * (RAND_MAX / 4.0);
+    srand((unsigned int)time(NULL));
+    float random_float = (float)((rand() / (float)RAND_MAX) * (RAND_MAX / 4.0));
 
     std::cout << "Testing SIMD / operator(float)... ";
     __m256Vector __aDiv = __a / random_float;

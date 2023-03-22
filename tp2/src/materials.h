@@ -143,7 +143,7 @@ struct Materials
     int default_material_index( )
     {
         if(default_material_id == -1)
-            default_material_id= insert(Material(Color(0.8)), "default");
+            default_material_id= insert(Material(Color(0.8f)), "default");
         
         return default_material_id;
     }

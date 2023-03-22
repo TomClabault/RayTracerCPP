@@ -11,8 +11,9 @@ public:
     friend std::ostream& operator << (std::ostream& os, const Ray& ray);
 
 public:
-    Vector _direction;
     Point _origin;
+
+    Vector _direction;
 };
 
 #endif

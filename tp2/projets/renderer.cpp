@@ -293,7 +293,7 @@ void Renderer::rasterTrace()
 	{
 		Triangle& triangle = _scene._triangles[triangle_index];
 
-		vec4 a_image_plane4 = perspective_projection(vec4(triangle._a));//TODO remove unecessary conversion Point(...)
+		vec4 a_image_plane4 = perspective_projection(vec4(triangle._a));
 		vec4 b_image_plane4 = perspective_projection(vec4(triangle._b));
 		vec4 c_image_plane4 = perspective_projection(vec4(triangle._c));
 
@@ -315,10 +315,10 @@ void Renderer::rasterTrace()
 			float boundingMaxX = std::max(a_image_plane.x, std::max(b_image_plane.x, c_image_plane.x));
 			float boundingMaxY = std::max(a_image_plane.y, std::max(b_image_plane.y, c_image_plane.y));
 		
-			int minXPixels = (boundingMinX + 1) * 0.5 * _width;
-			int minYPixels = (boundingMinY + 1) * 0.5 * _height;
-			int maxXPixels = (boundingMaxX + 1) * 0.5 * _width;
-			int maxYPixels = (boundingMaxY + 1) * 0.5 * _height;
+			int minXPixels = (int)((boundingMinX + 1) * 0.5 * _width);
+			int minYPixels = (int)((boundingMinY + 1) * 0.5 * _height);
+			int maxXPixels = (int)((boundingMaxX + 1) * 0.5 * _width);
+			int maxYPixels = (int)((boundingMaxY + 1) * 0.5 * _height);
 
 			maxXPixels = std::min(_width - 1, maxXPixels);
 			maxYPixels = std::min(_height - 1, maxYPixels);
@@ -366,8 +366,7 @@ void Renderer::rasterTrace()
 
 						Color final_color;
 #if SHADING
-						//TODO remove unecessary point/vector conversion
-						final_color = traceTriangle(Ray(_scene._camera._position, normalize(Vector(perspective_projection_inv(pixel_point) - _scene._camera._position))), perspective_projection_inv(clipped_triangle_NDC));
+						final_color = traceTriangle(Ray(_scene._camera._position, normalize(perspective_projection_inv(pixel_point) - _scene._camera._position)), perspective_projection_inv(clipped_triangle_NDC));
 #elif COLOR_NORMAL_OR_BARYCENTRIC
 						Vector normalized_normal = normalize(cross(triangle._b - triangle._a, triangle._c - triangle._a));
 						final_color = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
@@ -398,7 +397,7 @@ void Renderer::rayTrace()
 			Point image_plane_point = Point(x_world, y_world, -1);
 
 			Point camera_position = _scene._camera._position;
-			Vector ray_direction = normalize(Vector(image_plane_point - camera_position));//TODO remove unecessary conversion
+			Vector ray_direction = normalize(image_plane_point - camera_position);
 			Ray ray(camera_position, ray_direction);
 
 			HitInfo finalHitInfo;

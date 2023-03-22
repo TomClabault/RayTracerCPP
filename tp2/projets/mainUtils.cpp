@@ -41,7 +41,7 @@ float loadOBJ(MeshIOData& meshData, std::vector<Triangle>& triangles)
 
     timer.start();
     meshData = read_meshio_data("data/geometry.obj");
-    triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(-1, -2, -7)) * RotationY(160) * Scale(0.02));
+    triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(-1, -2, -7)) * RotationY(160) * Scale(0.02f));
 
     //meshData = read_meshio_data("data/robot.obj");
     //triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(-5.5, 2, -4)));
