@@ -142,7 +142,19 @@ Color Renderer::traceTriangle(const Ray& ray, const Triangle& triangle) const
 	return finalColor;
 }
 
-//TODO doc
+/*
+ * Clips triangles given in @to_clip against the plane defined by the given @plane_index and @plane_sign and
+ * stores the result in @out_clipped
+ * 
+ * @param plane_index 0/1/2 for clipping against the x/y/z plane respectively
+ * @param plane_sign 1 or -1 to clip against x or -x (for example)
+ * @param to_clip triangles that needs to be clipped against the plane
+ * @param nb_triangles how many triangles are there to clip in the @to_clip array starting
+ * from index 0
+ * @param out_clipped clipped triangles
+ * 
+ * @return Returns the number of triangles after the clipping process
+ */
 int clip_triangles_to_plane(int plane_index, int plane_sign, std::array<Triangle4, 12>& to_clip, int nb_triangles, std::array<Triangle4, 12>& out_clipped)
 {
 	const static float CLIPPING_EPSILON = 1.0e-5f;
@@ -251,7 +263,7 @@ int clip_triangle(const Triangle4& to_clip_triangle, std::array<Triangle4, 12>& 
 #if CLIPPING
 	//TODO profiler le clipping pour continuer sur ce que je faisais
 	//TODO opti ? pour ne pas redéclarer le tableau à chaque appel de la fonction 
-	std::array<Triangle4, 12> temp = {to_clip_triangle};//TODO size 12 ? calculer le worst case scenario
+	std::array<Triangle4, 12> temp = {to_clip_triangle};
 	
 	nb_triangles = clip_triangles_to_plane(0, 1, temp, nb_triangles, clipped_triangles);//right plane
 	nb_triangles = clip_triangles_to_plane(0, -1, clipped_triangles, nb_triangles, temp);//left plane
@@ -354,12 +366,6 @@ void Renderer::rasterTrace()
 						//TODO remove unecessary point/vector conversion
 						Color trace_color = traceTriangle(Ray(_scene._camera._position, normalize(Vector(perspective_projection_inv(Point(pixel_point))) - _scene._camera._position)), perspective_projection_inv(clipped_triangle_NDC));
 						_image(px, py) = trace_color;
-
-						if (px == 198 && py == (_height - 428))
-						{
-							std::cout << triangle_index << ": " << triangle << ", " << trace_color << std::endl;
-						}
-
 #elif COLOR_NORMAL_OR_BARYCENTRIC
 						Vector normalized_normal = normalize(cross(triangle._b - triangle._a, triangle._c - triangle._a));
 						_image(px, py) = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
