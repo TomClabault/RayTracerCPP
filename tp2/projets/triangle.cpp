@@ -128,6 +128,11 @@ bool Triangle::barycentric_coordinates(const Point& point, float& u, float& v) c
     return true;
 }
 
+Point Triangle::centroid() const
+{
+    return (_a + _b + _c) / 3;
+}
+
 bool Triangle::inside_outside_2D(const Point& point) const
 {
     float abSide = (_b.x - _a.x) * (point.y - _a.y) - (_b.y - _a.y) * (point.x - _a.x);

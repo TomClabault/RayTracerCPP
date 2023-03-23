@@ -402,9 +402,12 @@ void Renderer::rayTrace()
 
 			HitInfo finalHitInfo;
 			HitInfo hit_info;
-			for (Triangle& triangle : _scene._triangles)
-				if (triangle.intersect(ray, hit_info))
-					if (hit_info.t < finalHitInfo.t || finalHitInfo.t == -1)
+			//for (Triangle& triangle : _scene._triangles)
+				//if (triangle.intersect(ray, hit_info))
+					//if (hit_info.t < finalHitInfo.t || finalHitInfo.t == -1)
+						//finalHitInfo = hit_info;
+			if (_scene._bvh.intersect(ray, hit_info))
+				if (hit_info.t < finalHitInfo.t || finalHitInfo.t == -1)
 						finalHitInfo = hit_info;
 
 			Color finalColor = Color(0, 0, 0);

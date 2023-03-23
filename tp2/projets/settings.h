@@ -13,7 +13,7 @@
 #define BACKFACE_CULLING 1
 
 //Whether or not to use 
-#define HYBRID_RASTERIZATION_TRACING 1
+#define HYBRID_RASTERIZATION_TRACING 0
 
 //1 to use shading, 0 to use COLOR_NORMAL_OR_BARYCENTRIC for the shading. 
 //If this is 1, COLOR_NORMAL_OR_BARYCENTRIC is ignored
@@ -28,3 +28,6 @@
 //1 to use the Moller Trumbore ray-triangle intersection algorithm. 
 //0 to use the naive (barycentric coordinates) ray-triangle intersection algorithm
 #define MOLLER_TRUMBORE 1
+
+//The maximum number of triangles that a leaf of the BVH can contain
+#define BVH_LEAF_TRIANGLE_COUNT 8
