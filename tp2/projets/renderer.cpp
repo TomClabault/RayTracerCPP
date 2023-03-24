@@ -13,6 +13,7 @@ Material init_default_material()
 
 Material Renderer::DEFAULT_MATERIAL = init_default_material();
 Color Renderer::AMBIENT_COLOR = Color(0.1f, 0.1f, 0.1f);
+Color Renderer::BACKGROUND_COLOR = Color(0.0, 0.0, 0.0);
 
 Renderer::Renderer(int width, int height, Scene scene) : _width(width), _height(height),
 	_image(Image(width, height)), _scene(scene) 
@@ -81,7 +82,7 @@ bool Renderer::is_shadowed(const Point& inter_point, const Point& light_position
 	Ray ray(inter_point, light_position - inter_point);
 	HitInfo hitInfo;
 
-	for (const Triangle& triangle : _scene._triangles)
+	for (const Triangle& triangle : _scene._bvh._triangles)
 	{
 		if (triangle.intersect(ray, hitInfo))
 		{
@@ -283,15 +284,15 @@ int clip_triangle(const Triangle4& to_clip_triangle, std::array<Triangle4, 12>& 
 }
 
 //TODO utiliser les proper Point et Vector là où il faut plutôt que Vector partout
-void Renderer::rasterTrace()
+void Renderer::raster_trace()
 {
 	Transform perspective_projection = _scene._camera._perspective_proj_mat;
 	Transform perspective_projection_inv = _scene._camera._perspective_proj_mat_inv;
 
 #pragma omp parallel for
-	for (int triangle_index = 0; triangle_index < _scene._triangles.size(); triangle_index++)
+	for (int triangle_index = 0; triangle_index < _scene._bvh._triangles.size(); triangle_index++)
 	{
-		Triangle& triangle = _scene._triangles[triangle_index];
+		Triangle& triangle = _scene._bvh._triangles[triangle_index];
 
 		vec4 a_image_plane4 = perspective_projection(vec4(triangle._a));
 		vec4 b_image_plane4 = perspective_projection(vec4(triangle._b));
@@ -381,15 +382,26 @@ void Renderer::rasterTrace()
 	}
 }
 
-void Renderer::rayTrace()
+#define DEBUG 0
+#define DEBUG_WIDTH 470
+#define DEBUG_HEIGHT 478
+
+void Renderer::ray_trace()
 {
-	//TODO anti-aliasing
+#if DEBUG
+	for (int py = _height - DEBUG_HEIGHT; py < _height - DEBUG_HEIGHT + 1; py++)
+#else
 #pragma omp parallel for
 	for (int py = 0; py < _height; py++)
+#endif
 	{
 		float y_world = (float)py / _height * 2 - 1;
 
+#if DEBUG
+		for (int px = DEBUG_WIDTH; px < DEBUG_WIDTH + 1; px++)
+#else
 		for (int px = 0; px < _width; px++)
+#endif
 		{
 			float x_world = (float)px / _width * 2 - 1;
 			x_world *= (float)_width / _height;
@@ -402,15 +414,27 @@ void Renderer::rayTrace()
 
 			HitInfo finalHitInfo;
 			HitInfo hit_info;
-			//for (Triangle& triangle : _scene._triangles)
-				//if (triangle.intersect(ray, hit_info))
-					//if (hit_info.t < finalHitInfo.t || finalHitInfo.t == -1)
-						//finalHitInfo = hit_info;
+#if ENABLE_BVH
 			if (_scene._bvh.intersect(ray, hit_info))
 				if (hit_info.t < finalHitInfo.t || finalHitInfo.t == -1)
 						finalHitInfo = hit_info;
+#else
+			//838, 1358
+			//TODO mettre un std::cout << dans le copy constructor des Triangle pour voir partout où le copy constructor est appelé
+			int index = 0;//TODO remove
+			for (Triangle& triangle : _scene._bvh._triangles)
+			{
+				if (triangle.intersect(ray, hit_info))
+				{
+					//std::cout << index << "\n";
+					if (hit_info.t < finalHitInfo.t || finalHitInfo.t == -1)
+						finalHitInfo = hit_info;
+				}
+				index++;
+			}
+#endif
 
-			Color finalColor = Color(0, 0, 0);
+			Color finalColor;
 
 			if (finalHitInfo.t > 0)//We found an intersection
 			{
@@ -444,7 +468,7 @@ void Renderer::rayTrace()
 #endif
 			}
 			else
-				finalColor = Color(0.0, 0.0, 0);//Black since we didn't found any intersection
+				finalColor = Renderer::BACKGROUND_COLOR;//Black since we didn't found any intersection
 
 			_image(px, py) = finalColor;
 		}

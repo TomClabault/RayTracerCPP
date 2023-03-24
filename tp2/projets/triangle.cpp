@@ -128,9 +128,9 @@ bool Triangle::barycentric_coordinates(const Point& point, float& u, float& v) c
     return true;
 }
 
-Point Triangle::centroid() const
+Point Triangle::bbox_centroid() const
 {
-    return (_a + _b + _c) / 3;
+    return (min(_a, min(_b, _c)) + max(_a, max(_b, _c))) / 2;
 }
 
 bool Triangle::inside_outside_2D(const Point& point) const
@@ -165,6 +165,16 @@ std::ostream& operator << (std::ostream& os, const Triangle& triangle)
 Triangle operator +(const Triangle& triangle, const Vector& vec)
 {
     return Triangle(triangle._a + vec, triangle._b + vec, triangle._c + vec);
+}
+
+Point& Triangle::operator[] (int i)
+{
+    return *((&_a) + i);
+}
+
+const Point& Triangle::operator[] (int i) const
+{
+    return *((&_a) + i);
 }
 
 std::ostream& operator <<(std::ostream& os, const HitInfo& infos)

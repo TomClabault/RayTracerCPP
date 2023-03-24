@@ -14,6 +14,7 @@ public:
 	static constexpr float SHADOW_INTENSITY = 0.5f;
 	static Material DEFAULT_MATERIAL;
 	static Color AMBIENT_COLOR;
+	static Color BACKGROUND_COLOR;
 
 	Renderer(int width, int height, Scene scene);
 	~Renderer();
@@ -28,11 +29,11 @@ public:
 	/*
 	 * Renders the image using an hybrid rasterization / ray-tracing approach
 	 */
-	void rasterTrace();
+	void raster_trace();
 	/*
 	 * Renders the image full ray tracing
 	 */
-	void rayTrace();
+	void ray_trace();
 
 private:
 	/*

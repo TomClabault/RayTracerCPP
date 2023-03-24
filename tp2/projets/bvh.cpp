@@ -2,40 +2,51 @@
 
 #include "bvh.h"
 
-BVH::BVH(const std::vector<Triangle> triangles, Point& bounding_volume_min, Point& bounding_volume_max)
-{
-	//This means that the bounding volume is uninitialized
-	if (   bounding_volume_min.x == INFINITY && bounding_volume_min.y == INFINITY && bounding_volume_min.z == INFINITY
-		&& bounding_volume_max.x == -INFINITY && bounding_volume_max.y == -INFINITY && bounding_volume_max.z == -INFINITY)
-	{
-		for (const Triangle& triangle : triangles)
-		{
-			bounding_volume_min = min(bounding_volume_min, triangle._a);
-			bounding_volume_min = min(bounding_volume_min, triangle._b);
-			bounding_volume_min = min(bounding_volume_min, triangle._c);
+Vector BVH::BoundingVolume::PLANE_NORMALS[7] = {
+	Vector(1, 0, 0),
+	Vector(0, 1, 0),
+	Vector(0, 0, 1),
+	Vector(std::sqrt(3) / 3, std::sqrt(3) / 3, std::sqrt(3) / 3),
+	Vector(-std::sqrt(3) / 3, std::sqrt(3) / 3, std::sqrt(3) / 3),
+	Vector(-std::sqrt(3) / 3, -std::sqrt(3) / 3, std::sqrt(3) / 3),
+	Vector(std::sqrt(3) / 3, -std::sqrt(3) / 3, std::sqrt(3) / 3),
+};
 
-			bounding_volume_max = max(bounding_volume_max, triangle._a);
-			bounding_volume_max = max(bounding_volume_max, triangle._b);
-			bounding_volume_max = max(bounding_volume_max, triangle._c);
+BVH::BVH(const std::vector<Triangle> triangles, int max_depth)  : _triangles(triangles), _max_depth(max_depth)
+{
+	BoundingVolume volume;
+	Point minimum(INFINITY, INFINITY, INFINITY), maximum(-INFINITY, -INFINITY, -INFINITY);
+
+	for (const Triangle& triangle : triangles)
+	{
+		volume.extend_volume(triangle);
+
+		for (int i = 0; i < 3; i++)
+		{
+			minimum = min(minimum, triangle[i]);
+			maximum = max(maximum, triangle[i]);
 		}
 	}
 
+	//TODO replace les std::array du code par des array C style simples
 	//We now have a bounding volume to work with
-	build_bvh();
+	build_bvh(minimum, maximum, volume);
 }
 
-BVH::BVH(const std::vector<Triangle> triangles) : BVH(triangles, Point(INFINITY, INFINITY, INFINITY), Point(-INFINITY, -INFINITY, -INFINITY)) { }
-
-void BVH::build_bvh(const Point& min, const Point& max)
+void BVH::build_bvh(Point mini, Point maxi, const BoundingVolume& volume)
 {
-	_root = new OctreeNode(min, max);
+	_root = new OctreeNode(mini, maxi);
 
 	for (Triangle& triangle : _triangles)
-		_root->insert(&triangle);
+		_root->insert(&triangle, 0, _max_depth);
+
+	_root->compute_volume();
 }
 
 bool BVH::intersect(const Ray& ray, HitInfo& hit_info)
 {
-	return _root->intersect(ray, hit_info);
+	float trash;
+	//TODO faire une fonction auxiliaire pour cache l'API avec t_near
+	return _root->intersect(ray, hit_info, trash);
 }
 

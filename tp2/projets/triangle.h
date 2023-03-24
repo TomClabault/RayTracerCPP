@@ -57,10 +57,14 @@ public:
 
     bool barycentric_coordinates(const Point& point, float& u, float& v) const;
 
-    Point centroid() const;
+    Point bbox_centroid() const;
 
     friend std::ostream& operator << (std::ostream& os, const Triangle& triangle);
+
     friend Triangle operator +(const Triangle& triangle, const Vector& vec);
+
+    Point& operator[] (int i);
+    const Point& operator[] (int i) const;
 
 public:
     Point _a, _b, _c;
