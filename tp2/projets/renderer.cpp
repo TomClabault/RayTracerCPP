@@ -393,26 +393,14 @@ void Renderer::raster_trace()
 	}
 }
 
-#define DEBUG 0
-#define DEBUG_WIDTH 470
-#define DEBUG_HEIGHT 478
-
 void Renderer::ray_trace()
 {
-#if DEBUG
-	for (int py = _height - DEBUG_HEIGHT; py < _height - DEBUG_HEIGHT + 1; py++)
-#else
 #pragma omp parallel for schedule(dynamic)
 	for (int py = 0; py < _height; py++)
-#endif
 	{
 		float y_world = (float)py / _height * 2 - 1;
 
-#if DEBUG
-		for (int px = DEBUG_WIDTH; px < DEBUG_WIDTH + 1; px++)
-#else
 		for (int px = 0; px < _width; px++)
-#endif
 		{
 			float x_world = (float)px / _width * 2 - 1;
 			x_world *= (float)_width / _height;
