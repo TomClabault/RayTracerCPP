@@ -43,7 +43,7 @@ void BVH::build_bvh(Point mini, Point maxi, const BoundingVolume& volume)
 	_root->compute_volume();
 }
 
-bool BVH::intersect(const Ray& ray, HitInfo& hit_info)
+bool BVH::intersect(const Ray& ray, HitInfo& hit_info) const
 {
 	float trash;
 	//TODO faire une fonction auxiliaire pour cache l'API avec t_near

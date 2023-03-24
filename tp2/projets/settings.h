@@ -34,4 +34,5 @@
 
 //The maximum number of triangles that a leaf of the BVH can contain
 #define ENABLE_BVH 1
+#define BVH_MAX_DEPTH 13
 #define BVH_LEAF_TRIANGLE_MAX_COUNT 8

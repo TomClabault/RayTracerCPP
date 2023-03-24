@@ -82,6 +82,16 @@ bool Renderer::is_shadowed(const Point& inter_point, const Point& light_position
 	Ray ray(inter_point, light_position - inter_point);
 	HitInfo hitInfo;
 
+#if ENABLE_BVH
+		if (_scene._bvh.intersect(ray, hitInfo))
+		{
+			Point new_inter_point = ray._origin + ray._direction * hitInfo.t;
+
+			//If we found an object that is between the light and the current inter_point: the point is shadowed
+			if (distance(Point(inter_point), Point(new_inter_point)) < distance(Point(inter_point), Point(light_position)))
+				return true;
+		}
+#else
 	for (const Triangle& triangle : _scene._bvh._triangles)
 	{
 		if (triangle.intersect(ray, hitInfo))
@@ -96,6 +106,7 @@ bool Renderer::is_shadowed(const Point& inter_point, const Point& light_position
 			}
 		}
 	}
+#endif
 
 	//We haven't found any object between the light source and the intersection point, the point isn't shadowed
 #endif
@@ -289,7 +300,7 @@ void Renderer::raster_trace()
 	Transform perspective_projection = _scene._camera._perspective_proj_mat;
 	Transform perspective_projection_inv = _scene._camera._perspective_proj_mat_inv;
 
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic)
 	for (int triangle_index = 0; triangle_index < _scene._bvh._triangles.size(); triangle_index++)
 	{
 		Triangle& triangle = _scene._bvh._triangles[triangle_index];
@@ -391,7 +402,7 @@ void Renderer::ray_trace()
 #if DEBUG
 	for (int py = _height - DEBUG_HEIGHT; py < _height - DEBUG_HEIGHT + 1; py++)
 #else
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic)
 	for (int py = 0; py < _height; py++)
 #endif
 	{

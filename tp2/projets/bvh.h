@@ -253,9 +253,9 @@ public:
 public:
 	//TODO changer le constructeur pour ne pas se manger la copie du std::vector en entier à chaque fois et c'est partout dans le code comme ça apparemment (constructeur de Scene aussi par exemple)
 	//TODO tester la best max_depth
-	BVH(const std::vector<Triangle> triangles, int max_depth = 8);
+	BVH(const std::vector<Triangle> triangles, int max_depth = BVH_MAX_DEPTH);
 
-	bool intersect(const Ray& ray, HitInfo& hit_info);
+	bool intersect(const Ray& ray, HitInfo& hit_info) const;
 
 private:
 	void build_bvh(Point mini, Point maxi, const BoundingVolume& volume);
