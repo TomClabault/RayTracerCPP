@@ -25,7 +25,7 @@ int main()
     Renderer renderer(scene, triangles, render_settings);
 
     //TODO faire une structure à passer au renderer render() pour garder toutes les settings du rendu. Comme ça on peut lancer plusieurs rendus d'affilée avec des settings différentes.
-    //for (int i = 0; i < 20; i++)
+    for (int i = 0; i < 20; i++)
     totalTime += render(renderer);
     totalTime += writeImage(renderer, "image.png");
 
