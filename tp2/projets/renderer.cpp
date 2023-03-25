@@ -1,6 +1,8 @@
 #include "renderer.h"
 
-#include <mat.h>
+#include <cmath>
+
+#include "mat.h"
 
 Material init_default_material()
 {
@@ -107,7 +109,7 @@ Color Renderer::computeSpecular(const Material& hit_material, const Vector& ray_
 	if (angle <= hit_material.specular_threshold)//We're below the visibility threshold so we're not going to notice the specular anyway, returning no specular
 		return Color(0, 0, 0);
 	else
-		return hit_material.specular * std::powf(std::max(0.0f, angle), hit_material.ns);
+        return hit_material.specular * std::pow(std::max(0.0f, angle), hit_material.ns);
 }
 
 bool Renderer::is_shadowed(const Point& inter_point, const Point& light_position) const
