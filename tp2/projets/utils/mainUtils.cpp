@@ -13,7 +13,7 @@ float render(Renderer& renderer)
     else
         renderer.ray_trace();
     timer.stop();
-    std::cout << renderer.render_settings() << ": " << timer.elapsed() << "ms\n";
+    std::cout << ": " << timer.elapsed() << "ms\n\n";
 
     return timer.elapsed();
 }

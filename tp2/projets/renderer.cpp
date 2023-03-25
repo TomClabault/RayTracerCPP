@@ -15,20 +15,36 @@ Material Renderer::DEFAULT_MATERIAL = init_default_material();
 Color Renderer::AMBIENT_COLOR = Color(0.1f, 0.1f, 0.1f);
 Color Renderer::BACKGROUND_COLOR = Color(0.0, 0.0, 0.0);
 
-RenderSettings init_ray_trace_settings()
+RenderSettings RenderSettings::basic_settings(int width, int height, bool hybrid_raste_trace)
 {
-	RenderSettings ray_trace_settings;
-	ray_trace_settings.hybrid_rasterization_tracing = false;
+	RenderSettings settings;
+	settings.image_width = width;
+	settings.image_height = height;
+	settings.hybrid_rasterization_tracing = hybrid_raste_trace;
 
-	return ray_trace_settings;
+	return settings;
 }
 
-const RenderSettings RenderSettings::DEFAULT_SETTINGS = RenderSettings();
-const RenderSettings RenderSettings::RAYTRACE_SETTINGS = init_ray_trace_settings();
+RenderSettings RenderSettings::ssaa_settings(int width, int height, int ssaa_factor, bool hybrid_raste_trace, bool compute_shadows)
+{
+	RenderSettings settings;
+	settings.image_width = width;
+	settings.image_height = height;
+	settings.enable_ssaa = true;
+	settings.ssaa_factor = ssaa_factor;
+	settings.hybrid_rasterization_tracing = hybrid_raste_trace;
+	settings.compute_shadows = compute_shadows;
+
+	return settings;
+}
 
 std::ostream& operator << (std::ostream& os, const RenderSettings& settings)
 {
-	os << "RENDER SETTINGS OSTREAM";
+	os << "Render[" << (settings.hybrid_rasterization_tracing ? "Rast" : "RT") << ", " << settings.image_width << "x" << settings.image_height;
+	if (settings.enable_ssaa)
+		os << ", " << "SSAAx" << settings.ssaa_factor;
+	os << "]";
+
 	return os;
 }
 
@@ -36,46 +52,43 @@ Renderer::Renderer(Scene scene, std::vector<Triangle>& triangles, RenderSettings
 	_bvh(BVH(triangles, render_settings.bvh_max_depth)), _render_settings(render_settings), _scene(scene)
 {
 	//Accounting for the SSAA scaling
-	render_settings.image_width += (render_settings.enable_ssaa * (render_settings.ssaa_factor - 1) * render_settings.image_width);
-	render_settings.image_height += (render_settings.enable_ssaa * (render_settings.ssaa_factor - 1) * render_settings.image_height);
+	_render_width = render_settings.enable_ssaa ? render_settings.image_width * render_settings.ssaa_factor : render_settings.image_width;
+	_render_height = render_settings.enable_ssaa ? render_settings.image_height * render_settings.ssaa_factor : render_settings.image_height;
 
 	//Initializing the z-buffer if we're using the rasterization approach
 	if (render_settings.hybrid_rasterization_tracing)
 	{
-		_z_buffer = new float* [render_settings.image_height];
+		_z_buffer = new float* [_render_height];
 		if (_z_buffer == nullptr)
 		{
 			std::cout << "Not enough memory to allocate the ZBuffer of the ray tracer..." << std::endl;
 			std::exit(-1);
 		}
 
-		for (int i = 0; i < render_settings.image_height; i++)
+		for (int i = 0; i < _render_height; i++)
 		{
-			_z_buffer[i] = new float[render_settings.image_width];
+			_z_buffer[i] = new float[_render_width];
 			if (_z_buffer[i] == nullptr)
 			{
 				std::cout << "Not enough memory to allocate the ZBuffer of the ray tracer..." << std::endl;
 				std::exit(-1);
 			}
 
-			for (int j = 0; j < render_settings.image_width; j++)
+			for (int j = 0; j < _render_width; j++)
 				_z_buffer[i][j] = -INFINITY;
 		}
 
-		_scene._camera.init_perspec_proj_mat((float)render_settings.image_width / render_settings.image_height);//Perspective projection matrix from camera space to NDC space
+		_scene._camera.init_perspec_proj_mat((float)_render_width / _render_height);//Perspective projection matrix from camera space to NDC space
 	}
 
-	_width = render_settings.image_width;
-	_height = render_settings.image_height;
-
-	_image = Image(_width, _height);
+	_image = Image(_render_width, _render_height);
 }
 
 Renderer::~Renderer()
 {
 	if (_render_settings.hybrid_rasterization_tracing)
 	{
-		for (int i = 0; i < _height; i++)
+		for (int i = 0; i < _render_height; i++)
 			delete[] _z_buffer[i];
 
 		delete[] _z_buffer;
@@ -327,7 +340,7 @@ int Renderer::clip_triangle(const Triangle4& to_clip_triangle, std::array<Triang
 	return nb_triangles;
 }
 
-void Renderer::raster_trace(const RenderSettings& render_settings)
+void Renderer::raster_trace()
 {
 	Transform perspective_projection = _scene._camera._perspective_proj_mat;
 	Transform perspective_projection_inv = _scene._camera._perspective_proj_mat_inv;
@@ -360,25 +373,25 @@ void Renderer::raster_trace(const RenderSettings& render_settings)
 			float boundingMaxX = std::max(a_image_plane.x, std::max(b_image_plane.x, c_image_plane.x));
 			float boundingMaxY = std::max(a_image_plane.y, std::max(b_image_plane.y, c_image_plane.y));
 		
-			int minXPixels = (int)((boundingMinX + 1) * 0.5 * _width);
-			int minYPixels = (int)((boundingMinY + 1) * 0.5 * _height);
-			int maxXPixels = (int)((boundingMaxX + 1) * 0.5 * _width);
-			int maxYPixels = (int)((boundingMaxY + 1) * 0.5 * _height);
+			int minXPixels = (int)((boundingMinX + 1) * 0.5 * _render_width);
+			int minYPixels = (int)((boundingMinY + 1) * 0.5 * _render_height);
+			int maxXPixels = (int)((boundingMaxX + 1) * 0.5 * _render_width);
+			int maxYPixels = (int)((boundingMaxY + 1) * 0.5 * _render_height);
 
-			maxXPixels = std::min(_width - 1, maxXPixels);
-			maxYPixels = std::min(_height - 1, maxYPixels);
+			maxXPixels = std::min(_render_width - 1, maxXPixels);
+			maxYPixels = std::min(_render_height - 1, maxYPixels);
 
 			for (int py = minYPixels; py <= maxYPixels; py++)
 			{
-				float image_y = py / (float)_height * 2 - 1;
+				float image_y = py / (float)_render_height * 2 - 1;
 
 				for (int px = minXPixels; px <= maxXPixels; px++)
 				{
 					//NOTE If there are still issues with the clipping algorithm creating new points just a little over the edge of the view frustum, consider using a simple std::max(0, ...)
-					assert(px >= 0 && px < _width);
-					assert(py >= 0 && py < _height);
+					assert(px >= 0 && px < _render_width);
+					assert(py >= 0 && py < _render_height);
 
-					float image_x = px / (float)_width * 2 - 1;
+					float image_x = px / (float)_render_width * 2 - 1;
 
 					Point pixel_point(image_x, image_y, -1);
 
@@ -430,17 +443,17 @@ void Renderer::raster_trace(const RenderSettings& render_settings)
 	}
 }
 
-void Renderer::ray_trace(const RenderSettings& render_settings)
+void Renderer::ray_trace()
 {
 #pragma omp parallel for schedule(dynamic)
-	for (int py = 0; py < _height; py++)
+	for (int py = 0; py < _render_height; py++)
 	{
-		float y_world = (float)py / _height * 2 - 1;
+		float y_world = (float)py / _render_height * 2 - 1;
 
-		for (int px = 0; px < _width; px++)
+		for (int px = 0; px < _render_width; px++)
 		{
-			float x_world = (float)px / _width * 2 - 1;
-			x_world *= (float)_width / _height;
+			float x_world = (float)px / _render_width * 2 - 1;
+			x_world *= (float)_render_width / _render_height;
 
 			Point image_plane_point = Point(x_world, y_world, -1);
 

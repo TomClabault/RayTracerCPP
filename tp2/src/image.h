@@ -21,12 +21,12 @@ class Image
 {
 protected:
     std::vector<Color> m_pixels;
-    int _width;
-    int _height;
+    int _render_width;
+    int _render_height;
 
 public:
-    Image( ) : m_pixels(), _width(0), _height(0) {}
-    Image( const int w, const int h, const Color& color= Black() ) : m_pixels(w*h, color), _width(w), _height(h) {}
+    Image( ) : m_pixels(), _render_width(0), _render_height(0) {}
+    Image( const int w, const int h, const Color& color= Black() ) : m_pixels(w*h, color), _render_width(w), _render_height(h) {}
     
     /*! renvoie une reference sur la couleur d'un pixel de l'image.
     permet de modifier et/ou de connaitre la couleur d'un pixel :
@@ -79,7 +79,7 @@ public:
     //! renvoie la couleur interpolee aux coordonnees normalisees (x, y) [0 .. 1]x[0 .. 1].
     Color texture( const float x, const float y ) const
     {
-        return sample(x * _width, y * _height);
+        return sample(x * _render_width, y * _render_height);
     }
     
     //! renvoie un const pointeur sur le stockage des couleurs des pixels.
@@ -97,11 +97,11 @@ public:
     }
     
     //! renvoie la largeur de l'image.
-    int width( ) const { return _width; }
+    int width( ) const { return _render_width; }
     //! renvoie la hauteur de l'image.
-    int height( ) const { return _height; }
+    int height( ) const { return _render_height; }
     //! renvoie le nombre de pixels de l'image.
-    unsigned size( ) const { return _width * _height; }
+    unsigned size( ) const { return _render_width * _render_height; }
     
     //! renvoie l'indice du pixel (x, y) [0 .. width]x[0 .. height].
     //! renvoie le pixel le plus proche si (x, y) est en dehors de l'image...
@@ -109,12 +109,12 @@ public:
     {
         int px= x;
         if(px < 0) px= 0;
-        if(px > _width-1) px= _width-1;
+        if(px > _render_width-1) px= _render_width-1;
         int py= y;
         if(py < 0) py= 0;
-        if(py > _height-1) py= _height-1;
+        if(py > _render_height-1) py= _render_height-1;
         
-        unsigned p= py * _width + px;
+        unsigned p= py * _render_width + px;
         assert(p < m_pixels.size());
         return p;
     }

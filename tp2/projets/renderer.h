@@ -11,6 +11,9 @@ struct RenderSettings
 	RenderSettings() {}
 	RenderSettings(int width, int height) : image_width(width), image_height(height) {}
 
+	static RenderSettings basic_settings(int width, int height, bool hybrid_raste_trace = true);
+	static RenderSettings ssaa_settings(int width, int height, int ssaa_factor, bool hybrid_raste_trace = true, bool compute_shadows = false);
+
 	int image_width = 1024;
 	int image_height = 1024;
 
@@ -49,9 +52,6 @@ struct RenderSettings
 	int bvh_leaf_object_count = 8;
 
 	friend std::ostream& operator << (std::ostream& os, const RenderSettings& settings);
-
-	static const RenderSettings DEFAULT_SETTINGS;
-	static const RenderSettings RAYTRACE_SETTINGS;
 };
 
 class Renderer
@@ -77,11 +77,11 @@ public:
 	/*
 	 * Renders the image using an hybrid rasterization / ray-tracing approach
 	 */
-	void raster_trace(const RenderSettings& render_settings = RenderSettings::DEFAULT_SETTINGS);
+	void raster_trace();
 	/*
 	 * Renders the image full ray tracing
 	 */
-	void ray_trace(const RenderSettings& render_settings = RenderSettings::DEFAULT_SETTINGS);
+	void ray_trace();
 
 private:
 	/*
@@ -117,8 +117,12 @@ private:
 	int clip_triangle(const Triangle4& to_clip_triangle, std::array<Triangle4, 12>& clipped_triangles) const;
 
 private:
-	//Basically aliases for _render_settings.image_width and _render_settings.image_height
-	int _width, _height;
+	//Width and height that account for the SSAA super sampling if enabled.
+	//These values should always be used over _render_settings.image_width and
+	//_render_settings.image_height when redering. _render_settings.image_width and
+	//height are used to keep track of the actual resolution wanted "on screen", they
+	//do not reflect the render resolution
+	int _render_width, _render_height;
 
 	float** _z_buffer;
 

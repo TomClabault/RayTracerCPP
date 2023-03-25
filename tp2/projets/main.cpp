@@ -20,10 +20,13 @@ int main()
 
     Scene scene(Camera(Point(0, 0, 0), 90), meshData.materials, PointLight(Point(2, 0, 2)));
 
-    //RenderSettings render_settings = RenderSettings::DEFAULT_SETTINGS;
-    RenderSettings render_settings = RenderSettings::RAYTRACE_SETTINGS;
+    //RenderSettings render_settings = RenderSettings::ssaa_settings(3840, 2160, 4);
+    RenderSettings render_settings = RenderSettings::basic_settings(3840, 2160);
+
+    render_settings.use_shading = false;
     Renderer renderer(scene, triangles, render_settings);
 
+    std::cout << render_settings;
     totalTime += render(renderer);
     totalTime += writeImage(renderer, "image.png");
 
