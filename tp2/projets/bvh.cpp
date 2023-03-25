@@ -1,5 +1,7 @@
 #include <vector>
 
+#include <cmath>
+
 #include "bvh.h"
 
 Vector BVH::BoundingVolume::PLANE_NORMALS[7] = {

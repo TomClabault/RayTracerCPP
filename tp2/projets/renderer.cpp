@@ -1,6 +1,8 @@
 #include "renderer.h"
 
-#include <mat.h>
+#include <cmath>
+
+#include "mat.h"
 
 Material init_default_material()
 {
@@ -107,7 +109,7 @@ Color Renderer::computeSpecular(const Material& hit_material, const Vector& ray_
 	if (angle <= hit_material.specular_threshold)//We're below the visibility threshold so we're not going to notice the specular anyway, returning no specular
 		return Color(0, 0, 0);
 	else
-		return hit_material.specular * std::powf(std::max(0.0f, angle), hit_material.ns);
+        return hit_material.specular * std::pow(std::max(0.0f, angle), hit_material.ns);
 }
 
 bool Renderer::is_shadowed(const Point& inter_point, const Point& light_position) const
@@ -327,12 +329,12 @@ int Renderer::clip_triangle(const Triangle4& to_clip_triangle, std::array<Triang
 	return nb_triangles;
 }
 
-#include <omp.h>
-omp_lock_t g_mutex;
+//#include <omp.h>
+//omp_lock_t g_mutex;
 
 void Renderer::raster_trace(const RenderSettings& render_settings)
 {
-	omp_init_lock(&g_mutex);
+    //omp_init_lock(&g_mutex);
 
 	Transform perspective_projection = _scene._camera._perspective_proj_mat;
 	Transform perspective_projection_inv = _scene._camera._perspective_proj_mat_inv;
@@ -410,9 +412,9 @@ void Renderer::raster_trace(const RenderSettings& render_settings)
 					float zCameraSpace = (w * -clipped_triangle_NDC._a.z + u * -clipped_triangle_NDC._b.z + v * -clipped_triangle_NDC._c.z);
 					if (zCameraSpace > _z_buffer[py][px])
 					{
-						omp_set_lock(&g_mutex);
+                        //omp_set_lock(&g_mutex);
 						_z_buffer[py][px] = zCameraSpace;
-						omp_unset_lock(&g_mutex);
+                        //omp_unset_lock(&g_mutex);
 
 						Color final_color;
 
@@ -426,16 +428,16 @@ void Renderer::raster_trace(const RenderSettings& render_settings)
 						else //Color triangles with barycentric coordinates
 							final_color = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
 
-						omp_set_lock(&g_mutex);
+                        //omp_set_lock(&g_mutex);
 						_image(px, py) = final_color;
-						omp_unset_lock(&g_mutex);
+                        //omp_unset_lock(&g_mutex);
 					}
 				}
 			}
 		}
 	}
 
-	omp_destroy_lock(&g_mutex);
+    //omp_destroy_lock(&g_mutex);
 }
 
 void Renderer::ray_trace(const RenderSettings& render_settings)

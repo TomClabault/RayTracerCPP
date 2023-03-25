@@ -82,7 +82,7 @@ void precompute_materials(Materials& materials)
     for (Material& material : materials.materials)
     {
         float luminance = 0.2126f * material.specular.r + 0.7152f * material.specular.g + 0.0722 * material.specular.b;
-        float tau = std::powf(Material::SPECULAR_THRESHOLD_EPSILON / luminance, 1 / material.ns);
+        float tau = std::pow(Material::SPECULAR_THRESHOLD_EPSILON / luminance, 1 / material.ns);
 
         material.specular_threshold = tau;
     }
