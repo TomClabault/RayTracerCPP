@@ -23,10 +23,11 @@ int main()
     //RenderSettings render_settings = RenderSettings::ssaa_settings(3840, 2160, 4);
     RenderSettings render_settings = RenderSettings::basic_settings(3840, 2160);
 
-    render_settings.use_shading = false;
+    render_settings.use_shading = true;
     Renderer renderer(scene, triangles, render_settings);
 
-    std::cout << render_settings;
+    getchar();
+    for (int i = 0; i < 50; i++)
     totalTime += render(renderer);
     totalTime += writeImage(renderer, "image.png");
 
