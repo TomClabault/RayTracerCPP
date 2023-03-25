@@ -6,7 +6,8 @@
 float render(Renderer& renderer)
 {
     Timer timer;
-
+    
+    std::cout << renderer.render_settings();
     timer.start();
     if (renderer.render_settings().hybrid_rasterization_tracing)
         renderer.raster_trace();

@@ -3,6 +3,8 @@
 #include "scene/scene.h"
 #include "timer.h"
 
+#include <omp.h>
+
 int main()
 {
     float totalTime = 0.0;
@@ -10,8 +12,6 @@ int main()
     Timer timer;
     MeshIOData meshData;
     std::vector<Triangle> triangles;
-
-
 
 
     
@@ -26,8 +26,8 @@ int main()
     render_settings.use_shading = true;
     Renderer renderer(scene, triangles, render_settings);
 
-    std::cout << render_settings;
-    for (int i = 0; i < 20; i++)
+    getchar();
+    for (int i = 0; i < 50; i++)
     totalTime += render(renderer);
     totalTime += writeImage(renderer, "image.png");
 

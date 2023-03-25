@@ -100,8 +100,9 @@ private:
 	 * Clips triangles given in @to_clip against the plane defined by the given @plane_index and @plane_sign and
 	 * stores the result in @out_clipped
 	 *
-	 * @param plane_index 0/1/2 for clipping against the x/y/z plane respectively
-	 * @param plane_sign 1 or -1 to clip against x or -x (for example)
+	 * @template plane_index 0/1/2 for clipping against the x/y/z plane respectively
+	 * @template plane_sign 1 or -1 to clip against x or -x (for example)
+	 * 
 	 * @param to_clip triangles that needs to be clipped against the plane
 	 * @param nb_triangles how many triangles are there to clip in the @to_clip array starting
 	 * from index 0
@@ -109,12 +110,14 @@ private:
 	 *
 	 * @return Returns the number of triangles after the clipping process
 	 */
-	int clip_triangles_to_plane(int plane_index, int plane_sign, std::array<Triangle4, 12>& to_clip, int nb_triangles, std::array<Triangle4, 12>& out_clipped) const;
+	template<int plane_index, int plane_sign>
+	int clip_triangles_to_plane(std::array<Triangle4, 12>& to_clip, int nb_triangles, std::array<Triangle4, 12>& out_clipped) const;
 
 	/*
 	 * Clips a triangle in homogeneous clip space coordinates and outputs the clipped triangles in @param clipped_triangles
 	 */
-	int clip_triangle(const Triangle4& to_clip_triangle, std::array<Triangle4, 12>& clipped_triangles) const;
+	int clip_triangle(std::array<Triangle4, 12>& to_clip_triangles, std::array<Triangle4, 12>& clipped_triangles) const;
+	//int clip_triangle(const Triangle4& to_clip_triangle, std::array<Triangle4, 12>& clipped_triangles) const;
 
 private:
 	//Width and height that account for the SSAA super sampling if enabled.
