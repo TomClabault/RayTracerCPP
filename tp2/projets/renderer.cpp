@@ -521,21 +521,21 @@ void Renderer::raster_trace()
 			maxXPixels = std::min(_render_width - 1, maxXPixels);
 			maxYPixels = std::min(_render_height - 1, maxYPixels);
 
-			for (int py = minYPixels; py <= maxYPixels; py++)
-			{
-				float image_y = py * render_height_scaling - 1;
+			float image_y = minYPixels * render_height_scaling - 1;
+			float image_y_increment = render_height_scaling;
 
-				for (int px = minXPixels; px <= maxXPixels; px++)
+			float image_x = minXPixels * render_width_scaling - 1;
+			float image_x_increment = render_width_scaling;
+			for (int py = minYPixels; py <= maxYPixels; py++, image_y += image_y_increment)
+			{
+				for (int px = minXPixels; px <= maxXPixels; px++, image_x += image_x_increment)
 				{
 					//NOTE If there are still issues with the clipping algorithm creating new points just a little over the edge of the view frustum, consider using a simple std::max(0, ...)
 					assert(px >= 0 && px < _render_width);
 					assert(py >= 0 && py < _render_height);
 
-					float image_x = px * render_width_scaling - 1;
-
 					Point pixel_point(image_x, image_y, -1);
 
-					//TODO optimiser la edge function commee dit sur scratchapixel en ne recalculant pas la partie qui utilise la position du pixel en y pour chaque pixel en X puisque la position du pixel en Y ne change pas pour chaque position en X
 					float u = Triangle::edge_function(pixel_point, c_image_plane, a_image_plane);
 					if (u < 0)
 						continue;
@@ -551,8 +551,6 @@ void Renderer::raster_trace()
 					u *= invTriangleArea;
 					v *= invTriangleArea;
 					w *= invTriangleArea;
-
-					//TODO pour les scènes avec des grands triangles, voir si on peut pas d'abord check si un carré de pixels entiers est déjà contenu dans le triangle pour pouvoir safely déterminer que du coup on peut remplir tout ce carré de pixels d'un coup sans avoir à retester à chaque fois si le pixel est dans le traingle ou pas
 
 					//Z coordinate of the point on the triangle by interpolating the z coordinates of the 3 vertices
 					float zCameraSpace = (w * -clipped_triangle_NDC._a.z + u * -clipped_triangle_NDC._b.z + v * -clipped_triangle_NDC._c.z);
