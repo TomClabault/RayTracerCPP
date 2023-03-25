@@ -11,8 +11,8 @@ struct RenderSettings
 	RenderSettings() {}
 	RenderSettings(int width, int height) : image_width(width), image_height(height) {}
 
-	int image_width = 1920;
-	int image_height = 1080;
+	int image_width = 1024;
+	int image_height = 1024;
 
 	bool enable_ssaa = false;
 	//Super sampling factor. How many times larger will the image be rendered
@@ -27,7 +27,7 @@ struct RenderSettings
 	//triangles and then ray tracing for the rest of computations (shadows, reflections, ...)
 	//0 for full ray-tracing
 	//1 for rasterization/ray-tracing
-	bool hybrid_rasterization_tracing = false;
+	bool hybrid_rasterization_tracing = true;
 
 	//1 to use shading, false to use 'color_normal_or_barycentric' for the shading. 
 	//If this is true, 'color_normal_or_barycentric' is ignored

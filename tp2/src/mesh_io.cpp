@@ -256,11 +256,13 @@ bool read_materials_mtl( const char *filename, Materials& materials  )
         {
             float r, g, b;
             if(sscanf(line, "Kd %f %f %f", &r, &g, &b) == 3)
-                material->diffuse= Color(r, g, b);
+                material->diffuse = Color(r, g, b);
             else if(sscanf(line, "Ks %f %f %f", &r, &g, &b) == 3)
-                material->specular= Color(r, g, b);
+                material->specular = Color(r, g, b);
             else if(sscanf(line, "Ke %f %f %f", &r, &g, &b) == 3)
-                material->emission= Color(r, g, b);
+                material->emission = Color(r, g, b);
+            else if(sscanf(line, "Ka %f %f %f", &r, &g, &b) == 3)
+                material->ambient_coeff = Color(r, g, b);
         }
         
         else if(line[0] == 'N')
