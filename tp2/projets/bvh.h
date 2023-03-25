@@ -101,7 +101,8 @@ public:
 			//by the OctreeNode to compute the intersection with a ray
 		};
 
-		OctreeNode(Point min, Point max) : _min(min), _max(max) {}
+		OctreeNode(Point min, Point max, int max_depth, int leaf_max_obj_count) : _min(min), _max(max), 
+			_max_depth(max_depth), _leaf_max_obj_count(leaf_max_obj_count) {}
 
  		 /*
 		  * Once the objects have been inserted in the hierarchy, this function computes
@@ -125,43 +126,43 @@ public:
 			float middle_y = (_min.y + _max.y) / 2;
 			float middle_z = (_min.z + _max.z) / 2;
 
-			_children[0] = new OctreeNode(_min, Point(middle_x, middle_y, middle_z));
-			_children[1] = new OctreeNode(Point(middle_x, _min.y, _min.z), Point(_max.x, middle_y, middle_z));
-			_children[2] = new OctreeNode(_min + Point(0, middle_y, 0), Point(middle_x, _max.y, middle_z));
-			_children[3] = new OctreeNode(Point(middle_x, middle_y, _min.z), Point(_max.x, _max.y, middle_z));
-			_children[4] = new OctreeNode(_min + Point(0, 0, middle_z), Point(middle_x, middle_y, _max.z));
-			_children[5] = new OctreeNode(Point(middle_x, _min.y, middle_z), Point(_max.x, middle_y, _max.z));
-			_children[6] = new OctreeNode(_min + Point(0, middle_y, middle_z), Point(middle_x, _max.y, _max.z));
-			_children[7] = new OctreeNode(Point(middle_x, middle_y, middle_z), Point(_max.x, _max.y, _max.z));
+			_children[0] = new OctreeNode(_min, Point(middle_x, middle_y, middle_z), _max_depth, _leaf_max_obj_count);
+			_children[1] = new OctreeNode(Point(middle_x, _min.y, _min.z), Point(_max.x, middle_y, middle_z), _max_depth, _leaf_max_obj_count);
+			_children[2] = new OctreeNode(_min + Point(0, middle_y, 0), Point(middle_x, _max.y, middle_z), _max_depth, _leaf_max_obj_count);
+			_children[3] = new OctreeNode(Point(middle_x, middle_y, _min.z), Point(_max.x, _max.y, middle_z), _max_depth, _leaf_max_obj_count);
+			_children[4] = new OctreeNode(_min + Point(0, 0, middle_z), Point(middle_x, middle_y, _max.z), _max_depth, _leaf_max_obj_count);
+			_children[5] = new OctreeNode(Point(middle_x, _min.y, middle_z), Point(_max.x, middle_y, _max.z), _max_depth, _leaf_max_obj_count);
+			_children[6] = new OctreeNode(_min + Point(0, middle_y, middle_z), Point(middle_x, _max.y, _max.z), _max_depth, _leaf_max_obj_count);
+			_children[7] = new OctreeNode(Point(middle_x, middle_y, middle_z), Point(_max.x, _max.y, _max.z), _max_depth, _leaf_max_obj_count);
 		}
 
-		void insert(Triangle* triangle, int current_depth, int max_depth)
+		void insert(Triangle* triangle, int current_depth)
 		{
-			bool depth_exceeded = current_depth == max_depth;
+			bool depth_exceeded = current_depth == _max_depth;
 
 			if (_is_leaf || depth_exceeded)
 			{
 				_triangles.push_back(triangle);
 
-				if (_triangles.size() > BVH_LEAF_TRIANGLE_MAX_COUNT && !depth_exceeded)
+				if (_triangles.size() > _leaf_max_obj_count && !depth_exceeded)
 				{
 					_is_leaf = false;//This node isn't a leaf anymore
 
 					create_children();
 
 					for (Triangle* triangle : _triangles)
-						insert_to_children(triangle, current_depth, max_depth);
+						insert_to_children(triangle, current_depth);
 
 					_triangles.clear();
 					_triangles.shrink_to_fit();
 				}
 			}
 			else
-				insert_to_children(triangle, current_depth, max_depth);
+				insert_to_children(triangle, current_depth);
 
 		}
 
-		void insert_to_children(Triangle* triangle, int current_depth, int max_depth)
+		void insert_to_children(Triangle* triangle, int current_depth)
 		{
 			Point bbox_centroid = triangle->bbox_centroid();
 
@@ -175,7 +176,7 @@ public:
 			if (bbox_centroid.y > middle_y) octant_index += 2;
 			if (bbox_centroid.z > middle_z) octant_index += 4;
 
-			_children[octant_index]->insert(triangle, current_depth + 1, max_depth);
+			_children[octant_index]->insert(triangle, current_depth + 1);
 		}
 
 		bool intersect(const Ray& ray, HitInfo& hit_info, float& t_near) const
@@ -243,6 +244,8 @@ public:
 		//this boolean will be set to false
 		bool _is_leaf = true;
 
+		int _leaf_max_obj_count, _max_depth;
+
 		std::vector<Triangle*> _triangles;
 		BVH::OctreeNode* _children[8];
 
@@ -253,12 +256,12 @@ public:
 public:
 	//TODO changer le constructeur pour ne pas se manger la copie du std::vector en entier à chaque fois et c'est partout dans le code comme ça apparemment (constructeur de Scene aussi par exemple)
 	//TODO tester la best max_depth
-	BVH(const std::vector<Triangle> triangles, int max_depth = BVH_MAX_DEPTH);
+	BVH(const std::vector<Triangle> triangles, int max_depth = 10, int leaf_max_obj_count = 8);
 
 	bool intersect(const Ray& ray, HitInfo& hit_info) const;
 
 private:
-	void build_bvh(Point mini, Point maxi, const BoundingVolume& volume);
+	void build_bvh(int max_depth, int leaf_max_obj_count, Point min, Point max, const BoundingVolume& volume);
 
 public:
 	int _max_depth;

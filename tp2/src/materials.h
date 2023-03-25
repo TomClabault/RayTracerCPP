@@ -16,7 +16,7 @@ struct Material
 {
     static constexpr float SPECULAR_THRESHOLD_EPSILON = 1.0e-3;
 
-    float ambient_coeff;        //!< How much of the ambient light is reflected by the object.
+    Color ambient_coeff;        //!< How much of the ambient light is reflected by the object for each channel RGB.
     Color diffuse;              //!< couleur diffuse / de base.
     Color specular;             //!< couleur du reflet.
     Color emission;             //!< pour une source de lumiere.
@@ -31,9 +31,9 @@ struct Material
     int ns_texture;        //!< indice de la texture, ou -1.
     
     //! constructeur par defaut. noir.
-    Material( ) : diffuse(), specular(), emission(), ns(0), ni(0), transmission(), diffuse_texture(-1), specular_texture(-1), ns_texture(-1) {}
+    Material( ) : ambient_coeff(Color(1.0, 1.0, 1.0)), diffuse(), specular(), emission(), ns(0), ni(0), transmission(), diffuse_texture(-1), specular_texture(-1), ns_texture(-1) {}
     //! matiere diffuse.
-    Material( const Color& color ) : diffuse(color), specular(), emission(), ns(0), ni(0), transmission(), diffuse_texture(-1), specular_texture(-1), ns_texture(-1) {}
+    Material( const Color& color ) : ambient_coeff(Color(1.0, 1.0, 1.0)), diffuse(color), specular(), emission(), ns(0), ni(0), transmission(), diffuse_texture(-1), specular_texture(-1), ns_texture(-1) {}
 };
 
 

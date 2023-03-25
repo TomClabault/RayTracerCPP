@@ -15,47 +15,81 @@ Material Renderer::DEFAULT_MATERIAL = init_default_material();
 Color Renderer::AMBIENT_COLOR = Color(0.1f, 0.1f, 0.1f);
 Color Renderer::BACKGROUND_COLOR = Color(0.0, 0.0, 0.0);
 
-Renderer::Renderer(int width, int height, Scene scene) : _width(width), _height(height),
-	_image(Image(width, height)), _scene(scene) 
+RenderSettings init_ray_trace_settings()
 {
-#if HYBRID_RASTERIZATION_TRACING
-	_z_buffer = new float*[height];
-	if (_z_buffer == nullptr)
-	{
-		std::cout << "Not enough memory to allocate the ZBuffer of the ray tracer..." << std::endl;
-		std::exit(-1);
-	}
+	RenderSettings ray_trace_settings;
+	ray_trace_settings.hybrid_rasterization_tracing = false;
 
-	for (int i = 0; i < height; i++)
+	return ray_trace_settings;
+}
+
+const RenderSettings RenderSettings::DEFAULT_SETTINGS = RenderSettings();
+const RenderSettings RenderSettings::RAYTRACE_SETTINGS = init_ray_trace_settings();
+
+std::ostream& operator << (std::ostream& os, const RenderSettings& settings)
+{
+	os << "RENDER SETTINGS OSTREAM";
+	return os;
+}
+
+Renderer::Renderer(Scene scene, std::vector<Triangle>& triangles, RenderSettings render_settings) : _triangles(triangles), 
+	_bvh(BVH(triangles, render_settings.bvh_max_depth)), _render_settings(render_settings), _scene(scene)
+{
+	//Accounting for the SSAA scaling
+	render_settings.image_width += (render_settings.enable_ssaa * (render_settings.ssaa_factor - 1) * render_settings.image_width);
+	render_settings.image_height += (render_settings.enable_ssaa * (render_settings.ssaa_factor - 1) * render_settings.image_height);
+
+	//Initializing the z-buffer if we're using the rasterization approach
+	if (render_settings.hybrid_rasterization_tracing)
 	{
-		_z_buffer[i] = new float[width];
-		if (_z_buffer[i] == nullptr)
+		_z_buffer = new float* [render_settings.image_height];
+		if (_z_buffer == nullptr)
 		{
 			std::cout << "Not enough memory to allocate the ZBuffer of the ray tracer..." << std::endl;
 			std::exit(-1);
 		}
 
-		for (int j = 0; j < width; j++)
-			_z_buffer[i][j] = -INFINITY;
+		for (int i = 0; i < render_settings.image_height; i++)
+		{
+			_z_buffer[i] = new float[render_settings.image_width];
+			if (_z_buffer[i] == nullptr)
+			{
+				std::cout << "Not enough memory to allocate the ZBuffer of the ray tracer..." << std::endl;
+				std::exit(-1);
+			}
+
+			for (int j = 0; j < render_settings.image_width; j++)
+				_z_buffer[i][j] = -INFINITY;
+		}
+
+		_scene._camera.init_perspec_proj_mat((float)render_settings.image_width / render_settings.image_height);//Perspective projection matrix from camera space to NDC space
 	}
 
-	_scene._camera.init_perspec_proj_mat((float)_width / _height);//Perspective projection matrix from camera space to NDC space
-#endif
+	_width = render_settings.image_width;
+	_height = render_settings.image_height;
+
+	_image = Image(_width, _height);
 }
 
 Renderer::~Renderer()
 {
-#if HYBRID_RASTERIZATION_TRACING
-	for (int i = 0; i < _height; i++)
-		delete[] _z_buffer[i];
+	if (_render_settings.hybrid_rasterization_tracing)
+	{
+		for (int i = 0; i < _height; i++)
+			delete[] _z_buffer[i];
 
-	delete[] _z_buffer;
-#endif
+		delete[] _z_buffer;
+	}
 }
 
 Image* Renderer::getImage()
 {
 	return &_image;
+}
+
+RenderSettings& Renderer::render_settings()
+{
+	return _render_settings;
 }
 
 Color Renderer::computeDiffuse(const Material& hitMaterial, const Vector& normal, const Vector& direction_to_light) const
@@ -78,38 +112,42 @@ Color Renderer::computeSpecular(const Material& hit_material, const Vector& ray_
 
 bool Renderer::is_shadowed(const Point& inter_point, const Point& light_position) const
 {
-#if SHADOWS
-	Ray ray(inter_point, light_position - inter_point);
-	HitInfo hitInfo;
-
-#if ENABLE_BVH
-		if (_scene._bvh.intersect(ray, hitInfo))
-		{
-			Point new_inter_point = ray._origin + ray._direction * hitInfo.t;
-
-			//If we found an object that is between the light and the current inter_point: the point is shadowed
-			if (distance(Point(inter_point), Point(new_inter_point)) < distance(Point(inter_point), Point(light_position)))
-				return true;
-		}
-#else
-	for (const Triangle& triangle : _scene._bvh._triangles)
+	if (_render_settings.compute_shadows)
 	{
-		if (triangle.intersect(ray, hitInfo))
+		Ray ray(inter_point, light_position - inter_point);
+		HitInfo hitInfo;
+
+		if (_render_settings.enable_bvh)
 		{
-			Point new_inter_point = ray._origin + ray._direction * hitInfo.t;
-
-			if (distance(Point(inter_point), Point(new_inter_point)) < distance(Point(inter_point), Point(light_position)))
+			if (_bvh.intersect(ray, hitInfo))
 			{
-				//We found an object that is between the light and the current inter_point: the point is shadowed
+				Point new_inter_point = ray._origin + ray._direction * hitInfo.t;
 
-				return true;
+				//If we found an object that is between the light and the current inter_point: the point is shadowed
+				if (distance(Point(inter_point), Point(new_inter_point)) < distance(Point(inter_point), Point(light_position)))
+					return true;
 			}
 		}
-	}
-#endif
+		else
+		{
+			for (const Triangle& triangle : _triangles)
+			{
+				if (triangle.intersect(ray, hitInfo))
+				{
+					Point new_inter_point = ray._origin + ray._direction * hitInfo.t;
 
-	//We haven't found any object between the light source and the intersection point, the point isn't shadowed
-#endif
+					if (distance(Point(inter_point), Point(new_inter_point)) < distance(Point(inter_point), Point(light_position)))
+					{
+						//We found an object that is between the light and the current inter_point: the point is shadowed
+
+						return true;
+					}
+				}
+			}
+		}
+
+
+	}	//We haven't found any object between the light source and the intersection point, the point isn't shadowed
 
 	return false;
 }
@@ -121,54 +159,49 @@ Color Renderer::trace_triangle(const Ray& ray, const Triangle& triangle) const
 
 	if (triangle.intersect(ray, hit_info))
 	{
-#if SHADING
-		Point inter_point = ray._origin + ray._direction * (hit_info.t + Renderer::EPSILON);
-		Vector direction_to_light = normalize(_scene._point_light._position - inter_point);
-		Vector normal = normalize(hit_info.normal_at_intersection);
+		if (_render_settings.use_shading)
+		{
+			Point inter_point = ray._origin + ray._direction * (hit_info.t + Renderer::EPSILON);
+			Vector direction_to_light = normalize(_scene._point_light._position - inter_point);
+			Vector normal = normalize(hit_info.normal_at_intersection);
 
-		Material hit_material;
-		if (hit_info.mat_index == -1)
-			hit_material = Renderer::DEFAULT_MATERIAL;
+			Material hit_material;
+			if (hit_info.mat_index == -1)
+				hit_material = Renderer::DEFAULT_MATERIAL;
+			else
+				hit_material = _scene._materials(hit_info.mat_index);
+
+			finalColor = finalColor + computeDiffuse(hit_material, normal, direction_to_light);
+			finalColor = finalColor + computeSpecular(hit_material, ray._direction, normal, direction_to_light);
+			if (is_shadowed(inter_point, _scene._point_light._position))
+				finalColor = finalColor * Color(Renderer::SHADOW_INTENSITY);
+			finalColor = finalColor + hit_material.emission;
+
+			finalColor = finalColor + Renderer::AMBIENT_COLOR * hit_material.ambient_coeff;
+		}
 		else
-			hit_material = _scene._materials(hit_info.mat_index);
+		{
+			if (_render_settings.color_normal_or_barycentric)
+			{
+				//Color triangles with normal
+				Vector normalized_normal = normalize(hit_info.normal_at_intersection);
+				finalColor = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
+			}
+			else
+			{
+				//Color triangles with barycentric coordinates
+				float u = hit_info.u;
+				float v = hit_info.v;
 
-		finalColor = finalColor + computeDiffuse(hit_material, normal, direction_to_light);
-		finalColor = finalColor + computeSpecular(hit_material, ray._direction, normal, direction_to_light);
-		if (is_shadowed(inter_point, _scene._point_light._position))
-			finalColor = finalColor * Color(Renderer::SHADOW_INTENSITY);
-		finalColor = finalColor + hit_material.emission;
-
-		finalColor = finalColor + Renderer::AMBIENT_COLOR * hit_material.ambient_coeff;
-#else
-#if COLOR_NORMAL_OR_BARYCENTRIC //Color triangles with normal
-		Vector normalized_normal = normalize(hit_info.normal_at_intersection);
-		finalColor = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
-#else //Color triangles with barycentric coordinates
-		float u = hit_info.u;
-		float v = hit_info.v;
-
-		finalColor = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
-#endif
-#endif
+				finalColor = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
+			}
+		}
 	}
 
 	return finalColor;
 }
 
-/*
- * Clips triangles given in @to_clip against the plane defined by the given @plane_index and @plane_sign and
- * stores the result in @out_clipped
- * 
- * @param plane_index 0/1/2 for clipping against the x/y/z plane respectively
- * @param plane_sign 1 or -1 to clip against x or -x (for example)
- * @param to_clip triangles that needs to be clipped against the plane
- * @param nb_triangles how many triangles are there to clip in the @to_clip array starting
- * from index 0
- * @param out_clipped clipped triangles
- * 
- * @return Returns the number of triangles after the clipping process
- */
-int clip_triangles_to_plane(int plane_index, int plane_sign, std::array<Triangle4, 12>& to_clip, int nb_triangles, std::array<Triangle4, 12>& out_clipped)
+int Renderer::clip_triangles_to_plane(int plane_index, int plane_sign, std::array<Triangle4, 12>& to_clip, int nb_triangles, std::array<Triangle4, 12>& out_clipped) const
 {
 	const static float CLIPPING_EPSILON = 1.0e-5f;
 
@@ -269,40 +302,45 @@ int clip_triangles_to_plane(int plane_index, int plane_sign, std::array<Triangle
 	return triangles_added;
 }
 
-int clip_triangle(const Triangle4& to_clip_triangle, std::array<Triangle4, 12>& clipped_triangles)
+int Renderer::clip_triangle(const Triangle4& to_clip_triangle, std::array<Triangle4, 12>& clipped_triangles) const
 {
 	int nb_triangles = 1;
 
-#if CLIPPING
-	//TODO profiler le clipping pour continuer sur ce que je faisais
-	//TODO opti ? pour ne pas redéclarer le tableau à chaque appel de la fonction 
-	std::array<Triangle4, 12> temp = {to_clip_triangle};
-	
-	nb_triangles = clip_triangles_to_plane(0, 1, temp, nb_triangles, clipped_triangles);//right plane
-	nb_triangles = clip_triangles_to_plane(0, -1, clipped_triangles, nb_triangles, temp);//left plane
-	nb_triangles = clip_triangles_to_plane(1, 1, temp, nb_triangles, clipped_triangles);//top plane
-	nb_triangles = clip_triangles_to_plane(1, -1, clipped_triangles, nb_triangles, temp);//bottom plane
-	nb_triangles = clip_triangles_to_plane(2, 1, temp, nb_triangles, clipped_triangles);//far plane
-	nb_triangles = clip_triangles_to_plane(2, -1, clipped_triangles, nb_triangles, temp);//near plane
+	if (_render_settings.enable_clipping)
+	{
+		//TODO profiler le clipping pour continuer sur ce que je faisais
+		//TODO opti ? pour ne pas redéclarer le tableau à chaque appel de la fonction 
+		std::array<Triangle4, 12> temp = { to_clip_triangle };
 
-	clipped_triangles = temp;
+		nb_triangles = clip_triangles_to_plane(0, 1, temp, nb_triangles, clipped_triangles);//right plane
+		nb_triangles = clip_triangles_to_plane(0, -1, clipped_triangles, nb_triangles, temp);//left plane
+		nb_triangles = clip_triangles_to_plane(1, 1, temp, nb_triangles, clipped_triangles);//top plane
+		nb_triangles = clip_triangles_to_plane(1, -1, clipped_triangles, nb_triangles, temp);//bottom plane
+		nb_triangles = clip_triangles_to_plane(2, 1, temp, nb_triangles, clipped_triangles);//far plane
+		nb_triangles = clip_triangles_to_plane(2, -1, clipped_triangles, nb_triangles, temp);//near plane
 
-#else
-	clipped_triangles[0] = to_clip_triangle;
-#endif
+		clipped_triangles = temp;
+	}
+	else
+		clipped_triangles[0] = to_clip_triangle;
 
 	return nb_triangles;
 }
 
-void Renderer::raster_trace()
+#include <omp.h>
+omp_lock_t g_mutex;
+
+void Renderer::raster_trace(const RenderSettings& render_settings)
 {
+	omp_init_lock(&g_mutex);
+
 	Transform perspective_projection = _scene._camera._perspective_proj_mat;
 	Transform perspective_projection_inv = _scene._camera._perspective_proj_mat_inv;
 
 #pragma omp parallel for schedule(dynamic)
-	for (int triangle_index = 0; triangle_index < _scene._bvh._triangles.size(); triangle_index++)
+	for (int triangle_index = 0; triangle_index < _triangles.size(); triangle_index++)
 	{
-		Triangle& triangle = _scene._bvh._triangles[triangle_index];
+		Triangle& triangle = _triangles[triangle_index];
 
 		vec4 a_image_plane4 = perspective_projection(vec4(triangle._a));
 		vec4 b_image_plane4 = perspective_projection(vec4(triangle._b));
@@ -372,26 +410,35 @@ void Renderer::raster_trace()
 					float zCameraSpace = (w * -clipped_triangle_NDC._a.z + u * -clipped_triangle_NDC._b.z + v * -clipped_triangle_NDC._c.z);
 					if (zCameraSpace > _z_buffer[py][px])
 					{
+						omp_set_lock(&g_mutex);
 						_z_buffer[py][px] = zCameraSpace;
+						omp_unset_lock(&g_mutex);
 
 						Color final_color;
-#if SHADING
-						final_color = trace_triangle(Ray(_scene._camera._position, normalize(perspective_projection_inv(pixel_point) - _scene._camera._position)), perspective_projection_inv(clipped_triangle_NDC));
-#elif COLOR_NORMAL_OR_BARYCENTRIC
-						Vector normalized_normal = normalize(cross(triangle._b - triangle._a, triangle._c - triangle._a));
-						final_color = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
-#else //Color triangles with barycentric coordinates
-						final_color = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
-#endif
+
+						if (_render_settings.use_shading)
+							final_color = trace_triangle(Ray(_scene._camera._position, normalize(perspective_projection_inv(pixel_point) - _scene._camera._position)), perspective_projection_inv(clipped_triangle_NDC));
+						else if (_render_settings.color_normal_or_barycentric)
+						{
+							Vector normalized_normal = normalize(cross(triangle._b - triangle._a, triangle._c - triangle._a));
+							final_color = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
+						}
+						else //Color triangles with barycentric coordinates
+							final_color = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
+
+						omp_set_lock(&g_mutex);
 						_image(px, py) = final_color;
+						omp_unset_lock(&g_mutex);
 					}
 				}
 			}
 		}
 	}
+
+	omp_destroy_lock(&g_mutex);
 }
 
-void Renderer::ray_trace()
+void Renderer::ray_trace(const RenderSettings& render_settings)
 {
 #pragma omp parallel for schedule(dynamic)
 	for (int py = 0; py < _height; py++)
@@ -411,51 +458,58 @@ void Renderer::ray_trace()
 
 			HitInfo finalHitInfo;
 			HitInfo hit_info;
-#if ENABLE_BVH
-			if (_scene._bvh.intersect(ray, hit_info))
-				if (hit_info.t < finalHitInfo.t || finalHitInfo.t == -1)
-						finalHitInfo = hit_info;
-#else
+
 			//TODO mettre un std::cout << dans le copy constructor des Triangle pour voir partout où le copy constructor est appelé
-			for (Triangle& triangle : _scene._bvh._triangles)
-				if (triangle.intersect(ray, hit_info))
+			if (_render_settings.enable_bvh)
+			{
+				if (_bvh.intersect(ray, hit_info))
 					if (hit_info.t < finalHitInfo.t || finalHitInfo.t == -1)
 						finalHitInfo = hit_info;
-#endif
+			}
+			else
+				for (Triangle& triangle : _triangles)
+					if (triangle.intersect(ray, hit_info))
+						if (hit_info.t < finalHitInfo.t || finalHitInfo.t == -1)
+							finalHitInfo = hit_info;
 
+			//TODO modifier le parseur d'OBJ pour ajouter le parsing de l'ambient
 			Color finalColor;
 
 			if (finalHitInfo.t > 0)//We found an intersection
 			{
-#if SHADING
-				Point inter_point = ray._origin + ray._direction * (finalHitInfo.t + Renderer::EPSILON);
-				Vector direction_to_light = normalize(_scene._point_light._position - inter_point);
-				Vector normal = normalize(finalHitInfo.normal_at_intersection);
+				//TODO factoriser ça dans une fonction parce que ce morcaeu de code où on teste (if shading) ... on le fait partout à plein d'endroit donc l'idée serait de faire une fonction qui fait tout ça pour nous
+				if (_render_settings.use_shading)
+				{
+					Point inter_point = ray._origin + ray._direction * (finalHitInfo.t + Renderer::EPSILON);
+					Vector direction_to_light = normalize(_scene._point_light._position - inter_point);
+					Vector normal = normalize(finalHitInfo.normal_at_intersection);
 
-				Material hit_material;
-				if (finalHitInfo.mat_index == -1)
-					hit_material = Renderer::DEFAULT_MATERIAL;
-				else
-					hit_material = _scene._materials(finalHitInfo.mat_index);
+					Material hit_material;
+					if (finalHitInfo.mat_index == -1)
+						hit_material = Renderer::DEFAULT_MATERIAL;
+					else
+						hit_material = _scene._materials(finalHitInfo.mat_index);
 
-				finalColor = finalColor + computeDiffuse(hit_material, normal, direction_to_light);
-				finalColor = finalColor + computeSpecular(hit_material, ray._direction, normal, direction_to_light);
-				finalColor = finalColor + hit_material.emission;
-				if (is_shadowed(inter_point, _scene._point_light._position))
-					finalColor = finalColor * Color(Renderer::SHADOW_INTENSITY);
+					finalColor = finalColor + computeDiffuse(hit_material, normal, direction_to_light);
+					finalColor = finalColor + computeSpecular(hit_material, ray._direction, normal, direction_to_light);
+					finalColor = finalColor + hit_material.emission;
+					if (is_shadowed(inter_point, _scene._point_light._position))
+						finalColor = finalColor * Color(Renderer::SHADOW_INTENSITY);
 
-				finalColor = finalColor + Renderer::AMBIENT_COLOR * hit_material.ambient_coeff;
-#else
-#if COLOR_NORMAL_OR_BARYCENTRIC //Color triangles with normal
-				Vector normalized_normal = normalize(finalHitInfo.normal_at_intersection);
-				finalColor = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
-#else //Color triangles with barycentric coordinates
-				float u = finalHitInfo.u;
-				float v = finalHitInfo.v;
+					finalColor = finalColor + Renderer::AMBIENT_COLOR * hit_material.ambient_coeff;
+				}
+				else if (_render_settings.color_normal_or_barycentric) //Color triangles with normal
+				{
+					Vector normalized_normal = normalize(finalHitInfo.normal_at_intersection);
+					finalColor = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
+				}
+				else //Color triangles with barycentric coordinates
+				{
+					float u = finalHitInfo.u;
+					float v = finalHitInfo.v;
 
-				finalColor = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
-#endif
-#endif
+					finalColor = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
+				}
 			}
 			else
 				finalColor = Renderer::BACKGROUND_COLOR;//Black since we didn't found any intersection

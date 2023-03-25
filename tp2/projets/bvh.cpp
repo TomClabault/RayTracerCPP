@@ -12,7 +12,7 @@ Vector BVH::BoundingVolume::PLANE_NORMALS[7] = {
 	Vector(std::sqrt(3) / 3, -std::sqrt(3) / 3, std::sqrt(3) / 3),
 };
 
-BVH::BVH(const std::vector<Triangle> triangles, int max_depth)  : _triangles(triangles), _max_depth(max_depth)
+BVH::BVH(const std::vector<Triangle> triangles, int max_depth, int leaf_max_obj_count) : _triangles(triangles)
 {
 	BoundingVolume volume;
 	Point minimum(INFINITY, INFINITY, INFINITY), maximum(-INFINITY, -INFINITY, -INFINITY);
@@ -30,15 +30,15 @@ BVH::BVH(const std::vector<Triangle> triangles, int max_depth)  : _triangles(tri
 
 	//TODO replace les std::array du code par des array C style simples
 	//We now have a bounding volume to work with
-	build_bvh(minimum, maximum, volume);
+	build_bvh(max_depth, leaf_max_obj_count, minimum, maximum, volume);
 }
 
-void BVH::build_bvh(Point mini, Point maxi, const BoundingVolume& volume)
+void BVH::build_bvh(int max_depth, int leaf_max_obj_count, Point min, Point max, const BoundingVolume& volume)
 {
-	_root = new OctreeNode(mini, maxi);
+	_root = new OctreeNode(min, max, max_depth, leaf_max_obj_count);
 
 	for (Triangle& triangle : _triangles)
-		_root->insert(&triangle, 0, _max_depth);
+		_root->insert(&triangle, 0);
 
 	_root->compute_volume();
 }

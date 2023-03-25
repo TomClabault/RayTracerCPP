@@ -8,13 +8,12 @@ float render(Renderer& renderer)
     Timer timer;
 
     timer.start();
-#if HYBRID_RASTERIZATION_TRACING
-    renderer.raster_trace();
-#else
-    renderer.ray_trace();
-#endif
+    if (renderer.render_settings().hybrid_rasterization_tracing)
+        renderer.raster_trace();
+    else
+        renderer.ray_trace();
     timer.stop();
-    std::cout << "Render time: " << timer.elapsed() << "ms\n";
+    std::cout << renderer.render_settings() << ": " << timer.elapsed() << "ms\n";
 
     return timer.elapsed();
 }
@@ -26,16 +25,13 @@ float writeImage(Renderer& renderer, const char* filepath)
     Image image_to_write;
     // enregistre l'image, de plusieurs manieres...
     timer.start();
-#if ENABLE_SSAA
-    downscale_image(*renderer.getImage(), image_to_write, SSAA_FACTOR);
-    timer.stop();
-    std::cout << "SSAA Downscaling time: " << timer.elapsed() << "ms\n";
-#else
-    image_to_write = *renderer.getImage();
-#endif
-
+    if (renderer.render_settings().enable_ssaa)
+        downscale_image(*renderer.getImage(), image_to_write, renderer.render_settings().ssaa_factor);
+    else
+        image_to_write = *renderer.getImage();
     write_image_png(image_to_write, filepath);
     timer.stop();
+
     std::cout << "Image writing time: " << timer.elapsed() << "ms\n";
     //write_image_bmp(*renderer.getImage(), "image.bmp");
     //write_image_hdr(*renderer.getImage(), "image.hdr");

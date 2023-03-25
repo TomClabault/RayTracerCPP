@@ -72,7 +72,7 @@ bool Triangle::intersect(const Ray& ray, HitInfo& hitInfo) const
         return false;
 
     //Now testing if the point is in the triangle
-    Vector inter_point = ray._origin + ray._direction * t;
+    Point inter_point = ray._origin + ray._direction * t;
     if (!barycentric_coordinates(inter_point, u, v))
         return false;//We have an intersection with the plane of the triangle but the point isn't in the triangle
 #endif

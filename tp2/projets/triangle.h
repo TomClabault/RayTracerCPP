@@ -2,9 +2,14 @@
 #define TRIANGLE_H
 
 #include "ray.h"
-#include "settings.h"
-
 #include "vec.h"
+
+//1 to use the Moller Trumbore ray-triangle intersection algorithm. 
+//0 to use the naive (barycentric coordinates) ray-triangle intersection algorithm
+#define MOLLER_TRUMBORE 1
+
+//Whether or not to render triangles that are facing away from the camera
+#define BACKFACE_CULLING 1
 
 struct HitInfo
 {
