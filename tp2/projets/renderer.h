@@ -24,7 +24,7 @@ public:
 	/*
 	 * Ray traces only one triangle and returns its color given a ray
 	 */
-	Color traceTriangle(const Ray& ray, const Triangle& triangle) const;
+	Color trace_triangle(const Ray& ray, const Triangle& triangle) const;
 
 	/*
 	 * Renders the image using an hybrid rasterization / ray-tracing approach

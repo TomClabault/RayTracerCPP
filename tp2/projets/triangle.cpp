@@ -25,7 +25,7 @@ bool Triangle::intersect(const Ray& ray, HitInfo& hitInfo) const
     //Common variables to both algorithms
     float t, u, v;
 
-    //TODO investigate muller trumbore black dot on very big 3d models
+    //TODO investigate muller trumbore black dots on very big 3d models
 #if MOLLER_TRUMBORE
     Vector ab = _b - _a;
     Vector ac = _c - _a;

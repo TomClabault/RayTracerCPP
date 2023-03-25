@@ -16,6 +16,7 @@ struct Material
 {
     static constexpr float SPECULAR_THRESHOLD_EPSILON = 1.0e-3;
 
+    float ambient_coeff;        //!< How much of the ambient light is reflected by the object.
     Color diffuse;              //!< couleur diffuse / de base.
     Color specular;             //!< couleur du reflet.
     Color emission;             //!< pour une source de lumiere.

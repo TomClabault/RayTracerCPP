@@ -114,7 +114,7 @@ bool Renderer::is_shadowed(const Point& inter_point, const Point& light_position
 	return false;
 }
 
-Color Renderer::traceTriangle(const Ray& ray, const Triangle& triangle) const
+Color Renderer::trace_triangle(const Ray& ray, const Triangle& triangle) const
 {
 	HitInfo hit_info;
 	Color finalColor = Color(0, 0, 0);
@@ -136,8 +136,9 @@ Color Renderer::traceTriangle(const Ray& ray, const Triangle& triangle) const
 		finalColor = finalColor + computeSpecular(hit_material, ray._direction, normal, direction_to_light);
 		if (is_shadowed(inter_point, _scene._point_light._position))
 			finalColor = finalColor * Color(Renderer::SHADOW_INTENSITY);
+		finalColor = finalColor + hit_material.emission;
 
-		finalColor = finalColor + Renderer::AMBIENT_COLOR;
+		finalColor = finalColor + Renderer::AMBIENT_COLOR * hit_material.ambient_coeff;
 #else
 #if COLOR_NORMAL_OR_BARYCENTRIC //Color triangles with normal
 		Vector normalized_normal = normalize(hit_info.normal_at_intersection);
@@ -154,7 +155,6 @@ Color Renderer::traceTriangle(const Ray& ray, const Triangle& triangle) const
 	return finalColor;
 }
 
-//TODO mettre cette fonction dans la classe triangle maybe ?
 /*
  * Clips triangles given in @to_clip against the plane defined by the given @plane_index and @plane_sign and
  * stores the result in @out_clipped
@@ -294,7 +294,6 @@ int clip_triangle(const Triangle4& to_clip_triangle, std::array<Triangle4, 12>& 
 	return nb_triangles;
 }
 
-//TODO utiliser les proper Point et Vector là où il faut plutôt que Vector partout
 void Renderer::raster_trace()
 {
 	Transform perspective_projection = _scene._camera._perspective_proj_mat;
@@ -335,7 +334,6 @@ void Renderer::raster_trace()
 			maxXPixels = std::min(_width - 1, maxXPixels);
 			maxYPixels = std::min(_height - 1, maxYPixels);
 
-			//TODO anti-aliasing
 			for (int py = minYPixels; py <= maxYPixels; py++)
 			{
 				float image_y = py / (float)_height * 2 - 1;
@@ -378,7 +376,7 @@ void Renderer::raster_trace()
 
 						Color final_color;
 #if SHADING
-						final_color = traceTriangle(Ray(_scene._camera._position, normalize(perspective_projection_inv(pixel_point) - _scene._camera._position)), perspective_projection_inv(clipped_triangle_NDC));
+						final_color = trace_triangle(Ray(_scene._camera._position, normalize(perspective_projection_inv(pixel_point) - _scene._camera._position)), perspective_projection_inv(clipped_triangle_NDC));
 #elif COLOR_NORMAL_OR_BARYCENTRIC
 						Vector normalized_normal = normalize(cross(triangle._b - triangle._a, triangle._c - triangle._a));
 						final_color = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
@@ -418,19 +416,11 @@ void Renderer::ray_trace()
 				if (hit_info.t < finalHitInfo.t || finalHitInfo.t == -1)
 						finalHitInfo = hit_info;
 #else
-			//838, 1358
 			//TODO mettre un std::cout << dans le copy constructor des Triangle pour voir partout où le copy constructor est appelé
-			int index = 0;//TODO remove
 			for (Triangle& triangle : _scene._bvh._triangles)
-			{
 				if (triangle.intersect(ray, hit_info))
-				{
-					//std::cout << index << "\n";
 					if (hit_info.t < finalHitInfo.t || finalHitInfo.t == -1)
 						finalHitInfo = hit_info;
-				}
-				index++;
-			}
 #endif
 
 			Color finalColor;
@@ -450,10 +440,11 @@ void Renderer::ray_trace()
 
 				finalColor = finalColor + computeDiffuse(hit_material, normal, direction_to_light);
 				finalColor = finalColor + computeSpecular(hit_material, ray._direction, normal, direction_to_light);
+				finalColor = finalColor + hit_material.emission;
 				if (is_shadowed(inter_point, _scene._point_light._position))
 					finalColor = finalColor * Color(Renderer::SHADOW_INTENSITY);
 
-				finalColor = finalColor + Renderer::AMBIENT_COLOR;
+				finalColor = finalColor + Renderer::AMBIENT_COLOR * hit_material.ambient_coeff;
 #else
 #if COLOR_NORMAL_OR_BARYCENTRIC //Color triangles with normal
 				Vector normalized_normal = normalize(finalHitInfo.normal_at_intersection);
