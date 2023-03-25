@@ -309,7 +309,7 @@ int Renderer::clip_triangle(const Triangle4& to_clip_triangle, std::array<Triang
 	if (_render_settings.enable_clipping)
 	{
 		//TODO profiler le clipping pour continuer sur ce que je faisais
-		//TODO opti ? pour ne pas redéclarer le tableau à chaque appel de la fonction 
+		//TODO opti ? pour ne pas redÃ©clarer le tableau Ã  chaque appel de la fonction 
 		std::array<Triangle4, 12> temp = { to_clip_triangle };
 
 		nb_triangles = clip_triangles_to_plane(0, 1, temp, nb_triangles, clipped_triangles);//right plane
@@ -459,7 +459,7 @@ void Renderer::ray_trace(const RenderSettings& render_settings)
 			HitInfo finalHitInfo;
 			HitInfo hit_info;
 
-			//TODO mettre un std::cout << dans le copy constructor des Triangle pour voir partout où le copy constructor est appelé
+			//TODO mettre un std::cout << dans le copy constructor des Triangle pour voir partout oÃ¹ le copy constructor est appelÃ©
 			if (_render_settings.enable_bvh)
 			{
 				if (_bvh.intersect(ray, hit_info))
@@ -477,7 +477,7 @@ void Renderer::ray_trace(const RenderSettings& render_settings)
 
 			if (finalHitInfo.t > 0)//We found an intersection
 			{
-				//TODO factoriser ça dans une fonction parce que ce morcaeu de code où on teste (if shading) ... on le fait partout à plein d'endroit donc l'idée serait de faire une fonction qui fait tout ça pour nous
+				//TODO factoriser Ã§a dans une fonction parce que ce morcaeu de code oÃ¹ on teste (if shading) ... on le fait partout Ã  plein d'endroit donc l'idÃ©e serait de faire une fonction qui fait tout Ã§a pour nous
 				if (_render_settings.use_shading)
 				{
 					Point inter_point = ray._origin + ray._direction * (finalHitInfo.t + Renderer::EPSILON);

@@ -254,7 +254,7 @@ public:
 	};
 
 public:
-	//TODO changer le constructeur pour ne pas se manger la copie du std::vector en entier à chaque fois et c'est partout dans le code comme ça apparemment (constructeur de Scene aussi par exemple)
+	//TODO changer le constructeur pour ne pas se manger la copie du std::vector en entier Ã  chaque fois et c'est partout dans le code comme Ã§a apparemment (constructeur de Scene aussi par exemple)
 	//TODO tester la best max_depth
 	BVH(const std::vector<Triangle> triangles, int max_depth = 10, int leaf_max_obj_count = 8);
 

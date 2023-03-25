@@ -24,7 +24,7 @@ int main()
     //RenderSettings render_settings = RenderSettings::RAYTRACE_SETTINGS;
     Renderer renderer(scene, triangles, render_settings);
 
-    //TODO faire une structure à passer au renderer render() pour garder toutes les settings du rendu. Comme ça on peut lancer plusieurs rendus d'affilée avec des settings différentes.
+    //TODO faire une structure Ã  passer au renderer render() pour garder toutes les settings du rendu. Comme Ã§a on peut lancer plusieurs rendus d'affilÃ©e avec des settings diffÃ©rentes.
     //for (int i = 0; i < 20; i++)
     totalTime += render(renderer);
     totalTime += writeImage(renderer, "image.png");
