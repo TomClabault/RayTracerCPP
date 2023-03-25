@@ -3,6 +3,8 @@
 #include "scene/scene.h"
 #include "timer.h"
 
+#include <omp.h>
+
 int main()
 {
     float totalTime = 0.0;
@@ -10,8 +12,6 @@ int main()
     Timer timer;
     MeshIOData meshData;
     std::vector<Triangle> triangles;
-
-
 
 
     

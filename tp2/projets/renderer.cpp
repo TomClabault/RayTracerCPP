@@ -363,9 +363,7 @@ int Renderer::clip_triangles_to_plane(std::array<Triangle4, 12>& to_clip, int nb
 		a_inside = is_a_inside<plane_index, plane_sign>(triangle_4);
 		b_inside = is_b_inside<plane_index, plane_sign>(triangle_4);
 		c_inside = is_c_inside<plane_index, plane_sign>(triangle_4);
-		//a_inside = (plane_sign == 1 && (triangle_4._a(plane_index) < triangle_4._a.w)) || (plane_sign == -1 && (triangle_4._a(plane_index) > -triangle_4._a.w));
-		//b_inside = (plane_sign == 1 && (triangle_4._b(plane_index) < triangle_4._b.w)) || (plane_sign == -1 && (triangle_4._b(plane_index) > -triangle_4._b.w));
-		//c_inside = (plane_sign == 1 && (triangle_4._c(plane_index) < triangle_4._c.w)) || (plane_sign == -1 && (triangle_4._c(plane_index) > -triangle_4._c.w));
+
 		sum_inside = a_inside + b_inside + c_inside;
 
 		if (sum_inside == 3)//All vertices inside, nothing to clip. Keeping the triangle as is
@@ -451,7 +449,7 @@ int Renderer::clip_triangles_to_plane(std::array<Triangle4, 12>& to_clip, int nb
 	return triangles_added;
 }
 
-int Renderer::clip_triangle(const Triangle4& to_clip_triangle, std::array<Triangle4, 12>& clipped_triangles) const
+int Renderer::clip_triangle(std::array<Triangle4, 12>& to_clip_triangles, std::array<Triangle4, 12>& clipped_triangles) const
 {
 	int nb_triangles = 1;
 
@@ -459,24 +457,17 @@ int Renderer::clip_triangle(const Triangle4& to_clip_triangle, std::array<Triang
 	{
 		//TODO profiler le clipping pour continuer sur ce que je faisais
 		//TODO opti ? pour ne pas redéclarer le tableau à chaque appel de la fonction 
-		std::array<Triangle4, 12> temp = { to_clip_triangle };
+		//std::array<Triangle4, 12> temp = { to_clip_triangle };
 
-		//nb_triangles = clip_triangles_to_plane(0, 1, temp, nb_triangles, temp);//right plane
-		//nb_triangles = clip_triangles_to_plane(0, -1, temp, nb_triangles, clipped_triangles);//left plane
-		//nb_triangles = clip_triangles_to_plane(1, 1, clipped_triangles, nb_triangles, temp);//top plane
-		//nb_triangles = clip_triangles_to_plane(1, -1, temp, nb_triangles, clipped_triangles);//bottom plane
-		//nb_triangles = clip_triangles_to_plane(2, 1, clipped_triangles, nb_triangles, temp);//far plane
-		//nb_triangles = clip_triangles_to_plane(2, -1, temp, nb_triangles, clipped_triangles);//near plane
-		 
-		nb_triangles = clip_triangles_to_plane<0, 1>(temp, nb_triangles, temp);//right plane
-		nb_triangles = clip_triangles_to_plane<0, -1>(temp, nb_triangles, clipped_triangles);//left plane
-		nb_triangles = clip_triangles_to_plane<1, 1>(clipped_triangles, nb_triangles, temp);//top plane
-		nb_triangles = clip_triangles_to_plane<1, -1>(temp, nb_triangles, clipped_triangles);//bottom plane
-		nb_triangles = clip_triangles_to_plane<2, 1>(clipped_triangles, nb_triangles, temp);//far plane
-		nb_triangles = clip_triangles_to_plane<2, -1>(temp, nb_triangles, clipped_triangles);//near plane
+		nb_triangles = clip_triangles_to_plane<0, 1>(to_clip_triangles, nb_triangles, to_clip_triangles);//right plane
+		nb_triangles = clip_triangles_to_plane<0, -1>(to_clip_triangles, nb_triangles, clipped_triangles);//left plane
+		nb_triangles = clip_triangles_to_plane<1, 1>(clipped_triangles, nb_triangles, to_clip_triangles);//top plane
+		nb_triangles = clip_triangles_to_plane<1, -1>(to_clip_triangles, nb_triangles, clipped_triangles);//bottom plane
+		nb_triangles = clip_triangles_to_plane<2, 1>(clipped_triangles, nb_triangles, to_clip_triangles);//far plane
+		nb_triangles = clip_triangles_to_plane<2, -1>(to_clip_triangles, nb_triangles, clipped_triangles);//near plane
 	}
 	else
-		clipped_triangles[0] = to_clip_triangle;
+		clipped_triangles[0] = to_clip_triangles[0];
 
 	return nb_triangles;
 }
@@ -490,7 +481,9 @@ void Renderer::raster_trace()
 	static const float render_width_scaling = 1.0f / _render_width * 2;
 
 	//TODO projection matrix sur la version ray tracée parce que c'est actuellement pas le cas
-//#pragma omp parallel for
+	std::array<Triangle4, 12> to_clip_triangles;
+	std::array<Triangle4, 12> clipped_triangles;
+//#pragma omp parallel for private(to_clip_triangles, clipped_triangles)
 	for (int triangle_index = 0; triangle_index < _triangles.size(); triangle_index++)
 	{
 		Triangle& triangle = _triangles[triangle_index];
@@ -499,8 +492,8 @@ void Renderer::raster_trace()
 		vec4 b_image_plane4 = perspective_projection(vec4(triangle._b));
 		vec4 c_image_plane4 = perspective_projection(vec4(triangle._c));
 
-		std::array<Triangle4, 12> clipped_triangles;
-		int nb_clipped = clip_triangle(Triangle4(a_image_plane4, b_image_plane4, c_image_plane4), clipped_triangles);
+		to_clip_triangles[0] = Triangle4(a_image_plane4, b_image_plane4, c_image_plane4);
+		int nb_clipped = clip_triangle(to_clip_triangles, clipped_triangles);
 
 		for (int clipped_triangle_index = 0; clipped_triangle_index < nb_clipped; clipped_triangle_index++)
 		{
@@ -510,6 +503,9 @@ void Renderer::raster_trace()
 			Point a_image_plane = clipped_triangle_NDC._a;
 			Point b_image_plane = clipped_triangle_NDC._b;
 			Point c_image_plane = clipped_triangle_NDC._c;
+
+			//We don't care about the z coordinate here
+			float invTriangleArea = 1 / ((b_image_plane.x - a_image_plane.x) * (c_image_plane.y - a_image_plane.y) - (b_image_plane.y - a_image_plane.y) * (c_image_plane.x - a_image_plane.x));
 
 			//Computing the bounding box of the triangle so that next, we only test pixels that are in the bounding box of the triangle
 			float boundingMinX = std::min(a_image_plane.x, std::min(b_image_plane.x, c_image_plane.x));
@@ -524,9 +520,6 @@ void Renderer::raster_trace()
 
 			maxXPixels = std::min(_render_width - 1, maxXPixels);
 			maxYPixels = std::min(_render_height - 1, maxYPixels);
-
-			//We don't care about the z coordinate here
-			float invTriangleArea = 1 / ((b_image_plane.x - a_image_plane.x) * (c_image_plane.y - a_image_plane.y) - (b_image_plane.y - a_image_plane.y) * (c_image_plane.x - a_image_plane.x));
 
 			for (int py = minYPixels; py <= maxYPixels; py++)
 			{

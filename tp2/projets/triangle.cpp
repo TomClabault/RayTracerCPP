@@ -150,11 +150,6 @@ bool Triangle::inside_outside_2D(const Point& point) const
     return true;
 }
 
-float Triangle::edge_function(const Point& point, const Point& a, const Point& b)
-{
-    return (b.x - a.x) * (point.y - a.y) - (b.y - a.y) * (point.x - a.x);
-}
-
 std::ostream& operator << (std::ostream& os, const Triangle& triangle)
 {
     os << "[" << triangle._a << ", " << triangle._b << ", " << triangle._c << "]";

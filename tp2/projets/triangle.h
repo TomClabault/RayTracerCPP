@@ -58,7 +58,10 @@ public:
      */
     bool inside_outside_2D(const Point& point) const;
 
-    static float edge_function(const Point& point, const Point& a, const Point& b);
+    static inline float Triangle::edge_function(const Point& point, const Point& a, const Point& b)
+    {
+        return (b.x - a.x) * (point.y - a.y) - (b.y - a.y) * (point.x - a.x);
+    }
 
     bool barycentric_coordinates(const Point& point, float& u, float& v) const;
 
