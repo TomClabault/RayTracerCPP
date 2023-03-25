@@ -2,6 +2,8 @@
 #define BVH_H
 
 #include <array>
+#include <cmath>
+#include <limits>
 #include <queue>
 
 #include "triangle.h"
@@ -14,8 +16,8 @@ public:
 	{
 		static Vector PLANE_NORMALS[7];
 
-		float _d_near[7] = { INFINITY, INFINITY, INFINITY, INFINITY, INFINITY, INFINITY, INFINITY };
-		float _d_far[7] = { -INFINITY, -INFINITY, -INFINITY, -INFINITY, -INFINITY, -INFINITY, -INFINITY };
+        float _d_near[7] = { INFINITY, INFINITY, INFINITY, INFINITY, INFINITY, INFINITY, INFINITY };
+        float _d_far[7] = { -INFINITY, -INFINITY, -INFINITY, -INFINITY, -INFINITY, -INFINITY, -INFINITY };
 
 		static void triangle_volume(const Triangle& triangle, float d_near[7], float d_far[7])
 		{
@@ -47,8 +49,8 @@ public:
 
 		void extend_volume(const Triangle& triangle)
 		{
-			float d_near[7] = { INFINITY, INFINITY, INFINITY, INFINITY, INFINITY, INFINITY, INFINITY };
-			float d_far[7] = { -INFINITY, -INFINITY, -INFINITY, -INFINITY, -INFINITY, -INFINITY, -INFINITY };
+            float d_near[7] = { INFINITY, INFINITY, INFINITY, INFINITY, INFINITY, INFINITY, INFINITY };
+            float d_far[7] = { -INFINITY, -INFINITY, -INFINITY, -INFINITY, -INFINITY, -INFINITY, -INFINITY };
 
 			triangle_volume(triangle, d_near, d_far);
 			extend_volume(d_near, d_far);
@@ -56,8 +58,8 @@ public:
 
 		bool intersect(const Ray& ray, float& t_near, float& t_far) const
 		{
-			t_near = -INFINITY;
-			t_far = INFINITY;
+            t_near = -INFINITY;
+            t_far = INFINITY;
 
 			for (int i = 0; i < 7; i++)
 			{
@@ -101,8 +103,8 @@ public:
 			//by the OctreeNode to compute the intersection with a ray
 		};
 
-		OctreeNode(Point min, Point max, int max_depth, int leaf_max_obj_count) : _min(min), _max(max), 
-			_max_depth(max_depth), _leaf_max_obj_count(leaf_max_obj_count) {}
+        OctreeNode(Point min, Point max, int max_depth, int leaf_max_obj_count) : _leaf_max_obj_count(leaf_max_obj_count),
+            _max_depth(max_depth), _min(min), _max(max) {}
 
  		 /*
 		  * Once the objects have been inserted in the hierarchy, this function computes
@@ -209,7 +211,7 @@ public:
 					intersection_queue.emplace(QueueElement(_children[i], inter_distance));
 			}
 
-			float closest_inter = INFINITY, inter_distance = INFINITY;
+            float closest_inter = INFINITY, inter_distance = INFINITY;
 			while (!intersection_queue.empty())
 			{
 				QueueElement top_element = intersection_queue.top();
@@ -230,7 +232,7 @@ public:
 				}
 			}
 
-			if (closest_inter == INFINITY)
+            if (closest_inter == INFINITY)
 				return false;
 			else
 			{

@@ -71,22 +71,22 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	message(GNU Compiler Detected)
+    message(GNU Compiler Detected)
 
     set(CMAKE_CXX_FLAGS "-Wall -Wextra -mavx2") #Flags always active
-	set(CMAKE_CXX_FLAGS_DEBUG "-g") #Flags when compiling in debug
-	set(CMAKE_CXX_FLAGS_RELEASE "-O3") #Flags when compiling in release
-	
-	target_compile_options(RayTracing_TP1 PRIVATE -fopenmp)
-	target_compile_options(RayTracing_TP1_Tests PRIVATE -fopenmp)
+    set(CMAKE_CXX_FLAGS_DEBUG "-g") #Flags when compiling in debug
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3") #Flags when compiling in release
 
-	if (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-		set(CMAKE_CXX_FLAGS_RELEASE "-O3 -g") #Flags when compiling in release
-	endif()
+    target_compile_options(RayTracing_TP1 PRIVATE -fopenmp)
+    target_compile_options(RayTracing_TP1_Tests PRIVATE -fopenmp)
+
+    if (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+            set(CMAKE_CXX_FLAGS_RELEASE "-O3 -g") #Flags when compiling in release
+    endif()
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-	if (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-		set(CMAKE_CXX_FLAGS_RELEASE "/g") #Flags when compiling in release
-	endif()
+    if (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+            set(CMAKE_CXX_FLAGS_RELEASE "/g") #Flags when compiling in release
+    endif()
 endif()
