@@ -46,6 +46,9 @@ std::ostream& operator << (std::ostream& os, const RenderSettings& settings)
 	os << "Render[" << (settings.hybrid_rasterization_tracing ? "Rast" : "RT") << ", " << settings.image_width << "x" << settings.image_height;
 	if (settings.enable_ssaa)
 		os << ", " << "SSAAx" << settings.ssaa_factor;
+	if (settings.enable_bvh)
+		os << ", " << "BVH[LObjC=" << settings.bvh_leaf_object_count << ", maxDepth=" << settings.bvh_max_depth;
+
 	os << "]";
 
 	return os;
@@ -524,17 +527,22 @@ void Renderer::raster_trace()
 			maxYPixels = std::min(_render_height - 1, maxYPixels);
 
 			float image_y = minYPixels * render_height_scaling - 1;
-			float image_y_increment = render_height_scaling;
 
-			float image_x = minXPixels * render_width_scaling - 1;
 			float image_x_increment = render_width_scaling;
+			float image_y_increment = render_height_scaling;
 			for (int py = minYPixels; py <= maxYPixels; py++, image_y += image_y_increment)
 			{
+				//float image_y = py * render_height_scaling - 1;
+
+				float image_x = minXPixels * render_width_scaling - 1;
 				for (int px = minXPixels; px <= maxXPixels; px++, image_x += image_x_increment)
 				{
-					//NOTE If there are still issues with the clipping algorithm creating new points just a little over the edge of the view frustum, consider using a simple std::max(0, ...)
+					//NOTE If there are still issues with the clipping algorithm creating new points 
+					//just a little over the edge of the view frustum, consider using a simple std::max(0, ...)
 					assert(px >= 0 && px < _render_width);
 					assert(py >= 0 && py < _render_height);
+
+					//float image_x = px * render_width_scaling - 1;
 
 					Point pixel_point(image_x, image_y, -1);
 
@@ -582,7 +590,7 @@ void Renderer::raster_trace()
 
 void Renderer::ray_trace()
 {
-#pragma omp parallel for schedule(dynamic)
+//#pragma omp parallel for schedule(dynamic)
 	for (int py = 0; py < _render_height; py++)
 	{
 		float y_world = (float)py / _render_height * 2 - 1;
@@ -614,7 +622,6 @@ void Renderer::ray_trace()
 						if (hit_info.t < finalHitInfo.t || finalHitInfo.t == -1)
 							finalHitInfo = hit_info;
 
-			//TODO modifier le parseur d'OBJ pour ajouter le parsing de l'ambient
 			Color finalColor;
 
 			if (finalHitInfo.t > 0)//We found an intersection
@@ -654,7 +661,7 @@ void Renderer::ray_trace()
 				}
 			}
 			else
-				finalColor = Renderer::BACKGROUND_COLOR;//Black since we didn't found any intersection
+				finalColor = Renderer::BACKGROUND_COLOR;//Background color since we didn't found any intersection
 
 			_image(px, py) = finalColor;
 		}

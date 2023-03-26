@@ -4,6 +4,8 @@
 
 #include "bvh.h"
 
+unsigned int maxChild = 0, minChild = 20000000, nb_visited = 0, total = 0;
+
 Vector BVH::BoundingVolume::PLANE_NORMALS[7] = {
 	Vector(1, 0, 0),
 	Vector(0, 1, 0),
@@ -30,7 +32,6 @@ BVH::BVH(const std::vector<Triangle> triangles, int max_depth, int leaf_max_obj_
 		}
 	}
 
-	//TODO replace les std::array du code par des array C style simples
 	//We now have a bounding volume to work with
 	build_bvh(max_depth, leaf_max_obj_count, minimum, maximum, volume);
 }
@@ -47,8 +48,6 @@ void BVH::build_bvh(int max_depth, int leaf_max_obj_count, Point min, Point max,
 
 bool BVH::intersect(const Ray& ray, HitInfo& hit_info) const
 {
-	float trash;
-	//TODO faire une fonction auxiliaire pour cache l'API avec t_near
-	return _root->intersect(ray, hit_info, trash);
+	return _root->intersect(ray, hit_info);
 }
 

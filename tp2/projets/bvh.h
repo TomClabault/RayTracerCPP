@@ -9,6 +9,8 @@
 #include "triangle.h"
 #include "ray.h"
 
+extern unsigned int minChild, maxChild, nb_visited, average, total;
+
 class BVH
 {
 public:
@@ -181,6 +183,13 @@ public:
 			_children[octant_index]->insert(triangle, current_depth + 1);
 		}
 
+		bool intersect(const Ray& ray, HitInfo& hit_info) const
+		{
+			float trash;
+
+			return intersect(ray, hit_info, trash);
+		}
+
 		bool intersect(const Ray& ray, HitInfo& hit_info, float& t_near) const
 		{
 			float t_far, trash;
@@ -190,6 +199,13 @@ public:
 
 			if (_is_leaf)
 			{
+				if (maxChild < _triangles.size())
+					maxChild = _triangles.size();
+				if (minChild > _triangles.size())
+					minChild = _triangles.size();
+				nb_visited++;
+				total += _triangles.size();
+
 				for (Triangle* triangle : _triangles)
 				{
 					HitInfo local_hit_info;

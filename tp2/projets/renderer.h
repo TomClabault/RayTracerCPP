@@ -49,7 +49,7 @@ struct RenderSettings
 	int bvh_max_depth = 13;
 	//Maximum number of objects per leaf of the BVH tree if the maximum recursion depth
 	//defined by bvh_max_depth hasn't been reached
-	int bvh_leaf_object_count = 8;
+	int bvh_leaf_object_count = 150;
 
 	friend std::ostream& operator << (std::ostream& os, const RenderSettings& settings);
 };
@@ -82,6 +82,8 @@ public:
 	 * Renders the image full ray tracing
 	 */
 	void ray_trace();
+	
+	BVH _bvh;
 
 private:
 	/*
@@ -130,7 +132,6 @@ private:
 	float** _z_buffer;
 
 	std::vector<Triangle>& _triangles;
-	BVH _bvh;
 	 
 	RenderSettings _render_settings;
 
