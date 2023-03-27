@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include "bvh.h"
+#include "timer.h"
 
 Vector BVH::BoundingVolume::PLANE_NORMALS[7] = {
 	Vector(1, 0, 0),
@@ -17,6 +18,9 @@ Vector BVH::BoundingVolume::PLANE_NORMALS[7] = {
 BVH::BVH() : _triangles(nullptr), _root(nullptr) {}
 BVH::BVH(std::vector<Triangle>* triangles, int max_depth, int leaf_max_obj_count) : _triangles(triangles)
 {
+	Timer timer;
+	timer.start();
+
 	BoundingVolume volume;
 	Point minimum(INFINITY, INFINITY, INFINITY), maximum(-INFINITY, -INFINITY, -INFINITY);
 
@@ -33,6 +37,9 @@ BVH::BVH(std::vector<Triangle>* triangles, int max_depth, int leaf_max_obj_count
 
 	//We now have a bounding volume to work with
 	build_bvh(max_depth, leaf_max_obj_count, minimum, maximum, volume);
+
+	timer.stop();
+	std::cout << "BVH Construction Time: " << timer.elapsed() << "ms\n";
 }
 
 BVH::~BVH()

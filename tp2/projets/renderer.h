@@ -82,8 +82,6 @@ public:
 	 * Renders the image full ray tracing
 	 */
 	void ray_trace();
-	
-	BVH _bvh;
 
 private:
 	/*
@@ -134,6 +132,8 @@ private:
 	std::vector<Triangle>& _triangles;
 	 
 	RenderSettings _render_settings;
+
+	BVH _bvh;
 
 	Image _image;
 	Scene _scene;

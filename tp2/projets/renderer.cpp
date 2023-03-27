@@ -146,7 +146,7 @@ bool Renderer::is_shadowed(const Point& inter_point, const Point& light_position
 				Point new_inter_point = ray._origin + ray._direction * hitInfo.t;
 
 				//If we found an object that is between the light and the current inter_point: the point is shadowed
-				if (distance(Point(inter_point), Point(new_inter_point)) < distance(Point(inter_point), Point(light_position)))
+				if (length2(Point(inter_point) - Point(new_inter_point)) < length2(Point(inter_point) - Point(light_position)))
 					return true;
 			}
 		}
@@ -158,7 +158,7 @@ bool Renderer::is_shadowed(const Point& inter_point, const Point& light_position
 				{
 					Point new_inter_point = ray._origin + ray._direction * hitInfo.t;
 
-					if (distance(Point(inter_point), Point(new_inter_point)) < distance(Point(inter_point), Point(light_position)))
+					if (length2(Point(inter_point) - Point(new_inter_point)) < length2(Point(inter_point) - Point(light_position)))
 					{
 						//We found an object that is between the light and the current inter_point: the point is shadowed
 
@@ -491,7 +491,7 @@ void Renderer::raster_trace()
 	//TODO projection matrix sur la version ray tracée parce que c'est actuellement pas le cas
 	std::array<Triangle4, 12> to_clip_triangles;
 	std::array<Triangle4, 12> clipped_triangles;
-//#pragma omp parallel for private(to_clip_triangles, clipped_triangles)
+#pragma omp parallel for schedule(dynamic) private(to_clip_triangles, clipped_triangles)
 	for (int triangle_index = 0; triangle_index < _triangles.size(); triangle_index++)
 	{
 		Triangle& triangle = _triangles[triangle_index];

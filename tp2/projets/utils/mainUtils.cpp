@@ -55,11 +55,11 @@ float loadOBJ(MeshIOData& meshData, std::vector<Triangle>& triangles)
     //meshData = read_meshio_data("data/robot.obj");
     //triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(0, -2, -4)));
 
-    meshData = read_meshio_data("data/burger_tom300.obj");
-    triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(0, -2, -6)));
+    //meshData = read_meshio_data("data/burger_tom300.obj");
+    //triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(0, -2, -6)));
 
-    //meshData = read_meshio_data("data/xyzrgb_dragon.obj");
-    //triangles = MeshIOUtils::create_triangles(meshData, Translation(0.25, 0, -3) * RotationY(22.5 + 180) * RotationX(90) * Scale(1.3, 1.3, 1.3));
+    meshData = read_meshio_data("data/xyzrgb_dragon.obj");
+    triangles = MeshIOUtils::create_triangles(meshData, Translation(0.25, 0, -3) * RotationY(22.5 + 180) * RotationX(90) * Scale(1.3, 1.3, 1.3));
 
     //meshData = read_meshio_data("data/stanford_bunny.obj");
     //triangles = MeshIOUtils::create_triangles(meshData, Translation(0, -2, -3) * RotationX(90));
