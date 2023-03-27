@@ -8,8 +8,8 @@
 class MeshIOUtils
 {
 public:
-    static std::vector<Triangle> create_triangles(MeshIOData meshData);
-	static std::vector<Triangle> create_triangles(MeshIOData meshData, Transform meshTransform);
+    static std::vector<Triangle> create_triangles(const MeshIOData& meshData);
+	static std::vector<Triangle> create_triangles(const MeshIOData& meshData, const Transform& meshTransform);
 };
 
 #endif

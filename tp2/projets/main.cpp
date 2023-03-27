@@ -37,11 +37,6 @@
 
 int main()
 {
-    //Benchmark::benchmark_bvh_parameters("data/xyzrgb_dragon.obj", Translation(0.25, 0, -3) * RotationY(22.5 + 180) * RotationX(90) * Scale(1.3, 1.3, 1.3), 8, 8, 12, 12, 10);
-    Benchmark::benchmark_bvh_parameters("data/robot.obj", Translation(Vector(0, -2, -4)), 10, 150, 8, 16, 20, 10);
-
-    return 0;
-
     float totalTime = 0.0;
 
     Timer timer;
@@ -60,13 +55,17 @@ int main()
     render_settings.use_shading = true;
     render_settings.hybrid_rasterization_tracing = false;
     render_settings.bvh_max_depth = 12;
-    Renderer renderer(scene, triangles, render_settings);
+    render_settings.enable_bvh = true;
+    for (int i = 0; i < 100; i++)
+    {
+        Renderer renderer(scene, triangles, render_settings);
 
-    getchar();
-    for (int i = 0; i < 50; i++)
-    totalTime += render(renderer);
+        //getchar();
+        //for (int i = 0; i < 50; i++)
+        totalTime += render(renderer);
     totalTime += writeImage(renderer, "image.png");
-
+    }
+    getchar();
 
 
     std::cout << "\nTotal time: " << totalTime << "ms\n";

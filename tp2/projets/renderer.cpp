@@ -55,8 +55,11 @@ std::ostream& operator << (std::ostream& os, const RenderSettings& settings)
 }
 
 Renderer::Renderer(Scene scene, std::vector<Triangle>& triangles, RenderSettings render_settings) : _triangles(triangles), 
-	_bvh(BVH(triangles, render_settings.bvh_max_depth)), _render_settings(render_settings), _scene(scene)
+	_render_settings(render_settings), _scene(scene)
 {
+	if (render_settings.enable_bvh)
+		_bvh = BVH(&triangles, render_settings.bvh_max_depth);
+
 	//Accounting for the SSAA scaling
 	_render_width = render_settings.enable_ssaa ? render_settings.image_width * render_settings.ssaa_factor : render_settings.image_width;
 	_render_height = render_settings.enable_ssaa ? render_settings.image_height * render_settings.ssaa_factor : render_settings.image_height;

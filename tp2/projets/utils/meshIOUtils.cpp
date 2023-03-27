@@ -1,7 +1,7 @@
 #include "meshIOUtils.h"
 #include "mesh_io.h"
 
-std::vector<Triangle> MeshIOUtils::create_triangles(MeshIOData meshData, Transform meshTransform)
+std::vector<Triangle> MeshIOUtils::create_triangles(const MeshIOData& meshData, const Transform& meshTransform)
 {
 	std::vector<Triangle> _triangles;
 	_triangles.reserve(meshData.indices.size() / 3);
@@ -22,7 +22,7 @@ std::vector<Triangle> MeshIOUtils::create_triangles(MeshIOData meshData, Transfo
 	return _triangles;
 }
 
-std::vector<Triangle> MeshIOUtils::create_triangles(MeshIOData meshData)
+std::vector<Triangle> MeshIOUtils::create_triangles(const MeshIOData& meshData)
 {
 	return MeshIOUtils::create_triangles(meshData, Identity());
 }

@@ -14,12 +14,13 @@ Vector BVH::BoundingVolume::PLANE_NORMALS[7] = {
 	Vector(std::sqrt(3) / 3, -std::sqrt(3) / 3, std::sqrt(3) / 3),
 };
 
-BVH::BVH(const std::vector<Triangle> triangles, int max_depth, int leaf_max_obj_count) : _triangles(triangles)
+BVH::BVH() : _triangles(nullptr), _root(nullptr) {}
+BVH::BVH(std::vector<Triangle>* triangles, int max_depth, int leaf_max_obj_count) : _triangles(triangles)
 {
 	BoundingVolume volume;
 	Point minimum(INFINITY, INFINITY, INFINITY), maximum(-INFINITY, -INFINITY, -INFINITY);
 
-	for (const Triangle& triangle : triangles)
+	for (const Triangle& triangle : *triangles)
 	{
 		volume.extend_volume(triangle);
 
@@ -34,12 +35,25 @@ BVH::BVH(const std::vector<Triangle> triangles, int max_depth, int leaf_max_obj_
 	build_bvh(max_depth, leaf_max_obj_count, minimum, maximum, volume);
 }
 
+BVH::~BVH()
+{
+	//delete _root;
+}
+
+void BVH::operator=(BVH&& bvh)
+{
+	_triangles = bvh._triangles;
+	_root = bvh._root;
+
+	bvh._root = nullptr;
+}
+
 void BVH::build_bvh(int max_depth, int leaf_max_obj_count, Point min, Point max, const BoundingVolume& volume)
 {
-	_root = new OctreeNode(min, max, max_depth, leaf_max_obj_count);
+	_root = new OctreeNode(min, max);
 
-	for (Triangle& triangle : _triangles)
-		_root->insert(&triangle, 0);
+	for (Triangle& triangle : *_triangles)
+		_root->insert(&triangle, 0, max_depth, leaf_max_obj_count);
 
 	_root->compute_volume();
 }
