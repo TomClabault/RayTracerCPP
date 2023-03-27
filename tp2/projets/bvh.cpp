@@ -37,7 +37,7 @@ BVH::BVH(std::vector<Triangle>* triangles, int max_depth, int leaf_max_obj_count
 
 BVH::~BVH()
 {
-	//delete _root;
+	delete _root;
 }
 
 void BVH::operator=(BVH&& bvh)

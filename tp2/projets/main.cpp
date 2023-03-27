@@ -56,15 +56,12 @@ int main()
     render_settings.hybrid_rasterization_tracing = false;
     render_settings.bvh_max_depth = 12;
     render_settings.enable_bvh = true;
-    for (int i = 0; i < 100; i++)
-    {
-        Renderer renderer(scene, triangles, render_settings);
+    Renderer renderer(scene, triangles, render_settings);
 
-        //getchar();
-        //for (int i = 0; i < 50; i++)
-        totalTime += render(renderer);
+    //getchar();
+    //for (int i = 0; i < 50; i++)
+    totalTime += render(renderer);
     totalTime += writeImage(renderer, "image.png");
-    }
     getchar();
 
 
