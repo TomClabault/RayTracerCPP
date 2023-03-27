@@ -4,8 +4,6 @@
 
 #include "bvh.h"
 
-unsigned int maxChild = 0, minChild = 20000000, nb_visited = 0, total = 0;
-
 Vector BVH::BoundingVolume::PLANE_NORMALS[7] = {
 	Vector(1, 0, 0),
 	Vector(0, 1, 0),

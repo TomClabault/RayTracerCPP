@@ -9,8 +9,6 @@
 #include "triangle.h"
 #include "ray.h"
 
-extern unsigned int minChild, maxChild, nb_visited, average, total;
-
 class BVH
 {
 public:
@@ -199,13 +197,6 @@ public:
 
 			if (_is_leaf)
 			{
-				if (maxChild < _triangles.size())
-					maxChild = _triangles.size();
-				if (minChild > _triangles.size())
-					minChild = _triangles.size();
-				nb_visited++;
-				total += _triangles.size();
-
 				for (Triangle* triangle : _triangles)
 				{
 					HitInfo local_hit_info;

@@ -11,8 +11,8 @@ struct RenderSettings
 	RenderSettings() {}
 	RenderSettings(int width, int height) : image_width(width), image_height(height) {}
 
-	static RenderSettings basic_settings(int width, int height, bool hybrid_raste_trace = true);
-	static RenderSettings ssaa_settings(int width, int height, int ssaa_factor, bool hybrid_raste_trace = true, bool compute_shadows = false);
+	static RenderSettings basic_settings(int width, int height, bool hybrid_raster_trace = true);
+	static RenderSettings ssaa_settings(int width, int height, int ssaa_factor, bool hybrid_raster_trace = true, bool compute_shadows = false);
 
 	int image_width = 1024;
 	int image_height = 1024;
@@ -49,7 +49,7 @@ struct RenderSettings
 	int bvh_max_depth = 13;
 	//Maximum number of objects per leaf of the BVH tree if the maximum recursion depth
 	//defined by bvh_max_depth hasn't been reached
-	int bvh_leaf_object_count = 150;
+	int bvh_leaf_object_count = 60;
 
 	friend std::ostream& operator << (std::ostream& os, const RenderSettings& settings);
 };

@@ -17,25 +17,25 @@ Material Renderer::DEFAULT_MATERIAL = init_default_material();
 Color Renderer::AMBIENT_COLOR = Color(0.1f, 0.1f, 0.1f);
 Color Renderer::BACKGROUND_COLOR = Color(0.0, 0.0, 0.0);
 
-RenderSettings RenderSettings::basic_settings(int width, int height, bool hybrid_raste_trace)
+RenderSettings RenderSettings::basic_settings(int width, int height, bool hybrid_raster_trace)
 {
 	RenderSettings settings;
 	settings.image_width = width;
 	settings.image_height = height;
-	settings.hybrid_rasterization_tracing = hybrid_raste_trace;
+	settings.hybrid_rasterization_tracing = hybrid_raster_trace;
 	settings.compute_shadows = false;
 
 	return settings;
 }
 
-RenderSettings RenderSettings::ssaa_settings(int width, int height, int ssaa_factor, bool hybrid_raste_trace, bool compute_shadows)
+RenderSettings RenderSettings::ssaa_settings(int width, int height, int ssaa_factor, bool hybrid_raster_trace, bool compute_shadows)
 {
 	RenderSettings settings;
 	settings.image_width = width;
 	settings.image_height = height;
 	settings.enable_ssaa = true;
 	settings.ssaa_factor = ssaa_factor;
-	settings.hybrid_rasterization_tracing = hybrid_raste_trace;
+	settings.hybrid_rasterization_tracing = hybrid_raster_trace;
 	settings.compute_shadows = compute_shadows;
 
 	return settings;
@@ -590,7 +590,7 @@ void Renderer::raster_trace()
 
 void Renderer::ray_trace()
 {
-//#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)
 	for (int py = 0; py < _render_height; py++)
 	{
 		float y_world = (float)py / _render_height * 2 - 1;
