@@ -9,7 +9,7 @@
 
 struct Camera
 {
-	Camera(Point position, float fov, float near, float far) : _position(position), _fovy(fov), _near(near), _far(far) {}
+	Camera(Point position, float fov, float near, float far) : _position(position), _fov(fov), _near(near), _far(far) {}
 	Camera(Point position, float fov) : Camera(position, fov, 1, 1000) {}
 	Camera(Point position) : Camera(position, 90, 1, 1000) {}
 
@@ -17,7 +17,8 @@ struct Camera
 
 	Point _position;
 
-	float _fovy;//Vertical fov
+	float _aspect_ratio;
+	float _fov;
 	float _near, _far;//Near and far clipping planes
 
 	Transform _perspective_proj_mat;//Perspective projection matrix from camera space to NDC space

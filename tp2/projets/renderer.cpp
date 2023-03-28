@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include "mat.h"
+#include "timer.h"
 
 Material init_default_material()
 {
@@ -15,7 +16,7 @@ Material init_default_material()
 
 Material Renderer::DEFAULT_MATERIAL = init_default_material();
 Color Renderer::AMBIENT_COLOR = Color(0.1f, 0.1f, 0.1f);
-Color Renderer::BACKGROUND_COLOR = Color(0.0, 0.0, 0.0);
+Color Renderer::BACKGROUND_COLOR = Color(72.0f / 255.0f, 181.0f / 255.0f, 224.0f / 255.0f);//Sky color
 
 RenderSettings RenderSettings::basic_settings(int width, int height, bool hybrid_raster_trace)
 {
@@ -64,8 +65,8 @@ Renderer::Renderer(Scene scene, std::vector<Triangle>& triangles, RenderSettings
 	_render_width = render_settings.enable_ssaa ? render_settings.image_width * render_settings.ssaa_factor : render_settings.image_width;
 	_render_height = render_settings.enable_ssaa ? render_settings.image_height * render_settings.ssaa_factor : render_settings.image_height;
 
-	//Initializing the z-buffer if we're using the rasterization approach
-	if (render_settings.hybrid_rasterization_tracing)
+	//Initializing the z-buffer if we're using the rasterization approach or post-processing that needs it
+	if (render_settings.hybrid_rasterization_tracing || render_settings.enable_ssao)
 	{
 		_z_buffer = new float* [_render_height];
 		if (_z_buffer == nullptr)
@@ -84,23 +85,54 @@ Renderer::Renderer(Scene scene, std::vector<Triangle>& triangles, RenderSettings
 			}
 
 			for (int j = 0; j < _render_width; j++)
-				_z_buffer[i][j] = -INFINITY;
+				_z_buffer[i][j] = INFINITY;
 		}
 
 		_scene._camera.init_perspec_proj_mat((float)_render_width / _render_height);//Perspective projection matrix from camera space to NDC space
 	}
 
+	if (render_settings.enable_ssao)
+	{
+		_normal_buffer = new Vector*[_render_height];
+		if (_normal_buffer == nullptr)
+		{
+			std::cout << "Not enough memory to allocate the Normal buffer of the ray tracer..." << std::endl;
+			std::exit(-1);
+		}
+
+		for (int i = 0; i < _render_height; i++)
+		{
+			_normal_buffer[i] = new Vector[_render_width];
+			if (_normal_buffer[i] == nullptr)
+			{
+				std::cout << "Not enough memory to allocate the Normal buffer of the ray tracer..." << std::endl;
+				std::exit(-1);
+			}
+		}
+	}
+
 	_image = Image(_render_width, _render_height);
+	for (int i = 0; i < _render_height; i++)
+		for (int j = 0; j < _render_width; j++)
+			_image(j, i) = Renderer::BACKGROUND_COLOR;
 }
 
 Renderer::~Renderer()
 {
-	if (_render_settings.hybrid_rasterization_tracing)
+	if (_render_settings.hybrid_rasterization_tracing || _render_settings.enable_ssao)
 	{
 		for (int i = 0; i < _render_height; i++)
 			delete[] _z_buffer[i];
 
 		delete[] _z_buffer;
+	}
+
+	if (_render_settings.enable_ssao)
+	{
+		for (int i = 0; i < _render_height; i++)
+			delete[] _normal_buffer[i];
+
+		delete[] _normal_buffer;
 	}
 }
 
@@ -223,6 +255,7 @@ Color Renderer::trace_triangle(const Ray& ray, const Triangle& triangle) const
 	return finalColor;
 }
 
+//TODO factoriser tout ça en seulement 6 fonctions en prenant directement le vertex qui va bien en paramètre plut$ot que le triangle en entier
 template<int plane_index, int plane_sign>
 inline bool is_a_inside(const Triangle4& triangle)
 {
@@ -565,11 +598,19 @@ void Renderer::raster_trace()
 					v *= invTriangleArea;
 					w *= invTriangleArea;
 
-					//Z coordinate of the point on the triangle by interpolating the z coordinates of the 3 vertices
-					float zCameraSpace = (w * -clipped_triangle_NDC._a.z + u * -clipped_triangle_NDC._b.z + v * -clipped_triangle_NDC._c.z);
-					if (zCameraSpace > _z_buffer[py][px])
+					//Z coordinate of the point on the "real 3D" (not the triangle projected on the image plane) triangle 
+					//by interpolating the z coordinates of the 3 vertices
+					//float zNDCSpace = (w * -clipped_triangle_NDC._a.z + u * -clipped_triangle_NDC._b.z + v * -clipped_triangle_NDC._c.z);
+					float zTriangle = -1 / (1 / triangle._a.z * w + 1 / triangle._b.z * u + 1 / triangle._c.z * v);
+					//if (py == _render_height - 221 && px == 1087)
+//						std::cout << "\ndepth: " << test << "\n";
+
+					if (zTriangle < _z_buffer[py][px])
 					{
-						_z_buffer[py][px] = zCameraSpace;
+						_z_buffer[py][px] = zTriangle;
+
+						if (_render_settings.enable_ssao)
+							_normal_buffer[py][px] = triangle._normal;
 
 						Color final_color;
 
@@ -591,9 +632,12 @@ void Renderer::raster_trace()
 	}
 }
 
+#define DEBUG_X 960
+#define DEBUG_Y 563
+
 void Renderer::ray_trace()
 {
-#pragma omp parallel for schedule(dynamic)
+//#pragma omp parallel for schedule(dynamic)
 	for (int py = 0; py < _render_height; py++)
 	{
 		float y_world = (float)py / _render_height * 2 - 1;
@@ -625,10 +669,17 @@ void Renderer::ray_trace()
 						if (hit_info.t < finalHitInfo.t || finalHitInfo.t == -1)
 							finalHitInfo = hit_info;
 
+
 			Color finalColor;
 
 			if (finalHitInfo.t > 0)//We found an intersection
 			{
+				//Updating the z_buffer for post-processing operations that need it
+				if (_render_settings.enable_ssao) {
+					_z_buffer[py][px] = -(ray._origin.z + ray._direction.z * finalHitInfo.t);
+					_normal_buffer[py][px] = finalHitInfo.normal_at_intersection;
+				}
+
 				//TODO factoriser ça dans une fonction parce que ce morcaeu de code où on teste (if shading) ... on le fait partout à plein d'endroit donc l'idée serait de faire une fonction qui fait tout ça pour nous
 				if (_render_settings.use_shading)
 				{
@@ -663,10 +714,177 @@ void Renderer::ray_trace()
 					finalColor = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
 				}
 			}
-			else
-				finalColor = Renderer::BACKGROUND_COLOR;//Background color since we didn't found any intersection
 
 			_image(px, py) = finalColor;
 		}
 	}
+}
+
+void Renderer::post_process()
+{
+	Timer timer;
+
+	if (_render_settings.enable_ssao)
+	{
+		timer.start();
+		post_process_ssao();
+		timer.stop();
+
+		std::cout << "SSAO Time: " << timer.elapsed() << "ms\n";
+	}
+}
+
+float get_rand_bilateral()
+{
+	return ((float)rand() / RAND_MAX) * 2 - 1;
+}
+
+float get_rand_lateral()
+{
+	return (float)rand() / RAND_MAX;
+}
+
+void Renderer::post_process_ssao()
+{
+	//srand(time(NULL));
+	srand(10);
+
+	short int* ao_buffer = new short int[_render_height * _render_width];
+	std::memset(ao_buffer, -1, sizeof(short int) * _render_height * _render_width);
+
+	Point* random_hemisphere_points = new Point[_render_settings.ssao_sample_count];
+	if (random_hemisphere_points == nullptr)
+	{
+		std::cout << "Not enough memory to allocate the random_sample_points buffer of the SSAO\n";
+
+		std::exit(-1);
+	}
+
+	for (int i = 0; i < _render_settings.ssao_sample_count; i++)
+	{
+		Vector random_hemisphere_point = normalize(Vector(get_rand_bilateral(), get_rand_bilateral(), get_rand_lateral()));
+		//Generating random points ON a hemisphere with normal the z-axis
+
+		//Getting the points back WITHIN the hemisphere
+		random_hemisphere_point = random_hemisphere_point * get_rand_lateral();
+
+		//Scaling the distribution of random point so that we get more points close 
+		//to the origin (center of the hemisphere) rather than away from it. This contributes
+		//to making the occlusion from far away points less impactful than from closer points
+		float scale = (float)i / _render_settings.ssao_sample_count;
+
+		//Linear interpolation between 0.1 and 1 according to the scale variable computed before
+		scale = (1 - scale) * 0.1f + scale * 1.0f;
+		random_hemisphere_point = random_hemisphere_point * scale;
+
+		random_hemisphere_points[i] = Point(normalize(random_hemisphere_point));
+	}
+
+	//Array of random rotations to rotate our random samples and effectively get more samples for "free"
+	Vector* random_rotates = new Vector[_render_settings.ssao_noise_size];
+	for (int i = 0; i < _render_settings.ssao_noise_size; i++)
+		//Rotate around the z-axis since our ssao samples are generated within an hemisphere oriented along the z-axis
+		random_rotates[i] = normalize(Vector(get_rand_bilateral(), get_rand_bilateral(), 0));
+
+	const int debug_x = 837;
+	const int debug_y = 384;
+#pragma omp parallel for
+	for (int y = 0; y < _render_height; y++)
+	//for (int y = _render_height - debug_y; y < _render_height; y++)
+	{
+		for (int x = 0; x < _render_width; x++)
+		//for (int x = debug_x; x < _render_width; x++)
+		{
+			//No information here, there's no pixel to shade: background at this pixel on the image
+			if (_z_buffer[y][x] == INFINITY)
+				continue;
+
+			//int linearized = (y * _render_width + x); TODO check perfs
+
+			float x_ndc = (float)x / _render_width * 2 - 1;
+			float y_ndc = (float)y / _render_height * 2 - 1;
+
+			float view_z = _z_buffer[y][x];
+			float view_ray_x = x_ndc * _scene._camera._aspect_ratio * std::tan(radians(_scene._camera._fov / 2));
+			float view_ray_y = y_ndc * std::tan(radians(_scene._camera._fov / 2));
+			Point camera_space_point = Point(view_ray_x * view_z, view_ray_y * view_z, -view_z);
+
+			Vector normal = normalize(_normal_buffer[y][x]);
+			//Reorienting our random samples around the normal 
+
+			Vector random_rotation = random_rotates[(y * _render_width + x) % _render_settings.ssao_noise_size];//TODO optimize modulus with logical AND if bottleneck
+
+			//Creating an R^3 base with 'normal' as the z axis.
+			//Gram Schmidt process
+			Vector x_base = normalize(random_rotation - normal * dot(random_rotation, normal));
+			vec3 y_base = cross(normal, x_base);
+			//Transformation matrix to move our random hemisphere points to the hemisphere around the 'normal'
+			//The random rotation is also included
+			Transform base_tranform = Transform(x_base, y_base, normal, Vector(0, 0, 0));
+
+			short int pixel_occlusion = 0;
+			for (int i = 0; i < _render_settings.ssao_sample_count; i++)
+			{
+				/*Point random_sample = base_tranform(random_hemisphere_points[i]);
+				random_sample = random_sample * _render_settings.ssao_radius + camera_space_point;*/
+
+				Point random_sample = Point(normalize(Vector(get_rand_bilateral(), get_rand_bilateral(), get_rand_bilateral())));
+				random_sample = random_sample * (get_rand_lateral() + 0.0001);
+				random_sample = random_sample * _render_settings.ssao_radius;
+				random_sample = random_sample + camera_space_point;
+				if (dot(random_sample - camera_space_point, normal) < 0)//The point is not in front of the normal
+					random_sample = -1 * random_sample;
+
+				Point random_sample_ndc = _scene._camera._perspective_proj_mat(random_sample);
+				int random_point_pixel_x = (int)((random_sample_ndc.x + 1) * 0.5 * _render_width);
+				int random_point_pixel_y = (int)((random_sample_ndc.y + 1) * 0.5 * _render_height);
+
+				random_point_pixel_x = std::min(std::max(0, random_point_pixel_x), _render_width - 1);
+				random_point_pixel_y = std::min(std::max(0, random_point_pixel_y), _render_height - 1);
+
+				float sample_geometry_depth = -_z_buffer[random_point_pixel_y][random_point_pixel_x];
+
+				if (random_sample.z < sample_geometry_depth)
+					pixel_occlusion++;
+			}
+
+			ao_buffer[y * _render_width + x] = pixel_occlusion;
+			float pixel_occlusion_float = pixel_occlusion * _render_settings.ssao_amount;
+			pixel_occlusion_float /= _render_settings.ssao_sample_count;
+
+			//_image(x, y) = _image(x, y) * (1 - pixel_occlusion_float);
+		}
+	}
+
+	//Blurring the AO
+	int blur_size = 5;
+	int half_blur_size = blur_size / 2;
+#pragma omp parallel for
+	for (int y = half_blur_size; y < _render_height - half_blur_size; y++)
+	{
+		for (int x = half_blur_size; x < _render_width - half_blur_size; x++)
+		{
+			if (ao_buffer[y * _render_width + x] == -1)
+				continue;
+
+			int total_sum = 0;
+			int nb_neighbors = 0;
+			for (int offset_y = -half_blur_size; offset_y <= half_blur_size; offset_y++)
+				for (int offset_x = -half_blur_size; offset_x <= half_blur_size; offset_x++)
+				{
+					if (ao_buffer[(y + offset_y) * _render_width + x + offset_x] == -1)
+						continue;
+
+					total_sum += ao_buffer[(y + offset_y) * _render_width + x + offset_x];
+					nb_neighbors++;
+				}
+
+			//Applying directly on the image
+			_image(x, y) = _image(x, y) * (1 - (float)total_sum / nb_neighbors / _render_settings.ssao_sample_count * _render_settings.ssao_amount);
+		}
+	}
+
+	delete[] ao_buffer;
+	delete[] random_hemisphere_points;
+	delete[] random_rotates;
 }

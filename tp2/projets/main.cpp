@@ -46,16 +46,17 @@ int main()
     loadOBJ(meshData, triangles);
     precompute_materials(meshData.materials);
 
-    Scene scene(Camera(Point(0, 0, 0), 90), meshData.materials, PointLight(Point(2, 0, 2)));
+    Scene scene(Camera(Point(0, 0, 0), 90), meshData.materials, PointLight(Point(3, 3, 2)));
 
     //RenderSettings render_settings = RenderSettings::ssaa_settings(3840, 2160, 4);
-    RenderSettings render_settings = RenderSettings::basic_settings(1920, 1080);
+    RenderSettings render_settings = RenderSettings::basic_settings(1920*2, 1080*2);
     render_settings.use_shading = true;
     render_settings.hybrid_rasterization_tracing = true;
-    render_settings.compute_shadows = true;
+    render_settings.compute_shadows = false;
     render_settings.bvh_max_depth = 12;
     render_settings.bvh_leaf_object_count = 8;
     render_settings.enable_bvh = true;
+    render_settings.enable_ssao = true;
     Renderer renderer(scene, triangles, render_settings);
 
     //getchar();

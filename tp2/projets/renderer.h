@@ -51,6 +51,18 @@ struct RenderSettings
 	//defined by bvh_max_depth hasn't been reached
 	int bvh_leaf_object_count = 60;
 
+	//Whether or not to enable post-processing-screen-space ambient occlusion
+	bool enable_ssao = true;
+	//Number of sample for the SSAO. The higher the sample count, the more precise
+	//and less noisy the SSAO but this also means higher computation times
+	int ssao_sample_count = 128;
+	//Number of samples used to randomly rotate the ssao samples
+	int ssao_noise_size = 16;
+	//Radius within which to look for occlusion
+	float ssao_radius = 0.1;
+	//Direct multiplier on the SSAO occlusion strength
+	float ssao_amount = 1.5;
+
 	friend std::ostream& operator << (std::ostream& os, const RenderSettings& settings);
 };
 
@@ -82,6 +94,16 @@ public:
 	 * Renders the image full ray tracing
 	 */
 	void ray_trace();
+
+	/*
+	 * Applies post-processing such as SSAO, FXAA, ...
+	 */
+	void post_process();
+
+	/*
+	 * Applies screen space ambient occlusion
+	 */
+	void post_process_ssao();
 
 private:
 	/*
@@ -128,6 +150,9 @@ private:
 	int _render_width, _render_height;
 
 	float** _z_buffer;
+	Vector** _normal_buffer;//2D-Array of pointer to Vector.
+	//The pointer to Vector trick allows us to store a normal for 8 bytes
+	//(64 bit pointer) instead of 12 (3*4 floats)
 
 	std::vector<Triangle>& _triangles;
 	 
