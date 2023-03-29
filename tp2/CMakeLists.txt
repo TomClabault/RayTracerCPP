@@ -2,8 +2,12 @@ cmake_minimum_required(VERSION 3.5)
 
 project(RayTracing_TP1 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
 #Defining the list of the header files
 file(GLOB INCLUDE_FILES_SRC ${PROJECT_SOURCE_DIR}/src/*.h)
@@ -11,11 +15,13 @@ file(GLOB INCLUDE_FILES_PROJETS ${PROJECT_SOURCE_DIR}/projets/*.h)
 file(GLOB INCLUDE_FILES_PROJETS_SIMD ${PROJECT_SOURCE_DIR}/projets/SIMD/*.h)
 file(GLOB INCLUDE_FILES_PROJETS_UTILS ${PROJECT_SOURCE_DIR}/projets/utils/*.h)
 file(GLOB INCLUDE_FILES_PROJETS_SCENE ${PROJECT_SOURCE_DIR}/projets/scene/*.h)
+file(GLOB INCLUDE_FILES_PROJETS_QT ${PROJECT_SOURCE_DIR}/projets/QT/*.h)
 list(APPEND INCLUDE_FILES ${INCLUDE_FILES_SRC})
 list(APPEND INCLUDE_FILES ${INCLUDE_FILES_PROJETS})
 list(APPEND INCLUDE_FILES ${INCLUDE_FILES_PROJETS_SIMD})
 list(APPEND INCLUDE_FILES ${INCLUDE_FILES_PROJETS_UTILS})
 list(APPEND INCLUDE_FILES ${INCLUDE_FILES_PROJETS_SCENE})
+list(APPEND INCLUDE_FILES ${INCLUDE_FILES_PROJETS_QT})
 
 #Defining the variables SRC_FILES and INCLUDE_FILES as the list of all recursively found cpp files and header files in the PROJECT_SOURCE_DIR
 file(GLOB SRC_FILES_SRC ${PROJECT_SOURCE_DIR}/src/*.cpp)
@@ -23,11 +29,15 @@ file(GLOB SRC_FILES_PROJETS ${PROJECT_SOURCE_DIR}/projets/*.cpp)
 file(GLOB SRC_FILES_PROJETS_SIMD ${PROJECT_SOURCE_DIR}/projets/SIMD/*.cpp)
 file(GLOB SRC_FILES_PROJETS_UTILS ${PROJECT_SOURCE_DIR}/projets/utils/*.cpp)
 file(GLOB SRC_FILES_PROJETS_SCENE ${PROJECT_SOURCE_DIR}/projets/scene/*.cpp)
+file(GLOB SRC_FILES_PROJETS_QT ${PROJECT_SOURCE_DIR}/projets/QT/*.cpp)
 list(APPEND SRC_FILES ${SRC_FILES_SRC})
 list(APPEND SRC_FILES ${SRC_FILES_PROJETS})
 list(APPEND SRC_FILES ${SRC_FILES_PROJETS_SIMD})
 list(APPEND SRC_FILES ${SRC_FILES_PROJETS_UTILS})
 list(APPEND SRC_FILES ${SRC_FILES_PROJETS_SCENE})
+list(APPEND SRC_FILES ${SRC_FILES_PROJETS_QT})
+
+file(GLOB UI_FILES_PROJETS_QT ${PROJECT_SOURCE_DIR}/projets/QT/*.ui)
 
 #Copying ${SRC_FILES} into ${SRC_FILES_TESTS}
 list(APPEND SRC_FILES_TESTS ${SRC_FILES})
@@ -35,7 +45,9 @@ list(APPEND SRC_FILES_TESTS ${SRC_FILES})
 list(REMOVE_ITEM SRC_FILES_TESTS ${PROJECT_SOURCE_DIR}/projets/main.cpp)
 list(REMOVE_ITEM SRC_FILES ${PROJECT_SOURCE_DIR}/projets/tests.cpp)
 list(APPEND SRC_FILES ${INCLUDE_FILES})
+list(APPEND SRC_FILES ${UI_FILES_PROJETS_QT})
 list(APPEND SRC_FILES_TESTS ${INCLUDE_FILES})
+list(APPEND SRC_FILES_TESTS ${UI_FILES_PROJETS_QT})
 
 
 
@@ -47,19 +59,29 @@ target_include_directories(RayTracing_TP1 PRIVATE projets/)
 target_include_directories(RayTracing_TP1 PRIVATE projets/SIMD/)
 target_include_directories(RayTracing_TP1 PRIVATE projets/utils/)
 target_include_directories(RayTracing_TP1 PRIVATE projets/scene/)
+target_include_directories(RayTracing_TP1 PRIVATE projets/QT/)
 
 target_include_directories(RayTracing_TP1_Tests PRIVATE src/)
 target_include_directories(RayTracing_TP1_Tests PRIVATE projets/)
 target_include_directories(RayTracing_TP1_Tests PRIVATE projets/SIMD/)
 target_include_directories(RayTracing_TP1_Tests PRIVATE projets/utils/)
 target_include_directories(RayTracing_TP1_Tests PRIVATE projets/scene/)
+target_include_directories(RayTracing_TP1_Tests PRIVATE projets/QT/)
 
 #Adding OpenMP to the projects
 find_package(OpenMP)
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(RayTracing_TP1_Tests PUBLIC OpenMP::OpenMP_CXX)
-    target_link_libraries(RayTracing_TP1 PUBLIC OpenMP::OpenMP_CXX)
+
+set (CMAKE_PREFIX_PATH "E:\\Programmes\\Qt\\6.3.2\\msvc2019_64")
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Gui OpenGL OpenGLWidgets)
+if (Qt6Widgets_FOUND)
+    if (Qt6Widgets_VERSION VERSION_LESS 6.3.0)
+        message(FATAL_ERROR "Minimum Qt version is 6.3.0")
+    endif()
 endif()
+qt_standard_project_setup()
+
+target_link_libraries(RayTracing_TP1_Tests PUBLIC OpenMP::OpenMP_CXX Qt6::Core Qt6::Widgets Qt6::Gui Qt6::OpenGL Qt6::OpenGLWidgets)
+target_link_libraries(RayTracing_TP1 PUBLIC OpenMP::OpenMP_CXX Qt6::Core Qt6::Widgets Qt6::Gui Qt6::OpenGL Qt6::OpenGLWidgets)
 
 #Copying the "data" folder into the binary directory so that the application has access to the data folder even when in the folders created by the QtCreator "compiler"
 file(COPY data DESTINATION ${PROJECT_BINARY_DIR})

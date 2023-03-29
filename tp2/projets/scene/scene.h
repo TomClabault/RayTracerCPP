@@ -11,14 +11,13 @@
 
 struct Scene
 {
+    Scene() {}
 	Scene(Camera camera, Materials materials, PointLight point_light)
-		: _camera(camera), _point_light(point_light), _materials(materials) {}
+        : _camera(camera), _point_light(point_light) {}
 
 	Camera _camera;
 
 	PointLight _point_light;
-
-	Materials _materials;//Materials of the triangles
 };
 
 #endif

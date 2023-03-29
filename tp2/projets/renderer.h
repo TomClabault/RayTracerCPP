@@ -8,7 +8,7 @@
 
 struct RenderSettings
 {
-	RenderSettings() {}
+    RenderSettings() {}
 	RenderSettings(int width, int height) : image_width(width), image_height(height) {}
 
 	static RenderSettings basic_settings(int width, int height, bool hybrid_raster_trace = true);
@@ -52,16 +52,16 @@ struct RenderSettings
 	int bvh_leaf_object_count = 60;
 
 	//Whether or not to enable post-processing-screen-space ambient occlusion
-	bool enable_ssao = true;
+    bool enable_ssao = true;
 	//Number of sample for the SSAO. The higher the sample count, the more precise
 	//and less noisy the SSAO but this also means higher computation times
-	int ssao_sample_count = 128;
+	int ssao_sample_count = 128;//128
 	//Number of samples used to randomly rotate the ssao samples
 	int ssao_noise_size = 16;
 	//Radius within which to look for occlusion
-	float ssao_radius = 0.1;
+	float ssao_radius = 1;
 	//Direct multiplier on the SSAO occlusion strength
-	float ssao_amount = 1.5;
+	float ssao_amount = 3;//1.5
 
 	friend std::ostream& operator << (std::ostream& os, const RenderSettings& settings);
 };
@@ -75,11 +75,26 @@ public:
 	static Color AMBIENT_COLOR;
 	static Color BACKGROUND_COLOR;
 
-	Renderer(Scene scene, std::vector<Triangle>& triangles, RenderSettings render_settings);
+    Renderer(Scene scene, std::vector<Triangle> triangles, RenderSettings render_settings);
+    Renderer();
 	~Renderer();
 
 	Image* getImage();
+
 	RenderSettings& render_settings();
+
+    void set_triangles(std::vector<Triangle> triangles);//TODO ne pas faire de copie. mais move?
+
+    void set_materials(Materials materials);
+
+    /**
+     * @brief Used to change the render size of the renderer even after the renderer has been instantiated.
+     * When the renderer has been instantiated, you should always use this function to change the render size
+     * and not directly change the render_settings
+     * @param width The new width
+     * @param height The new height
+     */
+    void change_render_size(int width, int height);
 
 	/*
 	 * Ray traces only one triangle and returns its color given a ray
@@ -106,6 +121,11 @@ public:
 	void post_process_ssao();
 
 private:
+
+    void delete_buffers();
+
+    void init_buffers(int width, int height);
+
 	/*
 	 * @return Returns the diffuse color of the material given the intersection normal and the direction to the light source
 	 */
@@ -154,7 +174,8 @@ private:
 	//The pointer to Vector trick allows us to store a normal for 8 bytes
 	//(64 bit pointer) instead of 12 (3*4 floats)
 
-	std::vector<Triangle>& _triangles;
+    std::vector<Triangle> _triangles;
+    Materials _materials;//Materials of the triangles
 	 
 	RenderSettings _render_settings;
 

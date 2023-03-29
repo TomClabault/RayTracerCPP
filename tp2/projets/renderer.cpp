@@ -16,7 +16,7 @@ Material init_default_material()
 
 Material Renderer::DEFAULT_MATERIAL = init_default_material();
 Color Renderer::AMBIENT_COLOR = Color(0.1f, 0.1f, 0.1f);
-Color Renderer::BACKGROUND_COLOR = Color(72.0f / 255.0f, 181.0f / 255.0f, 224.0f / 255.0f);//Sky color
+Color Renderer::BACKGROUND_COLOR = Color(135.0f / 255.0f, 206.0f / 255.0f, 235.0f / 255.0f);//Sky color
 
 RenderSettings RenderSettings::basic_settings(int width, int height, bool hybrid_raster_trace)
 {
@@ -55,85 +55,20 @@ std::ostream& operator << (std::ostream& os, const RenderSettings& settings)
 	return os;
 }
 
-Renderer::Renderer(Scene scene, std::vector<Triangle>& triangles, RenderSettings render_settings) : _triangles(triangles), 
+Renderer::Renderer(Scene scene, std::vector<Triangle> triangles, RenderSettings render_settings) : _triangles(triangles),
 	_render_settings(render_settings), _scene(scene)
 {
 	if (render_settings.enable_bvh)
 		_bvh = BVH(&triangles, render_settings.bvh_max_depth);
 
-	//Accounting for the SSAA scaling
-	_render_width = render_settings.enable_ssaa ? render_settings.image_width * render_settings.ssaa_factor : render_settings.image_width;
-	_render_height = render_settings.enable_ssaa ? render_settings.image_height * render_settings.ssaa_factor : render_settings.image_height;
-
-	//Initializing the z-buffer if we're using the rasterization approach or post-processing that needs it
-	if (render_settings.hybrid_rasterization_tracing || render_settings.enable_ssao)
-	{
-		_z_buffer = new float* [_render_height];
-		if (_z_buffer == nullptr)
-		{
-			std::cout << "Not enough memory to allocate the ZBuffer of the ray tracer..." << std::endl;
-			std::exit(-1);
-		}
-
-		for (int i = 0; i < _render_height; i++)
-		{
-			_z_buffer[i] = new float[_render_width];
-			if (_z_buffer[i] == nullptr)
-			{
-				std::cout << "Not enough memory to allocate the ZBuffer of the ray tracer..." << std::endl;
-				std::exit(-1);
-			}
-
-			for (int j = 0; j < _render_width; j++)
-				_z_buffer[i][j] = INFINITY;
-		}
-
-		_scene._camera.init_perspec_proj_mat((float)_render_width / _render_height);//Perspective projection matrix from camera space to NDC space
-	}
-
-	if (render_settings.enable_ssao)
-	{
-		_normal_buffer = new Vector*[_render_height];
-		if (_normal_buffer == nullptr)
-		{
-			std::cout << "Not enough memory to allocate the Normal buffer of the ray tracer..." << std::endl;
-			std::exit(-1);
-		}
-
-		for (int i = 0; i < _render_height; i++)
-		{
-			_normal_buffer[i] = new Vector[_render_width];
-			if (_normal_buffer[i] == nullptr)
-			{
-				std::cout << "Not enough memory to allocate the Normal buffer of the ray tracer..." << std::endl;
-				std::exit(-1);
-			}
-		}
-	}
-
-	_image = Image(_render_width, _render_height);
-	for (int i = 0; i < _render_height; i++)
-		for (int j = 0; j < _render_width; j++)
-			_image(j, i) = Renderer::BACKGROUND_COLOR;
+    init_buffers(_render_settings.image_width, _render_settings.image_height);
 }
+
+Renderer::Renderer() : Renderer(Scene(), std::vector<Triangle>(), RenderSettings::basic_settings(1280, 720)) {}
 
 Renderer::~Renderer()
 {
-	if (_render_settings.hybrid_rasterization_tracing || _render_settings.enable_ssao)
-	{
-		for (int i = 0; i < _render_height; i++)
-			delete[] _z_buffer[i];
-
-		delete[] _z_buffer;
-	}
-
-	if (_render_settings.enable_ssao)
-	{
-		for (int i = 0; i < _render_height; i++)
-			delete[] _normal_buffer[i];
-
-		delete[] _normal_buffer;
-	}
+    delete_buffers();
 }
 
 Image* Renderer::getImage()
@@ -144,6 +79,83 @@ Image* Renderer::getImage()
 RenderSettings& Renderer::render_settings()
 {
 	return _render_settings;
+}
+
+void Renderer::delete_buffers()
+{
+    if (_render_settings.hybrid_rasterization_tracing || _render_settings.enable_ssao)
+    {
+        for (int i = 0; i < _render_height; i++)
+            delete[] _z_buffer[i];
+
+        delete[] _z_buffer;
+    }
+
+    if (_render_settings.enable_ssao)
+    {
+        for (int i = 0; i < _render_height; i++)
+            delete[] _normal_buffer[i];
+
+        delete[] _normal_buffer;
+    }
+}
+
+void Renderer::init_buffers(int width, int height)
+{
+    //Accounting for the SSAA scaling
+    _render_width = _render_settings.enable_ssaa ? width * _render_settings.ssaa_factor : width;
+    _render_height = _render_settings.enable_ssaa ? height * _render_settings.ssaa_factor : height;
+
+    //Initializing the z-buffer if we're using the rasterization approach or post-processing that needs it
+    if (_render_settings.hybrid_rasterization_tracing || _render_settings.enable_ssao)
+    {
+        _z_buffer = new float* [_render_height];
+        if (_z_buffer == nullptr)
+        {
+            std::cout << "Not enough memory to allocate the ZBuffer of the ray tracer..." << std::endl;
+            std::exit(-1);
+        }
+
+        for (int i = 0; i < _render_height; i++)
+        {
+            _z_buffer[i] = new float[_render_width];
+            if (_z_buffer[i] == nullptr)
+            {
+                std::cout << "Not enough memory to allocate the ZBuffer of the ray tracer..." << std::endl;
+                std::exit(-1);
+            }
+
+            for (int j = 0; j < _render_width; j++)
+                _z_buffer[i][j] = INFINITY;
+        }
+
+        _scene._camera.init_perspec_proj_mat((float)_render_width / _render_height);//Perspective projection matrix from camera space to NDC space
+    }
+
+    if (_render_settings.enable_ssao)
+    {
+        _normal_buffer = new Vector*[_render_height];
+        if (_normal_buffer == nullptr)
+        {
+            std::cout << "Not enough memory to allocate the Normal buffer of the ray tracer..." << std::endl;
+            std::exit(-1);
+        }
+
+        for (int i = 0; i < _render_height; i++)
+        {
+            _normal_buffer[i] = new Vector[_render_width];
+            if (_normal_buffer[i] == nullptr)
+            {
+                std::cout << "Not enough memory to allocate the Normal buffer of the ray tracer..." << std::endl;
+                std::exit(-1);
+            }
+        }
+    }
+
+    _image = Image(_render_width, _render_height);
+    for (int i = 0; i < _render_height; i++)
+        for (int j = 0; j < _render_width; j++)
+            _image(j, i) = Renderer::BACKGROUND_COLOR;
 }
 
 Color Renderer::computeDiffuse(const Material& hitMaterial, const Vector& normal, const Vector& direction_to_light) const
@@ -206,6 +218,28 @@ bool Renderer::is_shadowed(const Point& inter_point, const Point& light_position
 	return false;
 }
 
+void Renderer::set_triangles(std::vector<Triangle> triangles)
+{
+    _triangles = triangles;
+
+    if (_render_settings.enable_bvh)
+        _bvh = BVH(&_triangles, _render_settings.bvh_max_depth, _render_settings.bvh_leaf_object_count);
+}
+
+void Renderer::set_materials(Materials materials)
+{
+    _materials = materials;
+}
+
+void Renderer::change_render_size(int width, int height)
+{
+    _render_settings.image_width = width;
+    _render_settings.image_height = height;
+
+    delete_buffers();
+    init_buffers(width, height);
+}
+
 Color Renderer::trace_triangle(const Ray& ray, const Triangle& triangle) const
 {
 	HitInfo hit_info;
@@ -223,7 +257,7 @@ Color Renderer::trace_triangle(const Ray& ray, const Triangle& triangle) const
 			if (hit_info.mat_index == -1)
 				hit_material = Renderer::DEFAULT_MATERIAL;
 			else
-				hit_material = _scene._materials(hit_info.mat_index);
+                hit_material = _materials(hit_info.mat_index);
 
 			finalColor = finalColor + computeDiffuse(hit_material, normal, direction_to_light);
 			finalColor = finalColor + computeSpecular(hit_material, ray._direction, normal, direction_to_light);
@@ -524,7 +558,7 @@ void Renderer::raster_trace()
 	//TODO projection matrix sur la version ray tracée parce que c'est actuellement pas le cas
 	std::array<Triangle4, 12> to_clip_triangles;
 	std::array<Triangle4, 12> clipped_triangles;
-#pragma omp parallel for schedule(dynamic) private(to_clip_triangles, clipped_triangles)
+//#pragma omp parallel for schedule(dynamic) private(to_clip_triangles, clipped_triangles)
 	for (int triangle_index = 0; triangle_index < _triangles.size(); triangle_index++)
 	{
 		Triangle& triangle = _triangles[triangle_index];
@@ -605,16 +639,15 @@ void Renderer::raster_trace()
 					//if (py == _render_height - 221 && px == 1087)
 //						std::cout << "\ndepth: " << test << "\n";
 
-					if (zTriangle < _z_buffer[py][px])
+                    if (zTriangle < _z_buffer[py][px])
 					{
 						_z_buffer[py][px] = zTriangle;
 
-						if (_render_settings.enable_ssao)
-							_normal_buffer[py][px] = triangle._normal;
+                        if (_render_settings.enable_ssao)
+                            _normal_buffer[py][px] = triangle._normal;
 
-						Color final_color;
-
-						if (_render_settings.use_shading)
+                        Color final_color;
+                        if (_render_settings.use_shading)
 							final_color = trace_triangle(Ray(_scene._camera._position, normalize(perspective_projection_inv(pixel_point) - _scene._camera._position)), perspective_projection_inv(clipped_triangle_NDC));
 						else if (_render_settings.color_normal_or_barycentric)
 						{
@@ -622,18 +655,16 @@ void Renderer::raster_trace()
 							final_color = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
 						}
 						else //Color triangles with barycentric coordinates
-							final_color = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
-						
-						_image(px, py) = final_color;
-					}
+                            final_color = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
+
+                        _image(px, py) = final_color;
+                    }
+
 				}
 			}
 		}
 	}
 }
-
-#define DEBUG_X 960
-#define DEBUG_Y 563
 
 void Renderer::ray_trace()
 {
@@ -669,8 +700,7 @@ void Renderer::ray_trace()
 						if (hit_info.t < finalHitInfo.t || finalHitInfo.t == -1)
 							finalHitInfo = hit_info;
 
-
-			Color finalColor;
+            Color finalColor;
 
 			if (finalHitInfo.t > 0)//We found an intersection
 			{
@@ -691,7 +721,7 @@ void Renderer::ray_trace()
 					if (finalHitInfo.mat_index == -1)
 						hit_material = Renderer::DEFAULT_MATERIAL;
 					else
-						hit_material = _scene._materials(finalHitInfo.mat_index);
+                        hit_material = _materials(finalHitInfo.mat_index);
 
 					finalColor = finalColor + computeDiffuse(hit_material, normal, direction_to_light);
 					finalColor = finalColor + computeSpecular(hit_material, ray._direction, normal, direction_to_light);
@@ -746,7 +776,6 @@ float get_rand_lateral()
 
 void Renderer::post_process_ssao()
 {
-	//srand(time(NULL));
 	srand(10);
 
 	short int* ao_buffer = new short int[_render_height * _render_width];
@@ -786,8 +815,8 @@ void Renderer::post_process_ssao()
 		//Rotate around the z-axis since our ssao samples are generated within an hemisphere oriented along the z-axis
 		random_rotates[i] = normalize(Vector(get_rand_bilateral(), get_rand_bilateral(), 0));
 
-	const int debug_x = 837;
-	const int debug_y = 384;
+	const int debug_x = 2082;
+	const int debug_y = 1501;
 #pragma omp parallel for
 	for (int y = 0; y < _render_height; y++)
 	//for (int y = _render_height - debug_y; y < _render_height; y++)
@@ -844,6 +873,8 @@ void Renderer::post_process_ssao()
 
 				float sample_geometry_depth = -_z_buffer[random_point_pixel_y][random_point_pixel_x];
 
+				if (std::abs(sample_geometry_depth - camera_space_point.z) > _render_settings.ssao_radius)
+					continue;
 				if (random_sample.z < sample_geometry_depth)
 					pixel_occlusion++;
 			}
@@ -852,12 +883,12 @@ void Renderer::post_process_ssao()
 			float pixel_occlusion_float = pixel_occlusion * _render_settings.ssao_amount;
 			pixel_occlusion_float /= _render_settings.ssao_sample_count;
 
-			//_image(x, y) = _image(x, y) * (1 - pixel_occlusion_float);
+			///_image(x, y) = _image(x, y) * (1 - pixel_occlusion_float);
 		}
 	}
 
 	//Blurring the AO
-	int blur_size = 5;
+	int blur_size = 9;
 	int half_blur_size = blur_size / 2;
 #pragma omp parallel for
 	for (int y = half_blur_size; y < _render_height - half_blur_size; y++)
@@ -883,6 +914,46 @@ void Renderer::post_process_ssao()
 			_image(x, y) = _image(x, y) * (1 - (float)total_sum / nb_neighbors / _render_settings.ssao_sample_count * _render_settings.ssao_amount);
 		}
 	}
+
+	float gaussian_kernel[25] = {
+		0.0038,	0.0150,	0.0238,	0.0150,	0.0038,
+		0.0150,	0.0599,	0.0949,	0.0599,	0.0150,
+		0.0238,	0.0949,	0.1503,	0.0949,	0.0238,
+		0.0150,	0.0599,	0.0949,	0.0599,	0.0150,
+		0.0038,	0.0150,	0.0238,	0.0150,	0.0038,
+	};
+
+	//for (int i = 0; i < 5; i++)
+		//for (int j = 0; j < 5; j++)
+			//gaussian_kernel[i][j] /= 273;
+
+//	int blur_size = 5;
+//	int half_blur_size = blur_size / 2;
+//#pragma omp parallel for
+//		for (int y = half_blur_size; y < _render_height - half_blur_size; y++)
+//		{
+//			for (int x = half_blur_size; x < _render_width - half_blur_size; x++)
+//			{
+//				if (ao_buffer[y * _render_width + x] == -1)
+//					continue;
+//	
+//				float total_sum = 0;
+//				float divisor = 0;
+//				for (int offset_y = -half_blur_size; offset_y <= half_blur_size; offset_y++)
+//					for (int offset_x = -half_blur_size; offset_x <= half_blur_size; offset_x++)
+//					{
+//						if (ao_buffer[(y + offset_y) * _render_width + x + offset_x] == -1)
+//							continue;
+//	
+//						float kernel_value = gaussian_kernel[(offset_y + half_blur_size) * blur_size + offset_x + half_blur_size];
+//						total_sum += ao_buffer[(y + offset_y) * _render_width + x + offset_x] * kernel_value;
+//						divisor += kernel_value;
+//					}
+//	
+//				//Applying directly on the image
+//				_image(x, y) = _image(x, y) * (1 - (float)total_sum / divisor / _render_settings.ssao_sample_count * _render_settings.ssao_amount);
+//			}
+//		}
 
 	delete[] ao_buffer;
 	delete[] random_hemisphere_points;

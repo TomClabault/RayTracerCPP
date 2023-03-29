@@ -9,6 +9,7 @@
 
 struct Camera
 {
+    Camera() : _position(Point(0, 0, 0)), _fov(20), _near(1), _far(1000) {}
 	Camera(Point position, float fov, float near, float far) : _position(position), _fov(fov), _near(near), _far(far) {}
 	Camera(Point position, float fov) : Camera(position, fov, 1, 1000) {}
 	Camera(Point position) : Camera(position, 90, 1, 1000) {}
