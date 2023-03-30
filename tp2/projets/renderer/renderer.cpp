@@ -15,7 +15,17 @@ Material init_default_material()
 	return mat;
 }
 
+Material init_debug_material_1()
+{
+    Material mat = Material(Color(0.5f, 0.5f, 1.0f));//Blueish color
+    mat.specular = Color(1.0f, 1.0f, 1.0f);
+    mat.ns = 15;
+
+    return mat;
+}
+
 Material Renderer::DEFAULT_MATERIAL = init_default_material();
+Material Renderer::DEBUG_MATERIAL_1 = init_debug_material_1();
 Color Renderer::AMBIENT_COLOR = Color(0.1f, 0.1f, 0.1f);
 Color Renderer::BACKGROUND_COLOR = Color(135.0f / 255.0f, 206.0f / 255.0f, 235.0f / 255.0f);//Sky color
 
@@ -197,7 +207,9 @@ Color Renderer::trace_triangle(const Ray& ray, const Triangle& triangle) const
 
 			Material hit_material;
 			if (hit_info.mat_index == -1)
-				hit_material = Renderer::DEFAULT_MATERIAL;
+                hit_material = Renderer::DEFAULT_MATERIAL;
+            else if (hit_info.mat_index == -2)//Debug material
+                hit_material = Renderer::DEBUG_MATERIAL_1;
 			else
                 hit_material = _materials(hit_info.mat_index);
 
@@ -459,23 +471,24 @@ int Renderer::clip_triangles_to_plane(std::array<Triangle4, 12>& to_clip, int nb
 
 			//Creating the 2 new triangles
 			out_clipped[triangles_added++] = Triangle4(inside_1, inside_2, P2);
-			out_clipped[triangles_added++] = Triangle4(inside_1, P2, P1);
+            out_clipped[triangles_added++] = Triangle4(inside_1, P2, P1);
 		}
 	}
 
 	return triangles_added;
 }
 
+int counter = 0;
+
 int Renderer::clip_triangle(std::array<Triangle4, 12>& to_clip_triangles, std::array<Triangle4, 12>& clipped_triangles) const
 {
 	int nb_triangles = 1;
 
+    if (counter++ == 2)
+        std::cout << to_clip_triangles[0] << std::endl;
+
 	if (_render_settings.enable_clipping)
 	{
-		//TODO profiler le clipping pour continuer sur ce que je faisais
-		//TODO opti ? pour ne pas redéclarer le tableau à chaque appel de la fonction 
-		//std::array<Triangle4, 12> temp = { to_clip_triangle };
-
 		nb_triangles = clip_triangles_to_plane<0, 1>(to_clip_triangles, nb_triangles, to_clip_triangles);//right plane
 		nb_triangles = clip_triangles_to_plane<0, -1>(to_clip_triangles, nb_triangles, clipped_triangles);//left plane
 		nb_triangles = clip_triangles_to_plane<1, 1>(clipped_triangles, nb_triangles, to_clip_triangles);//top plane
@@ -503,7 +516,7 @@ void Renderer::raster_trace()
 	std::array<Triangle4, 12> to_clip_triangles;
 	std::array<Triangle4, 12> clipped_triangles;
 
-#pragma omp parallel for schedule(dynamic) private(to_clip_triangles, clipped_triangles)
+//#pragma omp parallel for schedule(dynamic) private(to_clip_triangles, clipped_triangles)
 	for (int triangle_index = 0; triangle_index < _triangles.size(); triangle_index++)
 	{
 		Triangle& triangle = _triangles[triangle_index];
@@ -513,12 +526,19 @@ void Renderer::raster_trace()
 		vec4 c_image_plane4 = perspective_projection(vec4(triangle._c));
 
 		to_clip_triangles[0] = Triangle4(a_image_plane4, b_image_plane4, c_image_plane4);
+        if (triangle_index == 2)
+            std::cout << triangle << std::endl;
 		int nb_clipped = clip_triangle(to_clip_triangles, clipped_triangles);
 
 		for (int clipped_triangle_index = 0; clipped_triangle_index < nb_clipped; clipped_triangle_index++)
 		{
-			Triangle4 clipped_triangle = clipped_triangles[clipped_triangle_index];
-			Triangle clipped_triangle_NDC(clipped_triangle, triangle._materialIndex);
+            Triangle4 clipped_triangle = clipped_triangles[clipped_triangle_index];
+            Triangle clipped_triangle_NDC;
+            if (triangle_index == 2)
+                clipped_triangle_NDC = Triangle(clipped_triangle, -1 - clipped_triangle_index);
+            else
+                clipped_triangle_NDC = Triangle(clipped_triangle, triangle._materialIndex);
+
 
 			Point a_image_plane = clipped_triangle_NDC._a;
 			Point b_image_plane = clipped_triangle_NDC._b;
@@ -538,6 +558,8 @@ void Renderer::raster_trace()
             int maxXPixels = (int)((boundingMaxX + 1) * 0.5 * render_width);
             int maxYPixels = (int)((boundingMaxY + 1) * 0.5 * render_height);
 
+            //minXPixels = std::max(0, minXPixels);//TODO remove
+            //minYPixels = std::max(0, minYPixels);//TODO remove
             maxXPixels = std::min(render_width - 1, maxXPixels);
             maxYPixels = std::min(render_height - 1, maxYPixels);
 
@@ -549,7 +571,7 @@ void Renderer::raster_trace()
 			{
 				float image_x = minXPixels * render_width_scaling - 1;
 				for (int px = minXPixels; px <= maxXPixels; px++, image_x += image_x_increment)
-				{
+                {
 					//NOTE If there are still issues with the clipping algorithm creating new points 
 					//just a little over the edge of the view frustum, consider using a simple std::max(0, ...)
                     assert(px >= 0 && px < render_width);
@@ -579,7 +601,10 @@ void Renderer::raster_trace()
 					float zTriangle = -1 / (1 / triangle._a.z * w + 1 / triangle._b.z * u + 1 / triangle._c.z * v);
 
                     if (zTriangle < _z_buffer(py, px))
-					{
+                    {
+                        if (px == 483 && py == render_height - 820 && triangle._materialIndex == 0)
+                            std::cout << "inhdex: " << triangle_index << std::endl;
+
                         _z_buffer(py, px) = zTriangle;
 
                         if (_render_settings.enable_ssao)

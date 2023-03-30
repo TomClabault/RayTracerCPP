@@ -34,6 +34,8 @@ struct Triangle4
     Triangle4(vec4 a, vec4 b, vec4 c) : _a(a), _b(b), _c(c) {}
 
     vec4 _a, _b, _c;
+
+    friend std::ostream& operator <<(std::ostream& os, const Triangle4& infos);
 };
 
 class Triangle

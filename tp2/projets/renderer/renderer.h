@@ -13,7 +13,8 @@ class Renderer
 public:
 	static constexpr float EPSILON = 1.0e-4f;
 	static constexpr float SHADOW_INTENSITY = 0.5f;
-	static Material DEFAULT_MATERIAL;
+    static Material DEFAULT_MATERIAL;
+    static Material DEBUG_MATERIAL_1;
 	static Color AMBIENT_COLOR;
 	static Color BACKGROUND_COLOR;
 

@@ -158,6 +158,13 @@ std::ostream& operator << (std::ostream& os, const Triangle& triangle)
     return os;
 }
 
+std::ostream& operator << (std::ostream& os, const Triangle4& triangle)
+{
+    os << "[" << triangle._a << ", " << triangle._b << ", " << triangle._c << "]";
+
+    return os;
+}
+
 Triangle operator +(const Triangle& triangle, const Vector& vec)
 {
     return Triangle(triangle._a + vec, triangle._b + vec, triangle._c + vec);

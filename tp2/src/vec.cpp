@@ -140,6 +140,13 @@ vec4 operator* (float t, const vec4& u)
     return u * t;
 }
 
+std::ostream& operator << (std::ostream& os, const vec4& vec)
+{
+    os << "v4(" << vec.x << ", " << vec.y << ", " << vec.z << ", " << vec.w << ")";
+
+    return os;
+}
+
 Vector normalize( const Vector& v )
 {
     float kk= 1 / length(v);
