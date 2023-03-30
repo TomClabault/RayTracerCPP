@@ -97,7 +97,7 @@ Image tone( const Image& image, const float saturation, const float gamma )
     return tmp;
 }
 
-void downscale_image(const Image& image, Image& downscaled_output, const int factor)
+void downscale_image(const Image& image, Image** downscaled_output, const int factor)
 {
     if (image.width() % factor != 0)
         std::cout << "Image width isn't divisible by the factor";
@@ -108,7 +108,7 @@ void downscale_image(const Image& image, Image& downscaled_output, const int fac
 
     int downscaled_width = image.width() / factor;
     int downscaled_height = image.height() / factor;
-    downscaled_output = Image(downscaled_width, downscaled_height);
+    *downscaled_output = new Image(downscaled_width, downscaled_height);
 
 #pragma omp parallel for
     for (int y = 0; y < downscaled_height; y++)
@@ -123,7 +123,7 @@ void downscale_image(const Image& image, Image& downscaled_output, const int fac
 
             average = average / (factor * factor);
 
-            downscaled_output(x, y) = average;
+            (*downscaled_output)->operator()(x, y) = average;
         }
     }
 }

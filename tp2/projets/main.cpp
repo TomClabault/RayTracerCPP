@@ -1,20 +1,6 @@
-#include "utils/mainUtils.h"
-#include "renderer.h"
-#include "scene/scene.h"
-#include "timer.h"
-
-#include <omp.h>
-
-//TODO free les octree node à la destruction de la BVH
 //TODO mettre les fonctions de mainUtils pour qu'elles renvoient des long lng int plutpot que des floats: les milliseoncdes sont pas en float
-#define MIN 8
-#define MAX 20//TODO faire un benchmark de la BVH plutôt que de mettre ça dans le main
-#define ITER 50
-
-#include "benchmark.h"
 
 #include "QT/mainwindow.h"
-
 #include <QApplication>
 
 int main(int argc, char *argv[])

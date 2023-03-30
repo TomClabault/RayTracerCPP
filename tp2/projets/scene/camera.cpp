@@ -2,12 +2,20 @@
 
 #include "camera.h"
 
-void Camera::init_perspec_proj_mat(float aspect_ratio)
+void Camera::set_aspect_ratio(float aspect_ratio)
 {
-	_perspective_proj_mat = Perspective(_fov, aspect_ratio, _near, _far);
-	_perspective_proj_mat_inv = _perspective_proj_mat.inverse();
+    _aspect_ratio = aspect_ratio;
 
-	_aspect_ratio = aspect_ratio;
+    _perspective_proj_mat = Perspective(_fov, _aspect_ratio, _near, _far);
+	_perspective_proj_mat_inv = _perspective_proj_mat.inverse();
+}
+
+void Camera::set_fov(float fov)
+{
+    _fov = fov;
+
+    _perspective_proj_mat = Perspective(_fov, _aspect_ratio, _near, _far);
+    _perspective_proj_mat_inv = _perspective_proj_mat.inverse();
 }
 
 std::ostream& operator << (std::ostream& os, const Camera& camera)

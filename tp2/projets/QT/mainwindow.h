@@ -18,6 +18,8 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    void prepare_renderer_buffers();
+
     void set_render_image(const Image* const image);
 
     void load_obj(const char* filepath);
@@ -25,13 +27,7 @@ public:
 private slots:
     void on_renderButton_clicked();
 
-    void on_loadRobotObjButton_clicked();
-
     void on_hybrid_check_box_stateChanged(int arg1);
-
-    void on_render_wdith_edit_editingFinished();
-
-    void on_render_height_edit_editingFinished();
 
     void on_clipping_check_box_stateChanged(int arg1);
 
@@ -39,11 +35,20 @@ private slots:
 
     void on_dump_render_to_file_button_clicked();
 
+    void on_camera_fov_spin_box_valueChanged(int arg1);
+
+    void on_load_robot_obj_button_clicked();
+
 private:
     Ui::MainWindow *ui;
 
     Renderer _renderer;
-    QImage* q_image = nullptr;//Rendered image displayed on the screen
+    QImage* q_image = nullptr;//QImage displayed on the screen
+
+    bool _rendererd_image_allocated = false;//Whether or not we need to delete the image
+    //before allocating a new one to free the old memory
+    Image* _renderered_image = nullptr;//Image buffer of the image
+    //displayed on the screen
 
     Graphics_view_zoom* graphics_view_zoom = nullptr;
 };
