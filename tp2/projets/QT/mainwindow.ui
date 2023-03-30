@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1750</width>
+    <width>1337</width>
     <height>491</height>
    </rect>
   </property>
@@ -26,11 +26,28 @@
          <enum>QLayout::SetMinAndMaxSize</enum>
         </property>
         <item>
-         <widget class="QPushButton" name="load_robot_obj_button">
-          <property name="text">
-           <string>Load Robot.obj</string>
-          </property>
-         </widget>
+         <layout class="QGridLayout" name="load_obj_grid">
+          <item row="0" column="0">
+           <widget class="QPushButton" name="load_robot_obj_button">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Load Robot.obj</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QPushButton" name="load_geometry_obj_button">
+            <property name="text">
+             <string>Load Geometry.obj</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
         <item>
          <widget class="Line" name="line">
@@ -50,7 +67,7 @@
           <item>
            <widget class="QPushButton" name="dump_render_to_file_button">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -62,6 +79,12 @@
           </item>
           <item>
            <widget class="QLineEdit" name="dump_to_file_filename_edit">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="text">
              <string>render.png</string>
             </property>
@@ -78,6 +101,12 @@
         </item>
         <item>
          <widget class="QLabel" name="general_label">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="text">
            <string>  General</string>
           </property>
@@ -85,27 +114,10 @@
         </item>
         <item>
          <layout class="QGridLayout" name="general_grid">
-          <item row="1" column="0">
-           <widget class="QCheckBox" name="hybrid_check_box">
-            <property name="text">
-             <string>Hybrid rasterization/ray -tracing: </string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="render_resolution_label">
-            <property name="text">
-             <string>Render resolution:</string>
-            </property>
-           </widget>
-          </item>
           <item row="0" column="1">
            <widget class="QLineEdit" name="render_width_edit">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -115,16 +127,23 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="3">
-           <widget class="QLineEdit" name="render_height_edit">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
+          <item row="2" column="0">
+           <widget class="QCheckBox" name="clipping_check_box">
             <property name="text">
-             <string>1080</string>
+             <string>Enable clipping</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QCheckBox" name="hybrid_check_box">
+            <property name="text">
+             <string>Hybrid rasterization/ray -tracing: </string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -141,13 +160,29 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="0">
-           <widget class="QCheckBox" name="clipping_check_box">
-            <property name="text">
-             <string>Enable clipping</string>
+          <item row="0" column="0">
+           <widget class="QLabel" name="render_resolution_label">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
-            <property name="checked">
-             <bool>true</bool>
+            <property name="text">
+             <string>Render resolution:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="3">
+           <widget class="QLineEdit" name="render_height_edit">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>1080</string>
             </property>
            </widget>
           </item>
@@ -162,6 +197,12 @@
         </item>
         <item>
          <widget class="QLabel" name="label">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="text">
            <string>  Anti-aliasing</string>
           </property>
@@ -169,20 +210,13 @@
         </item>
         <item>
          <layout class="QGridLayout" name="anti_aliasing_grid">
-          <item row="2" column="0">
-           <widget class="QCheckBox" name="enable_ssaa_check_box">
-            <property name="text">
-             <string>Enable SSAA</string>
-            </property>
-           </widget>
-          </item>
           <item row="2" column="1">
            <widget class="QSpinBox" name="ssaa_spin_box">
             <property name="enabled">
              <bool>false</bool>
             </property>
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -204,6 +238,13 @@
             </property>
            </widget>
           </item>
+          <item row="2" column="0">
+           <widget class="QCheckBox" name="enable_ssaa_check_box">
+            <property name="text">
+             <string>Enable SSAA</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </item>
         <item>
@@ -215,6 +256,12 @@
         </item>
         <item>
          <widget class="QLabel" name="camera_label">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="text">
            <string>  Camera</string>
           </property>
@@ -225,19 +272,6 @@
           <property name="sizeConstraint">
            <enum>QLayout::SetMinAndMaxSize</enum>
           </property>
-          <item row="0" column="2">
-           <spacer name="horizontalSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
           <item row="0" column="1">
            <widget class="QSpinBox" name="camera_fov_spin_box">
             <property name="sizePolicy">
@@ -259,6 +293,12 @@
           </item>
           <item row="0" column="0">
            <widget class="QLabel" name="label_2">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="text">
              <string>Vertical &amp; horizontal FOV</string>
             </property>
@@ -280,22 +320,33 @@
          </spacer>
         </item>
         <item>
-         <widget class="QPushButton" name="renderButton">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>Render</string>
-          </property>
-          <property name="default">
-           <bool>true</bool>
-          </property>
-         </widget>
+         <layout class="QGridLayout" name="render_button_grid">
+          <item row="0" column="0">
+           <widget class="QPushButton" name="renderButton">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Render</string>
+            </property>
+            <property name="default">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
+      </item>
+      <item>
+       <widget class="Line" name="line_5">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+       </widget>
       </item>
       <item>
        <widget class="QGraphicsView" name="graphics_view">
@@ -307,7 +358,7 @@
         </property>
         <property name="minimumSize">
          <size>
-          <width>0</width>
+          <width>1000</width>
           <height>0</height>
          </size>
         </property>
@@ -322,7 +373,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1750</width>
+     <width>1337</width>
      <height>21</height>
     </rect>
    </property>

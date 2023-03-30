@@ -33,15 +33,12 @@ private:
 template <typename T>
 Buffer<T>::Buffer()
 {
-    std::cout << "Default constructor <" << typeid(T).name() << ">" << std::endl;
     _initialized = false;
 }
 
 template <typename T>
 Buffer<T>::Buffer(int width, int height) : _width(width), _height(height)
 {
-    std::cout << "Basic constructor <" << typeid(T).name() << ">" << std::endl;
-
     _initialized = true;
 
     _elements = new T*[height];
@@ -68,8 +65,6 @@ Buffer<T>::Buffer(int width, int height) : _width(width), _height(height)
 template <typename T>
 Buffer<T>::Buffer(Buffer& buffer) : Buffer(buffer._width, buffer._height)
 {
-    std::cout << "Copy constructor <" << typeid(T).name() << ">" << std::endl;
-
     _initialized = buffer._initialized;
     _width = buffer._width;
     _height = buffer._height;
@@ -83,8 +78,6 @@ Buffer<T>::Buffer(Buffer& buffer) : Buffer(buffer._width, buffer._height)
 template <typename T>
 Buffer<T>::Buffer(Buffer&& buffer)
 {
-    std::cout << "Move constructor <" << typeid(T).name() << ">" << std::endl;
-
     _elements = buffer._elements;
     buffer._elements = nullptr;
 
@@ -96,8 +89,6 @@ Buffer<T>::Buffer(Buffer&& buffer)
 template <typename T>
 Buffer<T>& Buffer<T>::operator=(const Buffer<T>& buffer)
 {
-    std::cout << "Copy assign <" << typeid(T).name() << ">" << std::endl;
-
     _initialized = buffer._initialized;
     _width = buffer._width;
     _height = buffer._height;
@@ -113,8 +104,6 @@ Buffer<T>& Buffer<T>::operator=(const Buffer<T>& buffer)
 template <typename T>
 Buffer<T>& Buffer<T>::operator=(Buffer<T>&& buffer)
 {
-    std::cout << "Move assign <" << typeid(T).name() << ">" << std::endl;
-
     _elements = buffer._elements;
     buffer._elements = nullptr;
 
@@ -130,8 +119,6 @@ Buffer<T>& Buffer<T>::operator=(Buffer<T>&& buffer)
 template <typename T>
 Buffer<T>::~Buffer()
 {
-    std::cout << "Destructor <" << typeid(T).name() << ">" << std::endl;
-
     if (_initialized)
     {
         for (int i = 0; i < _height; i++)

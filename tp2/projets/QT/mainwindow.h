@@ -22,7 +22,7 @@ public:
 
     void set_render_image(const Image* const image);
 
-    void load_obj(const char* filepath);
+    void load_obj(const char* filepath, Transform transform);
 
 private slots:
     void on_renderButton_clicked();
@@ -42,6 +42,8 @@ private slots:
     void on_render_width_edit_returnPressed();
 
     void on_render_height_edit_returnPressed();
+
+    void on_load_geometry_obj_button_clicked();
 
 private:
     Ui::MainWindow *ui;

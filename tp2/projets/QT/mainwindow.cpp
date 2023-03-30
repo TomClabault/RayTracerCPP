@@ -122,14 +122,14 @@ void MainWindow::on_renderButton_clicked()
     set_render_image(_renderered_image);
 }
 
-void MainWindow::load_obj(const char* filepath)
+void MainWindow::load_obj(const char* filepath, Transform transform)
 {
     Timer timer;
 
     timer.start();
 
-    MeshIOData meshData = read_meshio_data("data/robot.obj");
-    std::vector<Triangle> triangles = MeshIOUtils::create_triangles(meshData, Translation(Vector(0, -2, -4)));
+    MeshIOData meshData = read_meshio_data(filepath);
+    std::vector<Triangle> triangles = MeshIOUtils::create_triangles(meshData, transform);
 
     _renderer.set_triangles(triangles);
     _renderer.set_materials(meshData.materials);
@@ -141,7 +141,12 @@ void MainWindow::load_obj(const char* filepath)
 
 void MainWindow::on_load_robot_obj_button_clicked()
 {
-    load_obj("data/robot.obj");
+    load_obj("data/robot.obj", Translation(Vector(0, -2, -4)));
+}
+
+void MainWindow::on_load_geometry_obj_button_clicked()
+{
+    load_obj("data/geometry.obj", Translation(Vector(-1, -3, -12)) * RotationY(160) * Scale(0.02f));
 }
 
 void MainWindow::on_hybrid_check_box_stateChanged(int value)
@@ -186,4 +191,5 @@ void MainWindow::on_render_height_edit_returnPressed()
 {
     on_renderButton_clicked();
 }
+
 
