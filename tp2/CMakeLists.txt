@@ -49,8 +49,6 @@ list(APPEND SRC_FILES ${UI_FILES_PROJETS_QT})
 list(APPEND SRC_FILES_TESTS ${INCLUDE_FILES})
 list(APPEND SRC_FILES_TESTS ${UI_FILES_PROJETS_QT})
 
-
-
 add_executable(RayTracing_TP1 ${SRC_FILES})
 add_executable(RayTracing_TP1_Tests ${SRC_FILES_TESTS})
 
@@ -72,16 +70,20 @@ target_include_directories(RayTracing_TP1_Tests PRIVATE projets/QT/)
 find_package(OpenMP)
 
 set (CMAKE_PREFIX_PATH "E:\\Programmes\\Qt\\6.3.2\\msvc2019_64")
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Gui OpenGL OpenGLWidgets)
-if (Qt6Widgets_FOUND)
-    if (Qt6Widgets_VERSION VERSION_LESS 6.3.0)
-        message(FATAL_ERROR "Minimum Qt version is 6.3.0")
+find_package(Qt6 COMPONENTS Core Widgets Gui OpenGL OpenGLWidgets)
+if (Qt6_FOUND)
+    target_link_libraries(RayTracing_TP1 PUBLIC OpenMP::OpenMP_CXX Qt6::Core Qt6::Widgets Qt6::Gui)
+    target_link_libraries(RayTracing_TP1_Tests PUBLIC OpenMP::OpenMP_CXX Qt6::Core Qt6::Widgets Qt6::Gui)
+
+    qt_standard_project_setup()
+else()
+    find_package(Qt5 REQUIRED COMPONENTS Widgets)
+    if (Qt5Widgets_FOUND)
+        target_link_libraries(RayTracing_TP1 PUBLIC OpenMP::OpenMP_CXX Qt5::Core Qt5::Widgets Qt5::Gui)
+        target_link_libraries(RayTracing_TP1_Tests PUBLIC OpenMP::OpenMP_CXX Qt5::Core Qt5::Widgets Qt5::Gui)
     endif()
 endif()
-qt_standard_project_setup()
 
-target_link_libraries(RayTracing_TP1_Tests PUBLIC OpenMP::OpenMP_CXX Qt6::Core Qt6::Widgets Qt6::Gui Qt6::OpenGL Qt6::OpenGLWidgets)
-target_link_libraries(RayTracing_TP1 PUBLIC OpenMP::OpenMP_CXX Qt6::Core Qt6::Widgets Qt6::Gui Qt6::OpenGL Qt6::OpenGLWidgets)
 
 #Copying the "data" folder into the binary directory so that the application has access to the data folder even when in the folders created by the QtCreator "compiler"
 file(COPY data DESTINATION ${PROJECT_BINARY_DIR})

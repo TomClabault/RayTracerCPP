@@ -5,7 +5,7 @@
 #include "qtUtils.h"
 #include "timer.h"
 
-#include "./ui_mainwindow.h"
+#include "ui_mainwindow.h"
 
 #include <iostream>
 
@@ -25,8 +25,24 @@ void MainWindow::set_render_image(const Image* const image)
 
     if (this->q_image != nullptr)
         delete this->q_image;
-    this->q_image = new QImage((uchar*)image->data(), image->width(), image->height(), QImage::Format_RGBA32FPx4);
-    this->q_image->mirror();//Because our ray tracer produces flipped images
+
+    QImage::Format format;
+#if QT_VERSION >= 0x060000
+    format = QImage::Format_RGBA32FPx4
+#else
+    format = QImage::Format_RGB32;
+#endif
+
+    this->q_image = new QImage((uchar*)image->data(), image->width(), image->height(), format);
+
+    //Flipping the image because our ray tracer produces flipped images
+#if QT_VERSION >= 0x060000
+    this->q_image->mirror();
+#else
+    QImage mirrored = this->q_image->mirrored();
+    delete q_image;
+    q_image = new QImage(mirrored);
+#endif
     scene->addPixmap(QPixmap::fromImage(*this->q_image));
 
     if (this->graphics_view_zoom != nullptr)
