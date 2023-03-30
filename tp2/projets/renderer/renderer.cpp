@@ -1,6 +1,7 @@
 #include "renderer.h"
 
 #include <cmath>
+#include <cstring>
 
 #include "mat.h"
 #include "timer.h"
