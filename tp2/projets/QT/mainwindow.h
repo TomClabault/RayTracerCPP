@@ -39,6 +39,10 @@ private slots:
 
     void on_load_robot_obj_button_clicked();
 
+    void on_render_width_edit_returnPressed();
+
+    void on_render_height_edit_returnPressed();
+
 private:
     Ui::MainWindow *ui;
 

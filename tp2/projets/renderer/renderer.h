@@ -38,6 +38,7 @@ public:
     void set_materials(Materials materials);
 
     void clear_z_buffer();
+    void clear_normal_buffer();
     void clear_image();
 
     void change_camera_fov(float fov);

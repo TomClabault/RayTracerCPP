@@ -38,7 +38,7 @@ void MainWindow::set_render_image(const Image* const image)
 
     QImage::Format format;
 #if QT_VERSION >= 0x060000
-    format = QImage::Format_RGBA32FPx4
+    format = QImage::Format_RGBA32FPx4;
 #else
     format = QImage::Format_RGB32;
 #endif
@@ -88,11 +88,11 @@ void MainWindow::prepare_renderer_buffers()
 
         _renderer.change_render_size(new_width, new_height);
     }
-    else//If the buffers haven't been recreated, we're just clearing them
-    {
-        _renderer.clear_z_buffer();
-        _renderer.clear_image();
-    }
+
+    //Clearing the buffers
+    _renderer.clear_z_buffer();
+    _renderer.clear_normal_buffer();
+    _renderer.clear_image();
 }
 
 void MainWindow::on_renderButton_clicked()
@@ -175,3 +175,14 @@ void MainWindow::on_camera_fov_spin_box_valueChanged(int fov)
 {
     _renderer.change_camera_fov(fov);
 }
+
+void MainWindow::on_render_width_edit_returnPressed()
+{
+    on_renderButton_clicked();
+}
+
+void MainWindow::on_render_height_edit_returnPressed()
+{
+    on_renderButton_clicked();
+}
+
