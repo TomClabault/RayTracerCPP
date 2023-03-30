@@ -500,10 +500,10 @@ void Renderer::raster_trace()
     const float render_height_scaling = 1.0f / render_height * 2;
     const float render_width_scaling = 1.0f / render_width * 2;
 
-	//TODO projection matrix sur la version ray tracée parce que c'est actuellement pas le cas
 	std::array<Triangle4, 12> to_clip_triangles;
 	std::array<Triangle4, 12> clipped_triangles;
-//#pragma omp parallel for schedule(dynamic) private(to_clip_triangles, clipped_triangles)
+
+#pragma omp parallel for schedule(dynamic) private(to_clip_triangles, clipped_triangles)
 	for (int triangle_index = 0; triangle_index < _triangles.size(); triangle_index++)
 	{
 		Triangle& triangle = _triangles[triangle_index];
@@ -555,25 +555,8 @@ void Renderer::raster_trace()
                     assert(px >= 0 && px < render_width);
                     assert(py >= 0 && py < render_height);
 
-                    if (px == 1465 && py == 364 && triangle_index == 12)
-                    {
-                        std::cout << "minXPixels: " << minXPixels << std::endl;
-                        std::cout << "render_width_scaling: " << render_width_scaling << std::endl;
-                    }
-
-                    /*
-                     * px, py: 1465, 364
-                     * minXPixels: 1463
-                     * render_width_scaling: 0.000520833
-                     * image_x: -0.236979
-                     * pixel_point: p(-0.236979,-0.325926,-1)
-                     * a, b, c_image_plane: p(-0.201432,-0.143293,0.481638), p(-0.237677,-0.32904,0.451963), p(-0.228741,-0.303193,0.434639)
-                     * u: 0.000696425
-                     * v: 1.66777e-05
-                     * w: 9.799e-06
-                     */
-
-                    Point pixel_point(image_x, image_y, -1);
+                    //Adding 0.5*increment to consider the center of the pixel
+                    Point pixel_point(image_x + image_x_increment * 0.5, image_y + image_y_increment * 0.5, -1);
 
                     float u = Triangle::edge_function(pixel_point, c_image_plane, a_image_plane);
                     if (u < 0)
@@ -586,10 +569,6 @@ void Renderer::raster_trace()
 					float w = Triangle::edge_function(pixel_point, b_image_plane, c_image_plane);
 					if (w < 0)
 						continue;
-
-                    if (px == 1465 && py == 364 && triangle_index == 12)
-                        //std::exit(0);
-                        ;
 
 					u *= invTriangleArea;
 					v *= invTriangleArea;
@@ -631,15 +610,23 @@ void Renderer::ray_trace()
     int render_width, render_height;
     get_render_width_height(_render_settings, render_width, render_height);
 
+    float fov_scaling = tan(radians(_scene._camera._fov / 2));
+
 #pragma omp parallel for schedule(dynamic)
     for (int py = 0; py < render_height; py++)
 	{
-        float y_world = (float)py / render_height * 2 - 1;
+        //Adding 0.5 to consider the center of the pixel
+        float y_world = ((float)py + 0.5) / render_height * 2 - 1;
+        y_world *= fov_scaling;
 
         for (int px = 0; px < render_width; px++)
-		{
-            float x_world = (float)px / render_width * 2 - 1;
+        {
+            //Adding 0.5 to consider the center of the pixel
+            float x_world = ((float)px + 0.5) / render_width * 2 - 1;
             x_world *= (float)render_width / render_height;
+            x_world *= fov_scaling;
+
+            //TODO projection matrix sur la version ray tracée parce que c'est actuellement pas le cas
 
 			Point image_plane_point = Point(x_world, y_world, -1);
 

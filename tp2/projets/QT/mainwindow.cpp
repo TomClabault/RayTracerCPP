@@ -147,6 +147,7 @@ void MainWindow::on_load_robot_obj_button_clicked()
 void MainWindow::on_hybrid_check_box_stateChanged(int value)
 {
     _renderer.render_settings().hybrid_rasterization_tracing = value;
+    this->ui->clipping_check_box->setEnabled(value);
 }
 
 void MainWindow::on_clipping_check_box_stateChanged(int value)
