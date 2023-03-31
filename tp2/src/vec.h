@@ -2,6 +2,7 @@
 #ifndef _VEC_H
 #define _VEC_H
 
+#include <iostream>
 
 //! \addtogroup math
 ///@{
@@ -186,6 +187,8 @@ struct vec4
     friend vec4 operator- (const vec4& u, const vec4& v);
     friend vec4 operator* (const vec4& u, float t);
     friend vec4 operator* (float t, const vec4& u);
+
+    friend std::ostream& operator << (std::ostream& os, const vec4& vec);
 
     float x, y, z, w;
 };

@@ -5,16 +5,16 @@
 #include <vector>
 
 #include "mat.h"
-#include "triangle.h"
 
 struct Camera
 {
-    Camera() : _position(Point(0, 0, 0)), _fov(20), _near(1), _far(1000) {}
+    Camera() : _position(Point(0, 0, 0)), _fov(45), _near(1), _far(1000) {}
 	Camera(Point position, float fov, float near, float far) : _position(position), _fov(fov), _near(near), _far(far) {}
 	Camera(Point position, float fov) : Camera(position, fov, 1, 1000) {}
 	Camera(Point position) : Camera(position, 90, 1, 1000) {}
 
-	void init_perspec_proj_mat(float aspect_ratio);
+    void set_aspect_ratio(float aspect_ratio);
+    void set_fov(float fov);
 
 	Point _position;
 

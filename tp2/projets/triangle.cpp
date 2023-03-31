@@ -8,6 +8,7 @@ Triangle::Triangle() :  _a(Point(0, 0, 0)),
 
 Triangle::Triangle(Point a, Point b, Point c, int material_index) : _a(a), _b(b), _c(c), _normal(cross(_b - _a, _c - _a)), _materialIndex(material_index) {};
 
+//TODO const Triangle4& here
 Triangle::Triangle(Triangle4 triangle, int material_index) : _materialIndex(material_index)
 {
     float iaw, ibw, icw;
@@ -151,6 +152,13 @@ bool Triangle::inside_outside_2D(const Point& point) const
 }
 
 std::ostream& operator << (std::ostream& os, const Triangle& triangle)
+{
+    os << "[" << triangle._a << ", " << triangle._b << ", " << triangle._c << "]";
+
+    return os;
+}
+
+std::ostream& operator << (std::ostream& os, const Triangle4& triangle)
 {
     os << "[" << triangle._a << ", " << triangle._b << ", " << triangle._c << "]";
 
