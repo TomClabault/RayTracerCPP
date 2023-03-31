@@ -478,14 +478,9 @@ int Renderer::clip_triangles_to_plane(std::array<Triangle4, 12>& to_clip, int nb
 	return triangles_added;
 }
 
-int counter = 0;
-
 int Renderer::clip_triangle(std::array<Triangle4, 12>& to_clip_triangles, std::array<Triangle4, 12>& clipped_triangles) const
 {
 	int nb_triangles = 1;
-
-    if (counter++ == 2)
-        std::cout << to_clip_triangles[0] << std::endl;
 
 	if (_render_settings.enable_clipping)
 	{
@@ -521,23 +516,17 @@ void Renderer::raster_trace()
 	{
 		Triangle& triangle = _triangles[triangle_index];
 
-		vec4 a_image_plane4 = perspective_projection(vec4(triangle._a));
-		vec4 b_image_plane4 = perspective_projection(vec4(triangle._b));
-		vec4 c_image_plane4 = perspective_projection(vec4(triangle._c));
+        vec4 a_clip_space = perspective_projection(vec4(triangle._a));
+        vec4 b_clip_space = perspective_projection(vec4(triangle._b));
+        vec4 c_clip_space = perspective_projection(vec4(triangle._c));
 
-		to_clip_triangles[0] = Triangle4(a_image_plane4, b_image_plane4, c_image_plane4);
-        if (triangle_index == 2)
-            std::cout << triangle << std::endl;
+        to_clip_triangles[0] = Triangle4(a_clip_space, b_clip_space, c_clip_space);
 		int nb_clipped = clip_triangle(to_clip_triangles, clipped_triangles);
 
 		for (int clipped_triangle_index = 0; clipped_triangle_index < nb_clipped; clipped_triangle_index++)
 		{
             Triangle4 clipped_triangle = clipped_triangles[clipped_triangle_index];
-            Triangle clipped_triangle_NDC;
-            if (triangle_index == 2)
-                clipped_triangle_NDC = Triangle(clipped_triangle, -1 - clipped_triangle_index);
-            else
-                clipped_triangle_NDC = Triangle(clipped_triangle, triangle._materialIndex);
+            Triangle clipped_triangle_NDC = Triangle(clipped_triangle, triangle._materialIndex);
 
 
 			Point a_image_plane = clipped_triangle_NDC._a;
@@ -596,16 +585,37 @@ void Renderer::raster_trace()
 					v *= invTriangleArea;
 					w *= invTriangleArea;
 
-					//Z coordinate of the point on the "real 3D" (not the triangle projected on the image plane) triangle 
-					//by interpolating the z coordinates of the 3 vertices
-					float zTriangle = -1 / (1 / triangle._a.z * w + 1 / triangle._b.z * u + 1 / triangle._c.z * v);
+                    //Inverse projecting the triangle back into camera space to interpolate the z coordinate correctly
+                    Triangle clipped_triangle_camera_space = perspective_projection(clipped_triangle_NDC);
+                    float near = _scene._camera._near, far = _scene._camera._far;
+                    float id= 1 / (near - far);
+                    float x_term = perspective_projection_inv.data()[2 * 4 + 0];
+                    float y_term = perspective_projection_inv.data()[2 * 4 + 1];
+                    float z_term = perspective_projection_inv.data()[2 * 4 + 2];
+                    float w_term = perspective_projection_inv.data()[2 * 4 + 3];//w term of the matrix/point multiplication when projecting
+                    float z_a = clipped_triangle_NDC._a.x * x_term + clipped_triangle_NDC._a.y * y_term + clipped_triangle_NDC._a.z * z_term + w_term;
+                    float z_b = clipped_triangle_NDC._b.x * x_term + clipped_triangle_NDC._b.y * y_term + clipped_triangle_NDC._b.z * z_term + w_term;
+                    float z_c = clipped_triangle_NDC._c.x * x_term + clipped_triangle_NDC._c.y * y_term + clipped_triangle_NDC._c.z * z_term + w_term;
+
+                    std::cout << perspective_projection(clipped_triangle_NDC)._a.z << ", " << perspective_projection(clipped_triangle_NDC)._b.z << ", " << perspective_projection(clipped_triangle_NDC)._c.z << ", " << std::endl;
+                    std::cout << perspective_projection_inv(clipped_triangle_NDC)._a.z << ", " << perspective_projection_inv(clipped_triangle_NDC)._b.z << ", " << perspective_projection_inv(clipped_triangle_NDC)._c.z << ", " << std::endl;
+                    std::cout << z_a << ", " << z_b << ", " << z_c << std::endl;
+                    std::exit(0);
+                    //std::cout << perspective_projection.data()[2 * 4] << ", " << perspective_projection.data()[2 * 4 + 1] << ", " << perspective_projection.data()[2 * 4 + 2] << ", " << perspective_projection.data()[2 * 4 + 3] << std::endl << std::endl;
+                    //std::cout << perspective_projection_inv.data()[2 * 4] << ", " << perspective_projection_inv.data()[2 * 4 + 1] << ", " << perspective_projection_inv.data()[2 * 4 + 2] << ", " << perspective_projection_inv.data()[2 * 4 + 3] << std::endl << std::endl;
+                    //std::exit(0);
+
+                    //Z coordinate of the point on the "real 3D" (not the triangle projected on the image plane) triangle
+                    //by interpolating the z coordinates of the 3 vertices
+                    //float zTriangle = -1 / (1 / clipped_triangle_camera_space._a.z * w + 1 / clipped_triangle_camera_space._b.z * u + 1 / clipped_triangle_camera_space._c.z * v);
+                    float zTriangle = -1 / (1 / z_a * w + 1 / z_b * u + 1 / z_c * v);
 
                     if (zTriangle < _z_buffer(py, px))
                     {
                         if (px == 483 && py == render_height - 820 && triangle._materialIndex == 0)
                             std::cout << "inhdex: " << triangle_index << std::endl;
 
-                        _z_buffer(py, px) = zTriangle;
+                        _z_buffer(py, px) = -zTriangle;
 
                         if (_render_settings.enable_ssao)
                             _normal_buffer(py, px) = triangle._normal;
@@ -651,8 +661,6 @@ void Renderer::ray_trace()
             x_world *= (float)render_width / render_height;
             x_world *= fov_scaling;
 
-            //TODO projection matrix sur la version ray tracée parce que c'est actuellement pas le cas
-
 			Point image_plane_point = Point(x_world, y_world, -1);
 
 			Point camera_position = _scene._camera._position;
@@ -663,17 +671,22 @@ void Renderer::ray_trace()
 			HitInfo hit_info;
 
 			//TODO mettre un std::cout << dans le copy constructor des Triangle pour voir partout où le copy constructor est appelé
-			if (_render_settings.enable_bvh)
+            if (!_render_settings.enable_bvh)//TODO remove !
 			{
 				if (_bvh.intersect(ray, hit_info))
 					if (hit_info.t < finalHitInfo.t || finalHitInfo.t == -1)
 						finalHitInfo = hit_info;
 			}
-			else
-				for (Triangle& triangle : _triangles)
-					if (triangle.intersect(ray, hit_info))
-						if (hit_info.t < finalHitInfo.t || finalHitInfo.t == -1)
-							finalHitInfo = hit_info;
+            else
+            {
+                std::array<Triangle4, 12> to_clip_triangles;
+                std::array<Triangle4, 12> clipped_triangles;
+
+                for (Triangle& triangle : _triangles)
+                    if (triangle.intersect(ray, hit_info))
+                        if (hit_info.t < finalHitInfo.t || finalHitInfo.t == -1)
+                            finalHitInfo = hit_info;
+            }
 
             Color finalColor;
 
