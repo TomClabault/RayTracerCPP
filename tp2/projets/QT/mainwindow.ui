@@ -386,7 +386,7 @@
              </sizepolicy>
             </property>
             <property name="text">
-             <string>2.5</string>
+             <string>1.4</string>
             </property>
            </widget>
           </item>
@@ -399,7 +399,7 @@
              </sizepolicy>
             </property>
             <property name="text">
-             <string>0.3</string>
+             <string>0.15</string>
             </property>
            </widget>
           </item>

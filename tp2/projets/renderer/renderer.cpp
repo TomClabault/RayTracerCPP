@@ -1,5 +1,6 @@
 #include "m256Point.h"
 #include "m256Vector.h"
+#include "m256Utils.h"
 #include "mat.h"
 #include "renderer.h"
 #include "timer.h"
@@ -519,7 +520,7 @@ void Renderer::raster_trace()
     std::array<Triangle4, 12> to_clip_triangles;
     std::array<Triangle4, 12> clipped_triangles;
 
-//#pragma omp parallel for schedule(dynamic) private(to_clip_triangles, clipped_triangles)
+#pragma omp parallel for schedule(dynamic) private(to_clip_triangles, clipped_triangles)
     for (int triangle_index = 0; triangle_index < _triangles.size(); triangle_index++)
     {
         Triangle& triangle = _triangles[triangle_index];
@@ -555,8 +556,6 @@ void Renderer::raster_trace()
             int maxXPixels = (int)((boundingMaxX + 1) * 0.5 * render_width);
             int maxYPixels = (int)((boundingMaxY + 1) * 0.5 * render_height);
 
-            //minXPixels = std::max(0, minXPixels);//TODO remove
-            //minYPixels = std::max(0, minYPixels);//TODO remove
             maxXPixels = std::min(render_width - 1, maxXPixels);
             maxYPixels = std::min(render_height - 1, maxYPixels);
 
@@ -596,27 +595,6 @@ void Renderer::raster_trace()
                     //Inverse projecting the triangle back into camera space to interpolate the z coordinate correctly
                     Triangle clipped_triangle_camera_space = perspective_projection_inv(clipped_triangle_NDC);
                     //TODO opti ça pour ne pas recalculer le x et le y dont on a pas besoin, on veut juste la coordonnées z projetée, pas les autres donc on peut s'éviter des calculs
-//                    float near = _scene._camera._near, far = _scene._camera._far;
-//                    float id= 1 / (near - far);
-//                    float y_x_term = perspective_projection_inv.data()[2 * 4 + 0];
-//                    float y_y_term = perspective_projection_inv.data()[2 * 4 + 1];
-//                    float y_z_term = perspective_projection_inv.data()[2 * 4 + 2];
-//                    float y_w_term = perspective_projection_inv.data()[2 * 4 + 3];//w term of the matrix/point multiplication when projecting
-//                    float w_x_term = perspective_projection_inv.data()[3 * 4 + 0];
-//                    float w_y_term = perspective_projection_inv.data()[3 * 4 + 1];
-//                    float w_z_term = perspective_projection_inv.data()[3 * 4 + 2];
-//                    float w_w_term = perspective_projection_inv.data()[3 * 4 + 3];
-//                    float z_a = (clipped_triangle_NDC._a.x * y_x_term + clipped_triangle_NDC._a.y * y_y_term + clipped_triangle_NDC._a.z * y_z_term + y_w_term) / (clipped_triangle_NDC._a.x * w_x_term + clipped_triangle_NDC._a.y * w_y_term + clipped_triangle_NDC._a.z * w_z_term + w_w_term);
-//                    float z_b = (clipped_triangle_NDC._b.x * y_x_term + clipped_triangle_NDC._b.y * y_y_term + clipped_triangle_NDC._b.z * y_z_term + y_w_term) / (clipped_triangle_NDC._b.x * w_x_term + clipped_triangle_NDC._b.y * w_y_term + clipped_triangle_NDC._b.z * w_z_term + w_w_term);
-//                    float z_c = (clipped_triangle_NDC._c.x * y_x_term + clipped_triangle_NDC._c.y * y_y_term + clipped_triangle_NDC._c.z * y_z_term + y_w_term) / (clipped_triangle_NDC._c.x * w_x_term + clipped_triangle_NDC._c.y * w_y_term + clipped_triangle_NDC._c.z * w_z_term + w_w_term);
-
-                    //std::cout << perspective_projection(clipped_triangle_NDC)._a.z << ", " << perspective_projection(clipped_triangle_NDC)._b.z << ", " << perspective_projection(clipped_triangle_NDC)._c.z << ", " << std::endl;
-                    //std::cout << perspective_projection_inv(clipped_triangle_NDC)._a.z << ", " << perspective_projection_inv(clipped_triangle_NDC)._b.z << ", " << perspective_projection_inv(clipped_triangle_NDC)._c.z << ", " << std::endl;
-                    //std::cout << "z: " << z_a << ", " << z_b << ", " << z_c << std::endl;
-                    //std::exit(0);
-                    //std::cout << perspective_projection.data()[2 * 4] << ", " << perspective_projection.data()[2 * 4 + 1] << ", " << perspective_projection.data()[2 * 4 + 2] << ", " << perspective_projection.data()[2 * 4 + 3] << std::endl << std::endl;
-                    //std::cout << perspective_projection_inv.data()[2 * 4] << ", " << perspective_projection_inv.data()[2 * 4 + 1] << ", " << perspective_projection_inv.data()[2 * 4 + 2] << ", " << perspective_projection_inv.data()[2 * 4 + 3] << std::endl << std::endl;
-                    //std::exit(0);
 
                     //Z coordinate of the point on the "real 3D" (not the triangle projected on the image plane) triangle
                     //by interpolating the z coordinates of the 3 vertices
@@ -627,7 +605,6 @@ void Renderer::raster_trace()
                     //TODO lundi 02/04: debug z-buffer
                     if (zTriangle < _z_buffer(py, px))
                     {
-                        //buffer before: -5.09607	buffer after: -5.10603
                         _z_buffer(py, px) = zTriangle;
 
                         if (_render_settings.enable_ssao)
@@ -683,8 +660,7 @@ void Renderer::ray_trace()
             HitInfo finalHitInfo;
             HitInfo hit_info;
 
-            //TODO mettre un std::cout << dans le copy constructor des Triangle pour voir partout où le copy constructor est appelé
-            if (!_render_settings.enable_bvh)//TODO remove !
+            if (!_render_settings.enable_bvh)
             {
                 if (_bvh.intersect(ray, hit_info))
                     if (hit_info.t < finalHitInfo.t || finalHitInfo.t == -1)
@@ -692,9 +668,6 @@ void Renderer::ray_trace()
             }
             else
             {
-                std::array<Triangle4, 12> to_clip_triangles;
-                std::array<Triangle4, 12> clipped_triangles;
-
                 for (Triangle& triangle : _triangles)
                     if (triangle.intersect(ray, hit_info))
                         if (hit_info.t < finalHitInfo.t || finalHitInfo.t == -1)
@@ -779,10 +752,10 @@ void Renderer::post_process()
 //{
 //    int render_width, render_height;
 //    get_render_width_height(_render_settings, render_width, render_height);
-//
+
 //    short int* ao_buffer = new short int[render_height * render_width];
 //    std::memset(ao_buffer, 0, sizeof(short int) * render_height * render_width);
-//
+
 //    XorShiftGenerator rand_generator;
 //#pragma omp parallel private(rand_generator)
 //    {
@@ -795,52 +768,52 @@ void Renderer::post_process()
 //                //No information here, there's no pixel to shade: background at this pixel on the image
 //                if (_z_buffer(y, x) == INFINITY)
 //                    continue;
-//
+
 //                float x_ndc = (float)x / render_width * 2 - 1;
 //                float y_ndc = (float)y / render_height * 2 - 1;
-//
+
 //                float view_z = _z_buffer(y, x);
 //                float view_ray_x = x_ndc * _scene._camera._aspect_ratio * std::tan(radians(_scene._camera._fov / 2));
 //                float view_ray_y = y_ndc * std::tan(radians(_scene._camera._fov / 2));
 //                Point camera_space_point = Point(view_ray_x * view_z, view_ray_y * view_z, -view_z);
-//
+
 //                Vector normal = normalize(_normal_buffer(y, x));
-//
+
 //                short int pixel_occlusion = 0;
 //                for (int i = 0; i < _render_settings.ssao_sample_count; i++)
 //                {
 //                    float rand_x = rand_generator.get_rand_bilateral();
 //                    float rand_y = rand_generator.get_rand_bilateral();
 //                    float rand_z = rand_generator.get_rand_bilateral();
-//
+
 //                    Point random_sample = Point(normalize(Vector(rand_x, rand_y, rand_z)));
 //                    random_sample = random_sample * (rand_generator.get_rand_lateral() + 0.0001);
 //                    random_sample = random_sample * _render_settings.ssao_radius;
 //                    random_sample = random_sample + camera_space_point;
 //                    if (dot(random_sample - camera_space_point, normal) < 0)//The point is not in front of the normal
 //                        random_sample = random_sample + 2 * (camera_space_point - random_sample);
-//
+
 //                    Point random_sample_ndc = _scene._camera._perspective_proj_mat(random_sample);
 //                    int random_point_pixel_x = (int)((random_sample_ndc.x + 1) * 0.5 * render_width);
 //                    int random_point_pixel_y = (int)((random_sample_ndc.y + 1) * 0.5 * render_height);
-//
+
 //                    random_point_pixel_x = std::min(std::max(0, random_point_pixel_x), render_width - 1);
 //                    random_point_pixel_y = std::min(std::max(0, random_point_pixel_y), render_height - 1);
-//
+
 //                    float sample_geometry_depth = -_z_buffer(random_point_pixel_y, random_point_pixel_x);
-//
+
 //                    //Range check
 //                    if (std::abs(sample_geometry_depth - camera_space_point.z) > _render_settings.ssao_radius)
 //                        continue;
 //                    if (random_sample.z < sample_geometry_depth)
 //                        pixel_occlusion++;
 //                }
-//
+
 //                ao_buffer[y * render_width + x] = pixel_occlusion;
 //            }
 //        }
 //    }
-//
+
 //    //Blurring the AO
 //    int blur_size = 7;
 //    int half_blur_size = blur_size / 2;
@@ -851,18 +824,18 @@ void Renderer::post_process()
 //        {
 //            if (_z_buffer(y, x) == INFINITY)//Background pixel, we're not blurring it
 //                continue;
-//
+
 //            int sum = 0;
 //            for (int offset_y = -half_blur_size; offset_y <= half_blur_size; offset_y++)
 //                for (int offset_x = -half_blur_size; offset_x <= half_blur_size; offset_x++)
 //                    sum += ao_buffer[(y + offset_y) * render_width + x + offset_x];
-//
+
 //            //Applying directly on the image
 //            float color_multiplier = 1 - ((float)sum / (float)(blur_size * blur_size) / (float)_render_settings.ssao_sample_count * (float)_render_settings.ssao_amount);
 //            _image(x, y) = _image(x, y) * Color(color_multiplier, color_multiplier, color_multiplier, 1.0f);
 //        }
 //    }
-//
+
 //    delete[] ao_buffer;
 //}
 
@@ -892,8 +865,6 @@ void Renderer::post_process_ssao()
                                                   omp_get_thread_num() * 24183 + rand(),
                                                   omp_get_thread_num() * 24183 + rand(),
                                                   omp_get_thread_num() * 24183 + rand()));
-
-        XorShiftGenerator rand_generator_scalar = XorShiftGenerator(rand_generator._state.m256i_i32[0]);
 #pragma omp for
         for (int y = 0; y < render_height; y++)
         {
@@ -904,6 +875,14 @@ void Renderer::post_process_ssao()
 
             for (int x = 0; x < render_width; x += 8)
             {
+                __m256 view_z = _mm256_load_ps(_z_buffer.row(y) + x);
+                __m256 infinity = _mm256_set1_ps(INFINITY);
+                __m256 infinity_mask = _mm256_cmp_ps(view_z, infinity, _CMP_NEQ_OQ);
+
+                float sum = _mm256_reduction_ps(infinity_mask);
+                if (sum == 0.0)//We have no _z_buffer information on any pixels i.e. all pixels are background pixels
+                    continue;//Skipping these 8 pixels
+
                 __m256 x_vec = _mm256_set1_ps(x);
 
                 __m256 xs = _mm256_set_ps(7, 6, 5, 4, 3, 2, 1, 0);
@@ -916,7 +895,6 @@ void Renderer::post_process_ssao()
                 __m256 view_ray_x = _mm256_mul_ps(x_ndc, _mm256_mul_ps(fov_multiplier, _mm256_set1_ps(_scene._camera._aspect_ratio)));
                 __m256 view_ray_y = _mm256_mul_ps(y_ndc, fov_multiplier);
 
-                __m256 view_z = _mm256_load_ps(_z_buffer.row(y) + x);
                 __m256Point camera_space_point = __m256Point(_mm256_mul_ps(view_z, view_ray_x), _mm256_mul_ps(view_z, view_ray_y), _mm256_mul_ps(view_z, _mm256_set1_ps(-1)));
 
                 __m256Vector normal = _mm256_normalize(__m256Vector(_normal_buffer.row(y) + x));
@@ -972,8 +950,9 @@ void Renderer::post_process_ssao()
                     __m256 sample_depth_mask = _mm256_cmp_ps(random_sample._z, sample_geometry_depth, _CMP_LT_OQ);
                     occluded_mask = _mm256_and_ps(occluded_mask, sample_depth_mask);
 
-                    __m256 infinity = _mm256_set1_ps(INFINITY);
-                    __m256 infinity_mask = _mm256_cmp_ps(view_z, infinity, _CMP_NEQ_OQ);
+                    //Some of the 8 pixels being processed may not have _z_buffer information. i.e. some 
+                    //of the pixels being processed are background pixels. We're going to mask those out
+                    //to avoid occluding them
                     occluded_mask = _mm256_and_ps(occluded_mask, infinity_mask);
 
                     pixel_occlusion = _mm256_add_epi32(pixel_occlusion, _mm256_cvtps_epi32(occluded_mask));
