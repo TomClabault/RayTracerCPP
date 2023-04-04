@@ -11,7 +11,7 @@ public:
     constexpr static double EPSILON = 1.0e-4;
 
 private:
-    __m256Vector _a, _b, _c;
+    __m256Vector _x, _y, _z;
 };
 
 #endif

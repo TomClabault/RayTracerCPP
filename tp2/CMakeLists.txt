@@ -103,7 +103,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    message(GNU Compiler Detected)
+    message("GNU Compiler Detected")
 
     set(CMAKE_CXX_FLAGS "-Wall -Wextra -mavx2") #Flags always active
     set(CMAKE_CXX_FLAGS_DEBUG "-g") #Flags when compiling in debug
@@ -113,12 +113,26 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(RayTracing_TP1_Tests PRIVATE -fopenmp)
 
     if (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-            set(CMAKE_CXX_FLAGS_RELEASE "-O3 -g") #Flags when compiling in release
+        set(CMAKE_CXX_FLAGS_RELEASE "-O3 -g") #Flags when compiling in release
+    endif()
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    message ("MSVC Compiler Detected")
+
+    target_compile_options(RayTracing_TP1 PRIVATE /arch:AVX2)
+
+    if (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+        set(CMAKE_CXX_FLAGS_RELEASE "/g") #Flags when compiling in release
     endif()
 endif()
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    if (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-            set(CMAKE_CXX_FLAGS_RELEASE "/g") #Flags when compiling in release
-    endif()
+if (WIN32)
+    # find qmake executable
+    get_target_property(_qmake_executable Qt6::qmake IMPORTED_LOCATION)
+    get_filename_component(_qt_bin_dir "${_qmake_executable}" DIRECTORY)
+
+    # run windeployqt
+    add_custom_command(
+        TARGET RayTracing_TP1 POST_BUILD
+        COMMAND "${_qt_bin_dir}/windeployqt.exe" ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/RayTracing_TP1.exe
+    )
 endif()

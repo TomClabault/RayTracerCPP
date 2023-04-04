@@ -5,16 +5,22 @@
 
 #include "vec.h"
 
-class __m256Vector
+struct __m256Vector
 {
 public:
 	__m256Vector();
 	__m256Vector(__m256 x, __m256 y, __m256 z);
 	__m256Vector(Vector a, Vector b, Vector c, Vector d, Vector e, Vector f, Vector g, Vector h);
-	__m256Vector(Vector vecs[8]);
+	__m256Vector(Vector* vecs);
 
 	Vector operator[] (int i);
+
+	friend __m256Vector operator * (const __m256Vector& a, float c);
+	friend __m256Vector operator * (float c, const __m256Vector& a);
+	friend __m256Vector operator * (const __m256Vector& a, __m256 c);
+
 	friend __m256Vector operator / (const __m256Vector& a, float c);
+	friend __m256Vector operator / (float c, const __m256Vector& a);
 	friend __m256Vector operator / (const __m256Vector& a, __m256 c);
 
 public:

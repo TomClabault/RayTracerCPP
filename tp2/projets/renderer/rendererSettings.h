@@ -52,13 +52,13 @@ struct RenderSettings
     bool enable_ssao = true;
     //Number of sample for the SSAO. The higher the sample count, the more precise
     //and less noisy the SSAO but this also means higher computation times
-    int ssao_sample_count = 128;//128
+    int ssao_sample_count = 64;
     //Number of samples used to randomly rotate the ssao samples
-    int ssao_noise_size = 16;
+    int ssao_noise_size = 16;//TODO remove
     //Radius within which to look for occlusion
-    float ssao_radius = 1;
+    float ssao_radius = 0.5;
     //Direct multiplier on the SSAO occlusion strength
-    float ssao_amount = 3;//1.5
+    float ssao_amount = 1.0;
 
     friend std::ostream& operator << (std::ostream& os, const RenderSettings& settings);
 };

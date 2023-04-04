@@ -22,6 +22,18 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         height = _renderer.render_settings().image_height;
 
     _renderer.change_render_size(width, height);
+
+    //Updating the renderer setting with the values present in the fields
+    //at the time the UI is built. This is to make sure that the UI is coherent
+    //with the actual settings of the renderer
+    on_ssao_1_amount_edit_editingFinished();
+    on_ssao_1_radius_edit_editingFinished();
+    on_ssao_1_sample_count_edit_editingFinished();
+
+    on_camera_fov_spin_box_valueChanged(this->ui->camera_fov_spin_box->value());
+
+    //Initializing the random generator here for later uses
+    srand(time(NULL));
 }
 
 MainWindow::~MainWindow()
@@ -72,8 +84,10 @@ void MainWindow::prepare_renderer_buffers()
         new_width = _renderer.render_settings().image_width;
     if (new_height == -1)
         new_height = _renderer.render_settings().image_height;
-    new_ssaa = this->ui->enable_ssaa_check_box->isChecked();
-    new_ssaa_factor = this->ui->ssaa_spin_box->value();
+    new_ssaa = this->ui->ssaa_radio_button->isChecked();
+    new_ssaa_factor = safe_text_to_int(this->ui->ssaa_factor_edit->text());
+    if (new_ssaa_factor == -1)
+        new_ssaa_factor = _renderer.render_settings().ssaa_factor;
 
     bool render_size_changed = (new_width != _renderer.render_settings().image_width)   ||
                                (new_height != _renderer.render_settings().image_height) ||
@@ -103,6 +117,7 @@ void MainWindow::on_renderButton_clicked()
         _renderer.raster_trace();
     else
         _renderer.ray_trace();
+    _renderer.post_process();
 
     if (_rendererd_image_allocated)
     {
@@ -160,14 +175,6 @@ void MainWindow::on_clipping_check_box_stateChanged(int value)
     _renderer.render_settings().enable_clipping = value;
 }
 
-void MainWindow::on_enable_ssaa_check_box_stateChanged(int value)
-{
-    if (value)
-        this->ui->ssaa_spin_box->setEnabled(true);
-    else
-        this->ui->ssaa_spin_box->setEnabled(false);
-}
-
 void MainWindow::on_dump_render_to_file_button_clicked()
 {
     QString filename = this->ui->dump_to_file_filename_edit->text();
@@ -192,4 +199,50 @@ void MainWindow::on_render_height_edit_returnPressed()
     on_renderButton_clicked();
 }
 
+void MainWindow::on_enable_ssao_1_checkbox_stateChanged(int value)
+{
+    _renderer.render_settings().enable_ssao = value;
 
+    this->ui->ssao_1_radius_edit->setEnabled(value);
+    this->ui->ssao_1_radius_label->setEnabled(value);
+    this->ui->ssao_1_sample_count_edit->setEnabled(value);
+    this->ui->ssao_1_sample_count_label->setEnabled(value);
+    this->ui->ssao_1_amount_edit->setEnabled(value);
+    this->ui->ssao_1_amount_label->setEnabled(value);
+}
+
+void MainWindow::on_ssao_1_radius_edit_editingFinished()
+{
+    float radius = safe_text_to_float(this->ui->ssao_1_radius_edit->text());
+
+    if (radius == -1)
+        return;
+
+    _renderer.render_settings().ssao_radius = radius;
+}
+
+void MainWindow::on_ssao_1_sample_count_edit_editingFinished()
+{
+    int sample_count = safe_text_to_int(this->ui->ssao_1_sample_count_edit->text());
+
+    if (sample_count == -1)
+        return;
+
+    _renderer.render_settings().ssao_sample_count = sample_count;
+}
+
+void MainWindow::on_ssao_1_amount_edit_editingFinished()
+{
+    float amount = safe_text_to_float(this->ui->ssao_1_amount_edit->text());
+
+    if (amount == -1)
+        return;
+
+    _renderer.render_settings().ssao_amount = amount;
+}
+
+void MainWindow::on_ssaa_radio_button_toggled(bool checked)
+{
+    this->ui->ssaa_factor_edit->setEnabled(checked);
+    this->ui->ssaa_factor_label->setEnabled(checked);
+}

@@ -4,18 +4,12 @@ __m256Vector::__m256Vector() {};
 __m256Vector::__m256Vector(__m256 x, __m256 y, __m256 z) : _x(x), _y(y), _z(z) {};
 __m256Vector::__m256Vector(Vector a, Vector b, Vector c, Vector d, Vector e, Vector f, Vector g, Vector h)
 {
-	float x[8] = { a.x, b.x, c.x, d.x, e.x, f.x, g.x, h.x },
-		  y[8] = { a.y, b.y, c.y, d.y, e.y, f.y, g.y, h.y },
-		  z[8] = { a.z, b.z, c.z, d.z, e.z, f.z, g.z, h.z };
+	_x = _mm256_set_ps(a.x, b.x, c.x, d.x, e.x, f.x, g.x, h.x);
+	_y = _mm256_set_ps(a.y, b.y, c.y, d.y, e.y, f.y, g.y, h.y);
+	_z = _mm256_set_ps(a.z, b.z, c.z, d.z, e.z, f.z, g.z, h.z);
+}
 
-	_x = _mm256_load_ps(x);
-	_y = _mm256_load_ps(y);
-	_z = _mm256_load_ps(z);
-}
-__m256Vector::__m256Vector(Vector vecs[8])
-{
-	__m256Vector(vecs[0], vecs[1], vecs[2], vecs[3], vecs[4], vecs[5], vecs[6], vecs[7]);
-}
+__m256Vector::__m256Vector(Vector* vecs) : __m256Vector(vecs[7], vecs[6], vecs[5], vecs[4], vecs[3], vecs[2], vecs[1], vecs[0]) {}
 
 Vector __m256Vector::operator[] (int i)
 {
@@ -26,11 +20,33 @@ Vector __m256Vector::operator[] (int i)
 #endif
 }
 
+__m256Vector operator * (const __m256Vector& a, float c)
+{
+	__m256 cVec = _mm256_set1_ps(c);
+
+	return __m256Vector(_mm256_mul_ps(a._x, cVec), _mm256_mul_ps(a._y, cVec), _mm256_mul_ps(a._z, cVec));
+}
+
+__m256Vector operator * (float c, const __m256Vector& a)
+{
+	return a * c;
+}
+
+__m256Vector operator * (const __m256Vector& a, __m256 c)
+{
+	return __m256Vector(_mm256_mul_ps(a._x, c), _mm256_mul_ps(a._y, c), _mm256_mul_ps(a._z, c));
+}
+
 __m256Vector operator / (const __m256Vector& a, float c)
 {
 	__m256 cVec = _mm256_set1_ps(c);
 
 	return (a / cVec);
+}
+
+__m256Vector operator / (float c, const __m256Vector& a)
+{
+	return a / c;
 }
 
 __m256Vector operator / (const __m256Vector& a, __m256 c)

@@ -27,23 +27,24 @@ public:
 private slots:
     void on_renderButton_clicked();
 
-    void on_hybrid_check_box_stateChanged(int arg1);
-
-    void on_clipping_check_box_stateChanged(int arg1);
-
-    void on_enable_ssaa_check_box_stateChanged(int arg1);
-
     void on_dump_render_to_file_button_clicked();
+    void on_hybrid_check_box_stateChanged(int arg1);
+    void on_clipping_check_box_stateChanged(int arg1);
 
     void on_camera_fov_spin_box_valueChanged(int arg1);
 
     void on_load_robot_obj_button_clicked();
+    void on_load_geometry_obj_button_clicked();
 
     void on_render_width_edit_returnPressed();
-
     void on_render_height_edit_returnPressed();
 
-    void on_load_geometry_obj_button_clicked();
+    void on_enable_ssao_1_checkbox_stateChanged(int arg1);
+    void on_ssao_1_radius_edit_editingFinished();
+    void on_ssao_1_sample_count_edit_editingFinished();
+    void on_ssao_1_amount_edit_editingFinished();
+
+    void on_ssaa_radio_button_toggled(bool checked);
 
 private:
     Ui::MainWindow *ui;

@@ -46,17 +46,6 @@ public:
     Triangle();
     Triangle(Point a, Point b, Point c, int material_index = -1);
 
-    /*Triangle(const Triangle& triangle)
-    {
-        _a = triangle._a;
-        _b = triangle._b;
-        _c = triangle._c;
-        _normal = triangle._normal;
-        _materialIndex = triangle._materialIndex;
-
-        std::cout << "copy";
-    }*/
-
     /*
      * Converts a triangle 4 in homogeneous coordinates to a cartesian triangle by dividing each verte by their homogeneous w component
      */
