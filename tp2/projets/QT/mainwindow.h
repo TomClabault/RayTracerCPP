@@ -19,9 +19,7 @@ public:
     ~MainWindow();
 
     void prepare_renderer_buffers();
-
     void set_render_image(const Image* const image);
-
     void load_obj(const char* filepath, Transform transform);
 
 private slots:

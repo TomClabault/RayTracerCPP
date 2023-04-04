@@ -1,6 +1,7 @@
 #include "graphicsViewZoom.h"
 #include "image_io.h"
 #include "mainwindow.h"
+#include "mainUtils.h"
 #include "meshIOUtils.h"
 #include "qtUtils.h"
 #include "timer.h"
@@ -148,6 +149,7 @@ void MainWindow::load_obj(const char* filepath, Transform transform)
 
     _renderer.set_triangles(triangles);
     _renderer.set_materials(meshData.materials);
+    precompute_materials(_renderer.get_materials());
 
     timer.stop();
 

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(RayTracing_TP1 LANGUAGES CXX)
+project(RayTracing LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -54,24 +54,24 @@ list(APPEND SRC_FILES ${UI_FILES_PROJETS_QT})
 list(APPEND SRC_FILES_TESTS ${INCLUDE_FILES})
 list(APPEND SRC_FILES_TESTS ${UI_FILES_PROJETS_QT})
 
-add_executable(RayTracing_TP1 ${SRC_FILES})
-add_executable(RayTracing_TP1_Tests ${SRC_FILES_TESTS})
+add_executable(RayTracing ${SRC_FILES})
+add_executable(RayTracing_Tests ${SRC_FILES_TESTS})
 
-target_include_directories(RayTracing_TP1 PRIVATE src/)
-target_include_directories(RayTracing_TP1 PRIVATE projets/)
-target_include_directories(RayTracing_TP1 PRIVATE projets/SIMD/)
-target_include_directories(RayTracing_TP1 PRIVATE projets/utils/)
-target_include_directories(RayTracing_TP1 PRIVATE projets/scene/)
-target_include_directories(RayTracing_TP1 PRIVATE projets/renderer/)
-target_include_directories(RayTracing_TP1 PRIVATE projets/QT/)
+target_include_directories(RayTracing PRIVATE src/)
+target_include_directories(RayTracing PRIVATE projets/)
+target_include_directories(RayTracing PRIVATE projets/SIMD/)
+target_include_directories(RayTracing PRIVATE projets/utils/)
+target_include_directories(RayTracing PRIVATE projets/scene/)
+target_include_directories(RayTracing PRIVATE projets/renderer/)
+target_include_directories(RayTracing PRIVATE projets/QT/)
 
-target_include_directories(RayTracing_TP1_Tests PRIVATE src/)
-target_include_directories(RayTracing_TP1_Tests PRIVATE projets/)
-target_include_directories(RayTracing_TP1_Tests PRIVATE projets/SIMD/)
-target_include_directories(RayTracing_TP1_Tests PRIVATE projets/utils/)
-target_include_directories(RayTracing_TP1_Tests PRIVATE projets/scene/)
-target_include_directories(RayTracing_TP1_Tests PRIVATE projets/renderer/)
-target_include_directories(RayTracing_TP1_Tests PRIVATE projets/QT/)
+target_include_directories(RayTracing_Tests PRIVATE src/)
+target_include_directories(RayTracing_Tests PRIVATE projets/)
+target_include_directories(RayTracing_Tests PRIVATE projets/SIMD/)
+target_include_directories(RayTracing_Tests PRIVATE projets/utils/)
+target_include_directories(RayTracing_Tests PRIVATE projets/scene/)
+target_include_directories(RayTracing_Tests PRIVATE projets/renderer/)
+target_include_directories(RayTracing_Tests PRIVATE projets/QT/)
 
 #Adding OpenMP to the projects
 find_package(OpenMP)
@@ -79,15 +79,15 @@ find_package(OpenMP)
 set (CMAKE_PREFIX_PATH "E:\\Programmes\\Qt\\6.3.2\\msvc2019_64")
 find_package(Qt6 COMPONENTS Core Widgets Gui OpenGL OpenGLWidgets)
 if (Qt6_FOUND)
-    target_link_libraries(RayTracing_TP1 PUBLIC OpenMP::OpenMP_CXX Qt6::Core Qt6::Widgets Qt6::Gui)
-    target_link_libraries(RayTracing_TP1_Tests PUBLIC OpenMP::OpenMP_CXX Qt6::Core Qt6::Widgets Qt6::Gui)
+    target_link_libraries(RayTracing PUBLIC OpenMP::OpenMP_CXX Qt6::Core Qt6::Widgets Qt6::Gui)
+    target_link_libraries(RayTracing_Tests PUBLIC OpenMP::OpenMP_CXX Qt6::Core Qt6::Widgets Qt6::Gui)
 
     qt_standard_project_setup()
 else()
     find_package(Qt5 REQUIRED COMPONENTS Widgets)
     if (Qt5Widgets_FOUND)
-        target_link_libraries(RayTracing_TP1 PUBLIC OpenMP::OpenMP_CXX Qt5::Core Qt5::Widgets Qt5::Gui)
-        target_link_libraries(RayTracing_TP1_Tests PUBLIC OpenMP::OpenMP_CXX Qt5::Core Qt5::Widgets Qt5::Gui)
+        target_link_libraries(RayTracing PUBLIC OpenMP::OpenMP_CXX Qt5::Core Qt5::Widgets Qt5::Gui)
+        target_link_libraries(RayTracing_Tests PUBLIC OpenMP::OpenMP_CXX Qt5::Core Qt5::Widgets Qt5::Gui)
     endif()
 endif()
 
@@ -109,8 +109,8 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS_DEBUG "-g") #Flags when compiling in debug
     set(CMAKE_CXX_FLAGS_RELEASE "-O3") #Flags when compiling in release
 
-    target_compile_options(RayTracing_TP1 PRIVATE -fopenmp)
-    target_compile_options(RayTracing_TP1_Tests PRIVATE -fopenmp)
+    target_compile_options(RayTracing PRIVATE -fopenmp)
+    target_compile_options(RayTracing_Tests PRIVATE -fopenmp)
 
     if (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
         set(CMAKE_CXX_FLAGS_RELEASE "-O3 -g") #Flags when compiling in release
@@ -118,7 +118,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     message ("MSVC Compiler Detected")
 
-    target_compile_options(RayTracing_TP1 PRIVATE /arch:AVX2)
+    target_compile_options(RayTracing PRIVATE /arch:AVX2)
 
     if (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
         set(CMAKE_CXX_FLAGS_RELEASE "/g") #Flags when compiling in release
@@ -132,7 +132,7 @@ if (WIN32)
 
     # run windeployqt
     add_custom_command(
-        TARGET RayTracing_TP1 POST_BUILD
-        COMMAND "${_qt_bin_dir}/windeployqt.exe" ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/RayTracing_TP1.exe
+        TARGET RayTracing POST_BUILD
+        COMMAND "${_qt_bin_dir}/windeployqt.exe" ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/RayTracing.exe
     )
 endif()

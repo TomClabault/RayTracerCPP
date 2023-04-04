@@ -36,6 +36,7 @@ public:
 
     void set_triangles(std::vector<Triangle> triangles);//TODO ne pas faire de copie. mais move?
 
+    Materials& get_materials();
     void set_materials(Materials materials);
 
     void clear_z_buffer();
@@ -76,25 +77,27 @@ public:
 	/*
 	 * Applies screen space ambient occlusion
 	 */
-	void post_process_ssao();
+    void post_process_ssao_SIMD();
+    void post_process_ssao_scalar();
 
 private:
 
     void init_buffers(int width, int height);
 
-	/*
+    /**
 	 * @return Returns the diffuse color of the material given the intersection normal and the direction to the light source
 	 */
 	Color computeDiffuse(const Material& hitMaterial, const Vector& normal, const Vector& direction_to_light) const;
 
 	Color computeSpecular(const Material& hitMaterial, const Vector& ray_direction, const Vector& normal, const Vector& direction_to_light) const;
 
-	/*
-	 * @return Returns true if the point is shadowed by another object, false otherwise.
+    /**
+     * @return Returns true if the point is shadowed by another object
+     * according to the given light position, false otherwise.
 	 */
 	bool is_shadowed(const Point& inter_point, const Point& light_position) const;
 
-	/*
+    /**
 	 * Clips triangles given in @to_clip against the plane defined by the given @plane_index and @plane_sign and
 	 * stores the result in @out_clipped
 	 *

@@ -156,6 +156,11 @@ void Renderer::set_triangles(std::vector<Triangle> triangles)
         _bvh = BVH(&_triangles, _render_settings.bvh_max_depth, _render_settings.bvh_leaf_object_count);
 }
 
+Materials& Renderer::get_materials()
+{
+    return _materials;
+}
+
 void Renderer::set_materials(Materials materials)
 {
     _materials = materials;
@@ -736,7 +741,7 @@ void Renderer::post_process()
         for (int i = 0; i < 1; i++)
         {
             timer.start();
-            post_process_ssao();
+            post_process_ssao_SIMD();
             timer.stop();
             if (min > timer.elapsed())
                 min = timer.elapsed();
@@ -748,98 +753,98 @@ void Renderer::post_process()
     }
 }
 
-//void Renderer::post_process_ssao()
-//{
-//    int render_width, render_height;
-//    get_render_width_height(_render_settings, render_width, render_height);
+void Renderer::post_process_ssao_scalar()
+{
+    int render_width, render_height;
+    get_render_width_height(_render_settings, render_width, render_height);
 
-//    short int* ao_buffer = new short int[render_height * render_width];
-//    std::memset(ao_buffer, 0, sizeof(short int) * render_height * render_width);
+    short int* ao_buffer = new short int[render_height * render_width];
+    std::memset(ao_buffer, 0, sizeof(short int) * render_height * render_width);
 
-//    XorShiftGenerator rand_generator;
-//#pragma omp parallel private(rand_generator)
-//    {
-//        rand_generator = XorShiftGenerator(omp_get_thread_num() * 24183 + rand());
-//#pragma omp for
-//        for (int y = 0; y < render_height; y++)
-//        {
-//            for (int x = 0; x < render_width; x++)
-//            {
-//                //No information here, there's no pixel to shade: background at this pixel on the image
-//                if (_z_buffer(y, x) == INFINITY)
-//                    continue;
+    XorShiftGenerator rand_generator;
+#pragma omp parallel private(rand_generator)
+    {
+        rand_generator = XorShiftGenerator(omp_get_thread_num() * 24183 + rand());
+#pragma omp for
+        for (int y = 0; y < render_height; y++)
+        {
+            for (int x = 0; x < render_width; x++)
+            {
+                //No information here, there's no pixel to shade: background at this pixel on the image
+                if (_z_buffer(y, x) == INFINITY)
+                    continue;
 
-//                float x_ndc = (float)x / render_width * 2 - 1;
-//                float y_ndc = (float)y / render_height * 2 - 1;
+                float x_ndc = (float)x / render_width * 2 - 1;
+                float y_ndc = (float)y / render_height * 2 - 1;
 
-//                float view_z = _z_buffer(y, x);
-//                float view_ray_x = x_ndc * _scene._camera._aspect_ratio * std::tan(radians(_scene._camera._fov / 2));
-//                float view_ray_y = y_ndc * std::tan(radians(_scene._camera._fov / 2));
-//                Point camera_space_point = Point(view_ray_x * view_z, view_ray_y * view_z, -view_z);
+                float view_z = _z_buffer(y, x);
+                float view_ray_x = x_ndc * _scene._camera._aspect_ratio * std::tan(radians(_scene._camera._fov / 2));
+                float view_ray_y = y_ndc * std::tan(radians(_scene._camera._fov / 2));
+                Point camera_space_point = Point(view_ray_x * view_z, view_ray_y * view_z, -view_z);
 
-//                Vector normal = normalize(_normal_buffer(y, x));
+                Vector normal = normalize(_normal_buffer(y, x));
 
-//                short int pixel_occlusion = 0;
-//                for (int i = 0; i < _render_settings.ssao_sample_count; i++)
-//                {
-//                    float rand_x = rand_generator.get_rand_bilateral();
-//                    float rand_y = rand_generator.get_rand_bilateral();
-//                    float rand_z = rand_generator.get_rand_bilateral();
+                short int pixel_occlusion = 0;
+                for (int i = 0; i < _render_settings.ssao_sample_count; i++)
+                {
+                    float rand_x = rand_generator.get_rand_bilateral();
+                    float rand_y = rand_generator.get_rand_bilateral();
+                    float rand_z = rand_generator.get_rand_bilateral();
 
-//                    Point random_sample = Point(normalize(Vector(rand_x, rand_y, rand_z)));
-//                    random_sample = random_sample * (rand_generator.get_rand_lateral() + 0.0001);
-//                    random_sample = random_sample * _render_settings.ssao_radius;
-//                    random_sample = random_sample + camera_space_point;
-//                    if (dot(random_sample - camera_space_point, normal) < 0)//The point is not in front of the normal
-//                        random_sample = random_sample + 2 * (camera_space_point - random_sample);
+                    Point random_sample = Point(normalize(Vector(rand_x, rand_y, rand_z)));
+                    random_sample = random_sample * (rand_generator.get_rand_lateral() + 0.0001);
+                    random_sample = random_sample * _render_settings.ssao_radius;
+                    random_sample = random_sample + camera_space_point;
+                    if (dot(random_sample - camera_space_point, normal) < 0)//The point is not in front of the normal
+                        random_sample = random_sample + 2 * (camera_space_point - random_sample);
 
-//                    Point random_sample_ndc = _scene._camera._perspective_proj_mat(random_sample);
-//                    int random_point_pixel_x = (int)((random_sample_ndc.x + 1) * 0.5 * render_width);
-//                    int random_point_pixel_y = (int)((random_sample_ndc.y + 1) * 0.5 * render_height);
+                    Point random_sample_ndc = _scene._camera._perspective_proj_mat(random_sample);
+                    int random_point_pixel_x = (int)((random_sample_ndc.x + 1) * 0.5 * render_width);
+                    int random_point_pixel_y = (int)((random_sample_ndc.y + 1) * 0.5 * render_height);
 
-//                    random_point_pixel_x = std::min(std::max(0, random_point_pixel_x), render_width - 1);
-//                    random_point_pixel_y = std::min(std::max(0, random_point_pixel_y), render_height - 1);
+                    random_point_pixel_x = std::min(std::max(0, random_point_pixel_x), render_width - 1);
+                    random_point_pixel_y = std::min(std::max(0, random_point_pixel_y), render_height - 1);
 
-//                    float sample_geometry_depth = -_z_buffer(random_point_pixel_y, random_point_pixel_x);
+                    float sample_geometry_depth = -_z_buffer(random_point_pixel_y, random_point_pixel_x);
 
-//                    //Range check
-//                    if (std::abs(sample_geometry_depth - camera_space_point.z) > _render_settings.ssao_radius)
-//                        continue;
-//                    if (random_sample.z < sample_geometry_depth)
-//                        pixel_occlusion++;
-//                }
+                    //Range check
+                    if (std::abs(sample_geometry_depth - camera_space_point.z) > _render_settings.ssao_radius)
+                        continue;
+                    if (random_sample.z < sample_geometry_depth)
+                        pixel_occlusion++;
+                }
 
-//                ao_buffer[y * render_width + x] = pixel_occlusion;
-//            }
-//        }
-//    }
+                ao_buffer[y * render_width + x] = pixel_occlusion;
+            }
+        }
+    }
 
-//    //Blurring the AO
-//    int blur_size = 7;
-//    int half_blur_size = blur_size / 2;
-//#pragma omp parallel for
-//    for (int y = half_blur_size; y < render_height - half_blur_size; y++)
-//    {
-//        for (int x = half_blur_size; x < render_width - half_blur_size; x++)
-//        {
-//            if (_z_buffer(y, x) == INFINITY)//Background pixel, we're not blurring it
-//                continue;
+    //Blurring the AO
+    int blur_size = 7;
+    int half_blur_size = blur_size / 2;
+#pragma omp parallel for
+    for (int y = half_blur_size; y < render_height - half_blur_size; y++)
+    {
+        for (int x = half_blur_size; x < render_width - half_blur_size; x++)
+        {
+            if (_z_buffer(y, x) == INFINITY)//Background pixel, we're not blurring it
+                continue;
 
-//            int sum = 0;
-//            for (int offset_y = -half_blur_size; offset_y <= half_blur_size; offset_y++)
-//                for (int offset_x = -half_blur_size; offset_x <= half_blur_size; offset_x++)
-//                    sum += ao_buffer[(y + offset_y) * render_width + x + offset_x];
+            int sum = 0;
+            for (int offset_y = -half_blur_size; offset_y <= half_blur_size; offset_y++)
+                for (int offset_x = -half_blur_size; offset_x <= half_blur_size; offset_x++)
+                    sum += ao_buffer[(y + offset_y) * render_width + x + offset_x];
 
-//            //Applying directly on the image
-//            float color_multiplier = 1 - ((float)sum / (float)(blur_size * blur_size) / (float)_render_settings.ssao_sample_count * (float)_render_settings.ssao_amount);
-//            _image(x, y) = _image(x, y) * Color(color_multiplier, color_multiplier, color_multiplier, 1.0f);
-//        }
-//    }
+            //Applying directly on the image
+            float color_multiplier = 1 - ((float)sum / (float)(blur_size * blur_size) / (float)_render_settings.ssao_sample_count * (float)_render_settings.ssao_amount);
+            _image(x, y) = _image(x, y) * Color(color_multiplier, color_multiplier, color_multiplier, 1.0f);
+        }
+    }
 
-//    delete[] ao_buffer;
-//}
+    delete[] ao_buffer;
+}
 
-void Renderer::post_process_ssao()
+void Renderer::post_process_ssao_SIMD()
 {
     int render_width, render_height;
     get_render_width_height(_render_settings, render_width, render_height);
@@ -881,7 +886,7 @@ void Renderer::post_process_ssao()
 
                 float sum = _mm256_reduction_ps(infinity_mask);
                 if (sum == 0.0)//We have no _z_buffer information on any pixels i.e. all pixels are background pixels
-                    continue;//Skipping these 8 pixels
+                    continue;//Skipping all these pixels
 
                 __m256 x_vec = _mm256_set1_ps(x);
 
@@ -919,7 +924,7 @@ void Renderer::post_process_ssao()
                     __m256 dot_mask = _mm256_and_ps(_mm256_cmp_ps(dot_result, _mm256_setzero_ps(), _CMP_LT_OQ), ones);
                     __m256Vector backflip_vec = 2 * (camera_space_point - random_sample);
 
-                    ///+ 2 * (camera_space_point - random_sample) if dot < 0
+                    //+ 2 * (camera_space_point - random_sample) if dot < 0
                     random_sample = random_sample + backflip_vec * dot_mask;
 
                     __m256Point random_sample_ndc = random_sample.transform(_scene._camera._perspective_proj_mat);
