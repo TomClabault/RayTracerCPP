@@ -46,6 +46,19 @@ public:
     void change_camera_fov(float fov);
     void change_camera_aspect_ratio(float aspect_ratio);
 
+    void set_light_position(const Point& position);
+
+    /**
+     * @brief Builds the BVH using the present triangles and the BVH
+     * settings held in the RenderSettings
+     */
+    void reconstruct_bvh_new();
+
+    /**
+     * @brief Destroys the BVH
+     */
+    void destroy_bvh();
+
     /**
      * @brief Used to change the render size of the renderer even after the renderer has been instantiated.
      * When the renderer has been instantiated, you should always use this function to change the render size

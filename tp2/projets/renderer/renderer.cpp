@@ -193,6 +193,21 @@ void Renderer::change_camera_aspect_ratio(float aspect_ratio)
     _scene._camera.set_aspect_ratio(aspect_ratio);
 }
 
+void Renderer::set_light_position(const Point& position)
+{
+    _scene._point_light._position = position;
+}
+
+void Renderer::reconstruct_bvh_new()
+{
+    _bvh = BVH(&_triangles, _render_settings.bvh_max_depth, _render_settings.bvh_leaf_object_count);
+}
+
+void Renderer::destroy_bvh()
+{
+    _bvh = BVH();//Empty BVH basically destroying the previous one
+}
+
 void Renderer::change_render_size(int width, int height)
 {
     _render_settings.image_width = width;
@@ -665,7 +680,7 @@ void Renderer::ray_trace()
             HitInfo finalHitInfo;
             HitInfo hit_info;
 
-            if (!_render_settings.enable_bvh)
+            if (_render_settings.enable_bvh)
             {
                 if (_bvh.intersect(ray, hit_info))
                     if (hit_info.t < finalHitInfo.t || finalHitInfo.t == -1)
@@ -733,24 +748,8 @@ void Renderer::ray_trace()
 
 void Renderer::post_process()
 {
-    Timer timer;
-
     if (_render_settings.enable_ssao)
-    {
-        float min = INFINITY;
-        for (int i = 0; i < 1; i++)
-        {
-            timer.start();
-            post_process_ssao_SIMD();
-            timer.stop();
-            if (min > timer.elapsed())
-                min = timer.elapsed();
-
-            std::cout << "SSAO Time: " << timer.elapsed() << "ms" << std::endl;
-        }
-
-        std::cout << "min time: " << min << "ms" << std::endl;
-    }
+        post_process_ssao_SIMD();
 }
 
 void Renderer::post_process_ssao_scalar()

@@ -39,7 +39,7 @@ BVH::BVH(std::vector<Triangle>* triangles, int max_depth, int leaf_max_obj_count
 	build_bvh(max_depth, leaf_max_obj_count, minimum, maximum, volume);
 
 	timer.stop();
-	std::cout << "BVH Construction Time: " << timer.elapsed() << "ms\n";
+    //std::cout << "BVH Construction Time: " << timer.elapsed() << "ms\n";
 }
 
 BVH::~BVH()

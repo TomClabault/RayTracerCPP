@@ -14,8 +14,13 @@ int safe_text_to_int(const QString& text)
 
 float safe_text_to_float(const QString& text)
 {
-    bool ok;
+    bool trash;
 
+    return safe_text_to_float(text, trash);
+}
+
+float safe_text_to_float(const QString& text, bool& ok)
+{
     float value = text.toFloat(&ok);
 
     if (!ok)

@@ -31,7 +31,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     on_ssao_1_radius_edit_editingFinished();
     on_ssao_1_sample_count_edit_editingFinished();
 
-    on_camera_fov_spin_box_valueChanged(this->ui->camera_fov_spin_box->value());
+    //Initializing the camera's FOV
+    on_camera_fov_edit_editingFinished();
+
+    //Initializing the light's position
+    on_light_position_edit_editingFinished();
 
     //Initializing the random generator here for later uses
     srand(time(NULL));
@@ -40,6 +44,26 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::handle_image_processing()
+{
+    if (_rendererd_image_allocated)
+    {
+        delete _renderered_image;
+
+        _rendererd_image_allocated = false;
+    }
+
+    if (_renderer.render_settings().enable_ssaa)
+    {
+        downscale_image(*_renderer.getImage(), &_renderered_image, _renderer.render_settings().ssaa_factor);
+        _rendererd_image_allocated = true;
+    }
+    else
+        _renderered_image = _renderer.getImage();
+
+    set_render_image(_renderered_image);
 }
 
 void MainWindow::set_render_image(const Image* const image)
@@ -72,6 +96,35 @@ void MainWindow::set_render_image(const Image* const image)
         delete this->graphics_view_zoom;
     this->graphics_view_zoom = new Graphics_view_zoom(ui->graphics_view);
     this->ui->graphics_view->setScene(scene);
+}
+
+void MainWindow::prepare_bvh()
+{
+    bool new_bvh_enabled = this->ui->enable_bvh_check_box->isChecked();
+    int new_bvh_max_depth = safe_text_to_int(this->ui->bvh_max_depth_edit->text());
+    if (new_bvh_max_depth == -1)//An invalid value was entered in the input field
+        new_bvh_max_depth = _renderer.render_settings().bvh_max_depth;
+    int new_bvh_max_obj_count = safe_text_to_int(this->ui->bvh_max_leaf_object_edit->text());
+    if (new_bvh_max_obj_count == -1)
+        new_bvh_max_obj_count = _renderer.render_settings().bvh_leaf_object_count;
+
+
+    //The user just enabled the BVH or changed the settings of the BVH
+    if ((new_bvh_enabled && !_renderer.render_settings().enable_bvh) ||
+        (new_bvh_max_depth != _renderer.render_settings().bvh_max_depth ||
+         new_bvh_max_obj_count != _renderer.render_settings().bvh_leaf_object_count))
+    {
+        _renderer.render_settings().bvh_max_depth = new_bvh_max_depth;
+        _renderer.render_settings().bvh_leaf_object_count = new_bvh_max_obj_count;
+
+        _renderer.reconstruct_bvh_new();
+    }
+    else if (!new_bvh_enabled && _renderer.render_settings().enable_bvh)
+        _renderer.destroy_bvh(); //The user just disabled the BVH
+
+    _renderer.render_settings().bvh_max_depth = new_bvh_max_depth;
+    _renderer.render_settings().bvh_leaf_object_count = new_bvh_max_obj_count;
+    _renderer.render_settings().enable_bvh = new_bvh_enabled;
 }
 
 void MainWindow::prepare_renderer_buffers()
@@ -110,36 +163,38 @@ void MainWindow::prepare_renderer_buffers()
     _renderer.clear_image();
 }
 
-void MainWindow::on_renderButton_clicked()
+void MainWindow::on_render_button_clicked()
 {
-    prepare_renderer_buffers();
+    std::stringstream ss;
 
+    Timer timer;
+    prepare_bvh();//Updates the BVH if necessary
+    prepare_renderer_buffers();//Updates the various buffers of the renderer
+    //if necessary
+
+    timer.start();
     if (_renderer.render_settings().hybrid_rasterization_tracing)
         _renderer.raster_trace();
     else
         _renderer.ray_trace();
+    timer.stop();
+    ss << std::endl << "Render time: " << timer.elapsed() << "ms" << std::endl;
+
+    timer.start();
     _renderer.post_process();
+    timer.stop();
+    ss << "Post-processing time: " << timer.elapsed() << "ms";
 
-    if (_rendererd_image_allocated)
-    {
-        delete _renderered_image;
+    //Allocates the image buffer, downscales the image if SSAA was used, ....
+    //and finally display the rendered image in the QGraphicsView
+    handle_image_processing();
 
-        _rendererd_image_allocated = false;
-    }
-
-    if (_renderer.render_settings().enable_ssaa)
-    {
-        downscale_image(*_renderer.getImage(), &_renderered_image, _renderer.render_settings().ssaa_factor);
-        _rendererd_image_allocated = true;
-    }
-    else
-        _renderered_image = _renderer.getImage();
-
-    set_render_image(_renderered_image);
+    write_to_console(ss);
 }
 
 void MainWindow::load_obj(const char* filepath, Transform transform)
 {
+    std::stringstream ss;
     Timer timer;
 
     timer.start();
@@ -153,7 +208,16 @@ void MainWindow::load_obj(const char* filepath, Transform transform)
 
     timer.stop();
 
-    std::cout << "OBJ Loading time: " << timer.elapsed() << "ms" << std::endl;
+    ss << "OBJ Loading time: " << timer.elapsed() << "ms";
+    write_to_console(ss);
+}
+
+void MainWindow::write_to_console(const std::stringstream& ss)
+{
+    std::string ss_string = ss.str();
+
+    this->ui->output_console->append(QString(ss_string.c_str()));
+    this->ui->output_console->ensureCursorVisible();
 }
 
 void MainWindow::on_load_robot_obj_button_clicked()
@@ -186,20 +250,8 @@ void MainWindow::on_dump_render_to_file_button_clicked()
     this->q_image->save(filename);
 }
 
-void MainWindow::on_camera_fov_spin_box_valueChanged(int fov)
-{
-    _renderer.change_camera_fov(fov);
-}
-
-void MainWindow::on_render_width_edit_returnPressed()
-{
-    on_renderButton_clicked();
-}
-
-void MainWindow::on_render_height_edit_returnPressed()
-{
-    on_renderButton_clicked();
-}
+void MainWindow::on_render_width_edit_returnPressed() { on_render_button_clicked(); }
+void MainWindow::on_render_height_edit_returnPressed() { on_render_button_clicked(); }
 
 void MainWindow::on_enable_ssao_1_checkbox_stateChanged(int value)
 {
@@ -248,3 +300,53 @@ void MainWindow::on_ssaa_radio_button_toggled(bool checked)
     this->ui->ssaa_factor_edit->setEnabled(checked);
     this->ui->ssaa_factor_label->setEnabled(checked);
 }
+
+void MainWindow::on_ssaa_factor_edit_returnPressed() { on_render_button_clicked(); }
+
+void MainWindow::on_ssao_1_sample_count_edit_returnPressed() { on_render_button_clicked(); }
+void MainWindow::on_ssao_1_radius_edit_returnPressed() { on_render_button_clicked(); }
+void MainWindow::on_ssao_1_amount_edit_returnPressed() { on_render_button_clicked(); }
+
+void MainWindow::on_camera_fov_edit_editingFinished()
+{
+    float fov = safe_text_to_float(this->ui->camera_fov_edit->text());
+    if (fov != -1)
+        _renderer.change_camera_fov(fov);
+}
+
+
+void MainWindow::on_camera_fov_edit_returnPressed() { on_render_button_clicked(); }
+
+void MainWindow::on_bvh_max_leaf_object_edit_returnPressed() { on_render_button_clicked(); }
+void MainWindow::on_bvh_max_depth_edit_returnPressed() { on_render_button_clicked(); }
+
+void MainWindow::on_enable_bvh_check_box_stateChanged(int checked)
+{
+    this->ui->bvh_max_depth_edit->setEnabled(checked);
+    this->ui->bvh_max_depth_label->setEnabled(checked);
+    this->ui->bvh_max_leaf_object_edit->setEnabled(checked);
+    this->ui->bvh_max_leaf_object_label->setEnabled(checked);
+}
+
+void MainWindow::on_enable_shadows_check_box_stateChanged(int checked) { _renderer.render_settings().compute_shadows = checked; }
+
+void MainWindow::on_light_position_edit_editingFinished()
+{
+    QString light_position_text = this->ui->light_position_edit->text();
+    QStringList coordinates = light_position_text.split("/");
+    if (coordinates.size() != 3)
+        return;
+
+    bool ok_x, ok_y, ok_z;
+    float x = safe_text_to_float(coordinates.at(0), ok_x);
+    float y = safe_text_to_float(coordinates.at(1), ok_y);
+    float z = safe_text_to_float(coordinates.at(2), ok_z);
+
+    if (!ok_x || !ok_y || !ok_z)
+        return;
+    else
+        _renderer.set_light_position(Point(x, y, z));
+}
+
+void MainWindow::on_light_position_edit_returnPressed() { on_light_position_edit_editingFinished(); on_render_button_clicked(); }
+

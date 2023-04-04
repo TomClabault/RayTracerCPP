@@ -4,6 +4,8 @@
 #include <QString>
 
 int safe_text_to_int(const QString& text);
+
+float safe_text_to_float(const QString& text, bool& ok);
 float safe_text_to_float(const QString& text);
 
 #endif
