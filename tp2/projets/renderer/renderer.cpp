@@ -856,7 +856,9 @@ void Renderer::post_process_ssao_SIMD()
 
     __m256 ones = _mm256_set1_ps(1);
     __m256 twos = _mm256_set1_ps(2);
-    __m256 fov_multiplier = _mm256_tan_ps(_mm256_mul_ps(_mm256_div_ps(_mm256_set1_ps(_scene._camera._fov / 2), _mm256_set1_ps(180)), _mm256_set1_ps(M_PI)));
+
+    float fov_multiplier_value = std::tan(_scene._camera._fov / 2 / 180 * M_PI);
+    __m256 fov_multiplier = _mm256_set1_ps(fov_multiplier_value);
 
     __m256_XorShiftGenerator rand_generator;
 #pragma omp parallel private(rand_generator)
@@ -879,7 +881,7 @@ void Renderer::post_process_ssao_SIMD()
 
             for (int x = 0; x < render_width; x += 8)
             {
-                __m256 view_z = _mm256_load_ps(_z_buffer.row(y) + x);
+                __m256 view_z = _mm256_loadu_ps(_z_buffer.row(y) + x);
                 __m256 infinity = _mm256_set1_ps(INFINITY);
                 __m256 infinity_mask = _mm256_cmp_ps(view_z, infinity, _CMP_NEQ_OQ);
 

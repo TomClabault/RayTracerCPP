@@ -86,6 +86,7 @@ if (Qt6_FOUND)
 else()
     find_package(Qt5 REQUIRED COMPONENTS Widgets)
     if (Qt5Widgets_FOUND)
+        message ("Qt5 Found!")
         target_link_libraries(RayTracing PUBLIC OpenMP::OpenMP_CXX Qt5::Core Qt5::Widgets Qt5::Gui)
         target_link_libraries(RayTracing_Tests PUBLIC OpenMP::OpenMP_CXX Qt5::Core Qt5::Widgets Qt5::Gui)
     endif()
@@ -93,6 +94,7 @@ endif()
 
 
 #Copying the "data" folder into the binary directory so that the application has access to the data folder even when in the folders created by the QtCreator "compiler"
+message(${PROJECT_BINARY_DIR})
 file(COPY data DESTINATION ${PROJECT_BINARY_DIR})
 file(COPY darkstyle DESTINATION ${PROJECT_BINARY_DIR})
 message("/data OBJ files copied")
@@ -105,7 +107,7 @@ endif()
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     message("GNU Compiler Detected")
 
-    set(CMAKE_CXX_FLAGS "-Wall -Wextra -mavx2") #Flags always active
+    set(CMAKE_CXX_FLAGS "-Wall -Wextra -march=native") #Flags always active
     set(CMAKE_CXX_FLAGS_DEBUG "-g") #Flags when compiling in debug
     set(CMAKE_CXX_FLAGS_RELEASE "-O3") #Flags when compiling in release
 

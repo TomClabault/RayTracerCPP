@@ -1,7 +1,9 @@
 #ifndef XORSHIFT_H
 #define XORSHIFT_H
 
+#include <cstdint>
 #include <immintrin.h>
+#include <limits>
 
 struct __m256_XorShiftGenerator
 {
@@ -12,9 +14,9 @@ struct __m256_XorShiftGenerator
     {
         __m256i x = _state;
 
-        x = _mm256_xor_epi32(x, _mm256_slli_epi32(x, 13));
-        x = _mm256_xor_epi32(x, _mm256_srli_epi32(x, 17));
-        x = _mm256_xor_epi32(x, _mm256_slli_epi32(x, 5));
+        x = _mm256_xor_si256(x, _mm256_slli_epi32(x, 13));
+        x = _mm256_xor_si256(x, _mm256_srli_epi32(x, 17));
+        x = _mm256_xor_si256(x, _mm256_slli_epi32(x, 5));
 
         return _state = x;
     }
