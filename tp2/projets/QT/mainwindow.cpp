@@ -73,14 +73,31 @@ void MainWindow::set_render_image(const Image* const image)
     if (this->q_image != nullptr)
         delete this->q_image;
 
-    QImage::Format format;
 #if QT_VERSION >= 0x060000
-    format = QImage::Format_RGBA32FPx4;
+    this->q_image = new QImage((uchar*)image->data(), image->width(), image->height(), QImage::Format_RGBA32FPx4);
 #else
-    format = QImage::Format_RGB32;
-#endif
+    //Because Qt5 doesn't have the QImage::Format_RGBA32FPx4 format which our image is encoded in
+    //we're converting our image to a Format_RGBA8888 which Qt5 supports
+    uchar* image_8888_data = new uchar[image->width() * image->height() * 4];
+    for (int i = 0; i < image->height(); i++)
+    {
+        for (int j = 0; j < image->width(); j++)
+        {
+            uchar r, g, b, a;
+            r = (uchar)(std::clamp(image->operator()(j, i).r, 0.0f, 1.0f) * 255);
+            g = (uchar)(std::clamp(image->operator()(j, i).g, 0.0f, 1.0f) * 255);
+            b = (uchar)(std::clamp(image->operator()(j, i).b, 0.0f, 1.0f) * 255);
+            a = (uchar)(std::clamp(image->operator()(j, i).a, 0.0f, 1.0f) * 255);
 
-    this->q_image = new QImage((uchar*)image->data(), image->width(), image->height(), format);
+            image_8888_data[(i * image->width() + j) * 4 + 0] = r;
+            image_8888_data[(i * image->width() + j) * 4 + 1] = g;
+            image_8888_data[(i * image->width() + j) * 4 + 2] = b;
+            image_8888_data[(i * image->width() + j) * 4 + 3] = a;
+        }
+    }
+
+    this->q_image = new QImage(image_8888_data, image->width(), image->height(), QImage::Format_RGBA8888);
+#endif
 
     //Flipping the image because our ray tracer produces flipped images
 #if QT_VERSION >= 0x060000
@@ -222,12 +239,12 @@ void MainWindow::write_to_console(const std::stringstream& ss)
 
 void MainWindow::on_load_robot_obj_button_clicked()
 {
-    load_obj("data/robot.obj", Translation(Vector(0, -2, -4)));
+    load_obj("./data/robot.obj", Translation(Vector(0, -2, -4)));
 }
 
 void MainWindow::on_load_geometry_obj_button_clicked()
 {
-    load_obj("data/geometry.obj", Translation(Vector(-1, -3, -12)) * RotationY(160) * Scale(0.02f));
+    load_obj("./data/geometry.obj", Translation(Vector(-1, -3, -12)) * RotationY(160) * Scale(0.02f));
 }
 
 void MainWindow::on_hybrid_check_box_stateChanged(int value)

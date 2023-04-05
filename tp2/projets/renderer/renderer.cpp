@@ -966,7 +966,8 @@ void Renderer::post_process_ssao_SIMD()
 
                 //TODO handle scalar leftover
 
-                _mm256_store_si256((__m256i*) & ao_buffer[y * render_width + x], pixel_occlusion);
+                //TODO align buffers and benchmark performance
+                _mm256_storeu_si256((__m256i*) & ao_buffer[y * render_width + x], pixel_occlusion);
             }
 
             //TODO handle scalar leftover
