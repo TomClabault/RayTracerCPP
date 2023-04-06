@@ -39,6 +39,9 @@ public:
     Materials& get_materials();
     void set_materials(Materials materials);
 
+    void prepare_ssao_buffers();
+    void destroy_ssao_buffers();
+
     void clear_z_buffer();
     void clear_normal_buffer();
     void clear_image();

@@ -146,7 +146,7 @@ void MainWindow::prepare_bvh()
 
 void MainWindow::prepare_renderer_buffers()
 {
-    bool new_ssaa;
+    bool new_ssaa, new_ssao;
     int new_ssaa_factor;
     int new_width = safe_text_to_int(ui->render_width_edit->text());
     int new_height = safe_text_to_int(ui->render_height_edit->text());
@@ -159,6 +159,7 @@ void MainWindow::prepare_renderer_buffers()
     new_ssaa_factor = safe_text_to_int(this->ui->ssaa_factor_edit->text());
     if (new_ssaa_factor == -1)
         new_ssaa_factor = _renderer.render_settings().ssaa_factor;
+    new_ssao = this->ui->enable_ssao_1_checkbox->isChecked();
 
     bool render_size_changed = (new_width != _renderer.render_settings().image_width)   ||
                                (new_height != _renderer.render_settings().image_height) ||
@@ -172,6 +173,16 @@ void MainWindow::prepare_renderer_buffers()
         _renderer.render_settings().ssaa_factor = new_ssaa_factor;
 
         _renderer.change_render_size(new_width, new_height);
+    }
+
+    if (new_ssao != _renderer.render_settings().enable_ssao)
+    {
+        _renderer.render_settings().enable_ssao = new_ssao;
+
+        if (new_ssao)
+            _renderer.prepare_ssao_buffers();
+        else
+            _renderer.destroy_ssao_buffers();
     }
 
     //Clearing the buffers
@@ -272,8 +283,6 @@ void MainWindow::on_render_height_edit_returnPressed() { on_render_button_clicke
 
 void MainWindow::on_enable_ssao_1_checkbox_stateChanged(int value)
 {
-    _renderer.render_settings().enable_ssao = value;
-
     this->ui->ssao_1_radius_edit->setEnabled(value);
     this->ui->ssao_1_radius_label->setEnabled(value);
     this->ui->ssao_1_sample_count_edit->setEnabled(value);
@@ -367,3 +376,4 @@ void MainWindow::on_light_position_edit_editingFinished()
 
 void MainWindow::on_light_position_edit_returnPressed() { on_light_position_edit_editingFinished(); on_render_button_clicked(); }
 
+//TODO profiler l'imple SIMD de la SSAO pour voir si y'a des bottleneck

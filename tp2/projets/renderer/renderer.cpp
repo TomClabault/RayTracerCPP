@@ -166,6 +166,21 @@ void Renderer::set_materials(Materials materials)
     _materials = materials;
 }
 
+void Renderer::prepare_ssao_buffers()
+{
+    int render_width, render_height;
+    get_render_width_height(_render_settings, render_width, render_height);
+
+    _normal_buffer = Buffer<Vector>(render_width, render_height);
+}
+
+void Renderer::destroy_ssao_buffers()
+{
+    _normal_buffer = Buffer<Vector>();
+}
+
+//TODO look for memory leaks
+
 void Renderer::clear_z_buffer()
 {
     _z_buffer.fill_values(INFINITY);
@@ -272,24 +287,11 @@ Color Renderer::trace_triangle(const Ray& ray, const Triangle& triangle) const
     return finalColor;
 }
 
-//TODO factoriser tout ça en seulement 6 fonctions en prenant directement le vertex qui va bien en paramètre plut$ot que le triangle en entier
 template<int plane_index, int plane_sign>
 inline bool is_inside(const vec4& vertex)
 {
     return false;
 }
-
-//template<int plane_index, int plane_sign>
-//inline bool is_b_inside(const Triangle4& triangle)
-//{
-//    return false;
-//}
-
-//template<int plane_index, int plane_sign>
-//inline bool is_c_inside(const Triangle4& triangle)
-//{
-//    return false;
-//}
 
 template<>
 inline bool is_inside<0, 1>(const vec4& vertex)
@@ -326,83 +328,6 @@ inline bool is_inside<2, -1>(const vec4& vertex)
 {
     return vertex.z > -vertex.w;
 }
-
-
-
-
-//template<>
-//inline bool is_b_inside<0, 1>(const Triangle4& triangle)
-//{
-//    return triangle._b.x < triangle._b.w;
-//}
-
-//template<>
-//inline bool is_b_inside<0, -1>(const Triangle4& triangle)
-//{
-//    return triangle._b.x > -triangle._b.w;
-//}
-
-//template<>
-//inline bool is_b_inside<1, 1>(const Triangle4& triangle)
-//{
-//    return triangle._b.y < triangle._b.w;
-//}
-
-//template<>
-//inline bool is_b_inside<1, -1>(const Triangle4& triangle)
-//{
-//    return triangle._b.y > -triangle._b.w;
-//}
-
-//template<>
-//inline bool is_b_inside<2, 1>(const Triangle4& triangle)
-//{
-//    return triangle._b.z < triangle._b.w;
-//}
-
-//template<>
-//inline bool is_b_inside<2, -1>(const Triangle4& triangle)
-//{
-//    return triangle._b.z > -triangle._b.w;
-//}
-
-
-
-//template<>
-//inline bool is_c_inside<0, 1>(const Triangle4& triangle)
-//{
-//    return triangle._c.x < triangle._c.w;
-//}
-
-//template<>
-//inline bool is_c_inside<0, -1>(const Triangle4& triangle)
-//{
-//    return triangle._c.x > -triangle._c.w;
-//}
-
-//template<>
-//inline bool is_c_inside<1, 1>(const Triangle4& triangle)
-//{
-//    return triangle._c.y < triangle._c.w;
-//}
-
-//template<>
-//inline bool is_c_inside<1, -1>(const Triangle4& triangle)
-//{
-//    return triangle._c.y > -triangle._c.w;
-//}
-
-//template<>
-//inline bool is_c_inside<2, 1>(const Triangle4& triangle)
-//{
-//    return triangle._c.z < triangle._c.w;
-//}
-
-//template<>
-//inline bool is_c_inside<2, -1>(const Triangle4& triangle)
-//{
-//    return triangle._c.z > -triangle._c.w;
-//}
 
 template<int plane_index, int plane_sign>
 int Renderer::clip_triangles_to_plane(std::array<Triangle4, 12>& to_clip, int nb_triangles, std::array<Triangle4, 12>& out_clipped) const
