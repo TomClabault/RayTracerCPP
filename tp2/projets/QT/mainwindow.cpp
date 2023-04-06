@@ -197,8 +197,12 @@ void MainWindow::on_render_button_clicked()
 
     Timer timer;
     prepare_bvh();//Updates the BVH if necessary
+    timer.start();
     prepare_renderer_buffers();//Updates the various buffers of the renderer
     //if necessary
+    timer.stop();
+
+    ss << std::endl << "Buffer intialization time: " << timer.elapsed() << "ms" << std::endl;
 
     timer.start();
     if (_renderer.render_settings().hybrid_rasterization_tracing)
@@ -206,7 +210,7 @@ void MainWindow::on_render_button_clicked()
     else
         _renderer.ray_trace();
     timer.stop();
-    ss << std::endl << "Render time: " << timer.elapsed() << "ms" << std::endl;
+    ss << "Render time: " << timer.elapsed() << "ms" << std::endl;
 
     timer.start();
     _renderer.post_process();
