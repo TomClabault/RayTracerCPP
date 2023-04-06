@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1343</width>
-    <height>758</height>
+    <width>1371</width>
+    <height>818</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -132,7 +132,7 @@
             <item>
              <widget class="QLineEdit" name="render_height_edit">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -244,7 +244,7 @@
           <item row="0" column="1">
            <widget class="QLineEdit" name="render_width_edit">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -422,6 +422,12 @@
           </item>
           <item row="1" column="1">
            <widget class="QLineEdit" name="light_position_edit">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="text">
              <string>3.0/3.0/2.0</string>
             </property>
@@ -630,7 +636,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1343</width>
+     <width>1371</width>
      <height>21</height>
     </rect>
    </property>
