@@ -117,7 +117,6 @@ bool read_indexed_positions( const char *filename, std::vector<Point>& positions
     FILE *in= fopen(filename, "rt");
     if(!in)
     {
-        std::cout << "1 HEREF" << std::endl;
         printf("[error] loading indexed mesh '%s'...\n", filename);
         return false;
     }
@@ -202,7 +201,6 @@ bool read_indexed_positions( const char *filename, std::vector<Point>& positions
     
     if(error)
     {
-        std::cout << "2 HEREF" << std::endl;
         printf("[error] loading indexed mesh '%s'...\n%s\n\n", filename, line_buffer);
     }
     else
@@ -430,8 +428,6 @@ MeshIOData read_meshio_data( const char *filename )
     FILE *in= fopen(filename, "rt");
     if(!in)
     {
-        std::cout << "3 HEREF" << std::endl;
-
         printf("[error] loading indexed mesh '%s'...\n", filename);
         return {};
     }
@@ -470,7 +466,7 @@ MeshIOData read_meshio_data( const char *filename )
         char *line= line_buffer;
         while(*line && isspace(*line))
             line++;
-        
+
         if(line[0] == 'v')
         {
             float x, y, z;
@@ -584,8 +580,6 @@ MeshIOData read_meshio_data( const char *filename )
     
     if(error)
     {
-        std::cout << "4 HEREF" << std::endl;
-
         printf("[error] loading indexed mesh '%s'...\n%s\n\n", filename, line_buffer);
         return {};
     }
