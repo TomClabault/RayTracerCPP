@@ -465,10 +465,13 @@ void Renderer::raster_trace()
     std::array<Triangle4, 12> to_clip_triangles;
     std::array<Triangle4, 12> clipped_triangles;
 
-#pragma omp parallel for schedule(dynamic) private(to_clip_triangles, clipped_triangles)
+//#pragma omp parallel for schedule(dynamic) private(to_clip_triangles, clipped_triangles)
+    //for (int triangle_index = 1361; triangle_index < _triangles.size(); triangle_index++)
     for (int triangle_index = 0; triangle_index < _triangles.size(); triangle_index++)
     {
         Triangle& triangle = _triangles[triangle_index];
+        if (triangle_index == 1361)
+            std::cout << triangle << std::endl;
 
         vec4 a_clip_space = perspective_projection(vec4(triangle._a));
         vec4 b_clip_space = perspective_projection(vec4(triangle._b));
@@ -509,10 +512,15 @@ void Renderer::raster_trace()
             float image_x_increment = render_width_scaling;
             float image_y_increment = render_height_scaling;
             for (int py = minYPixels; py <= maxYPixels; py++, image_y += image_y_increment)
+            //for (int py = render_height - 833; py <= maxYPixels; py++, image_y += image_y_increment)
             {
                 float image_x = minXPixels * render_width_scaling - 1;
                 for (int px = minXPixels; px <= maxXPixels; px++, image_x += image_x_increment)
+                //for (int px = 1847; px <= maxXPixels; px++, image_x += image_x_increment)
                 {
+                    //if (px == 1847 && py == render_height - 833)
+                        //_image(px, py) = Color(1.0, 0, 0);//std::cout << "index: " << triangle_index << std::endl;
+
                     //NOTE If there are still issues with the clipping algorithm creating new points
                     //just a little over the edge of the view frustum, consider using a simple std::max(0, ...)
                     assert(px >= 0 && px < render_width);
@@ -547,7 +555,6 @@ void Renderer::raster_trace()
                     //on the triangle from the camera
                     float zTriangle = -1 / (1 / clipped_triangle_camera_space._a.z * w + 1 / clipped_triangle_camera_space._b.z * u + 1 / clipped_triangle_camera_space._c.z * v);
 
-                    //TODO lundi 02/04: debug z-buffer
                     if (zTriangle < _z_buffer(py, px))
                     {
                         _z_buffer(py, px) = zTriangle;
@@ -567,6 +574,9 @@ void Renderer::raster_trace()
                             final_color = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
 
                         _image(px, py) = final_color;
+
+                        //index: 1362
+                        //index: 1964
                     }
 
                 }

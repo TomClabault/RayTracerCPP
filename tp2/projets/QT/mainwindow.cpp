@@ -232,11 +232,14 @@ void MainWindow::load_obj(const char* filepath, Transform transform)
     timer.start();
 
     MeshIOData meshData = read_meshio_data(filepath);
-    std::vector<Triangle> triangles = MeshIOUtils::create_triangles(meshData, transform);
+    //std::vector<Triangle> triangles = MeshIOUtils::create_triangles(meshData, transform);
+    std::vector<Triangle> triangles;
+    triangles.push_back(Triangle(Point(0.032414,0.763173,-5.07584), Point(-0.055944,0.887663,-2.90412), Point(-0.579099,0.855624,-3.02897)));
 
     _renderer.set_triangles(triangles);
-    _renderer.set_materials(meshData.materials);
-    precompute_materials(_renderer.get_materials());
+    //_renderer.set_materials(meshData.materials);
+    //precompute_materials(_renderer.get_materials());
+
 
     timer.stop();
 
