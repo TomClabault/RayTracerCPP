@@ -231,8 +231,9 @@ void MainWindow::load_obj(const char* filepath, Transform transform)
 
     timer.start();
 
-    MeshIOData meshData = read_meshio_data(filepath);
-    std::vector<Triangle> triangles = MeshIOUtils::create_triangles(meshData, transform);
+    MeshIOData meshData = read_meshio_data("data/xyzrgb_dragon.obj");
+    //std::vector<Triangle> triangles = MeshIOUtils::create_triangles(meshData, transform);
+    std::vector<Triangle> triangles = MeshIOUtils::create_triangles(meshData, Translation(0.25, 0, -3) * RotationY(22.5 + 180) * RotationX(90) * Scale(1.3, 1.3, 1.3));
     //std::vector<Triangle> triangles;
     //triangles.push_back(Triangle(Point(0.032414,0.763173,-5.07584), Point(-0.055944,0.887663,-2.90412), Point(-0.579099,0.855624,-3.02897)));
 
@@ -240,6 +241,7 @@ void MainWindow::load_obj(const char* filepath, Transform transform)
     _renderer.set_materials(meshData.materials);
     precompute_materials(_renderer.get_materials());
 
+    //TODO clear buffer --> utiliser memset
 
     timer.stop();
 
@@ -348,7 +350,7 @@ void MainWindow::on_camera_fov_edit_editingFinished()
 }
 
 
-void MainWindow::on_camera_fov_edit_returnPressed() { on_render_button_clicked(); }
+void MainWindow::on_camera_fov_edit_returnPressed() { on_camera_fov_edit_editingFinished(); on_render_button_clicked(); }
 
 void MainWindow::on_bvh_max_leaf_object_edit_returnPressed() { on_render_button_clicked(); }
 void MainWindow::on_bvh_max_depth_edit_returnPressed() { on_render_button_clicked(); }
@@ -384,3 +386,24 @@ void MainWindow::on_light_position_edit_editingFinished()
 void MainWindow::on_light_position_edit_returnPressed() { on_light_position_edit_editingFinished(); on_render_button_clicked(); }
 
 //TODO profiler l'imple SIMD de la SSAO pour voir si y'a des bottleneck
+
+void MainWindow::on_shade_obj_material_radio_button_toggled(bool checked)
+{
+    _renderer.render_settings().use_shading = checked;
+}
+
+void MainWindow::on_shade_normals_radio_button_toggled(bool checked)
+{
+    _renderer.render_settings().color_normal_or_barycentric = checked;
+
+    if (checked)
+        _renderer.render_settings().use_shading = false;
+}
+
+void MainWindow::on_shade_barycentric_radio_button_toggled(bool checked)
+{
+    _renderer.render_settings().color_normal_or_barycentric = !checked;
+
+    if (checked)
+        _renderer.render_settings().use_shading = false;
+}

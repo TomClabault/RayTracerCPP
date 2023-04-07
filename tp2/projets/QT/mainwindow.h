@@ -70,6 +70,12 @@ private slots:
 
     void on_light_position_edit_returnPressed();
 
+    void on_shade_normals_radio_button_toggled(bool checked);
+
+    void on_shade_barycentric_radio_button_toggled(bool checked);
+
+    void on_shade_obj_material_radio_button_toggled(bool checked);
+
 private:
     Ui::MainWindow *ui;
 

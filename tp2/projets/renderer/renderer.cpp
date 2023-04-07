@@ -93,6 +93,8 @@ Color Renderer::computeDiffuse(const Material& hitMaterial, const Vector& normal
     return hitMaterial.diffuse * std::max(0.0f, dot(normal, direction_to_light));
 }
 
+//TODO faire un thread qui tourne en permanence et qui display l'image
+
 Color Renderer::computeSpecular(const Material& hit_material, const Vector& ray_direction, const Vector& normal, const Vector& direction_to_light) const
 {
     Vector incident_direction = -direction_to_light;
@@ -100,9 +102,9 @@ Color Renderer::computeSpecular(const Material& hit_material, const Vector& ray_
     float angle = dot(reflection_ray, -ray_direction);
 
     //Specular optimization to avoid computing the exponentiation when not necessary (i.e. when it corresponds to a negligeable visual impact)
-    if (angle <= hit_material.specular_threshold)//We're below the visibility threshold so we're not going to notice the specular anyway, returning no specular
-        return Color(0, 0, 0);
-    else
+    //if (angle <= hit_material.specular_threshold)//We're below the visibility threshold so we're not going to notice the specular anyway, returning no specular
+        //return Color(0, 0, 0);
+    //else
         return hit_material.specular * std::pow(std::max(0.0f, angle), hit_material.ns);
 }
 
@@ -465,7 +467,7 @@ void Renderer::raster_trace()
     std::array<Triangle4, 12> to_clip_triangles;
     std::array<Triangle4, 12> clipped_triangles;
 
-//#pragma omp parallel for schedule(dynamic) private(to_clip_triangles, clipped_triangles)
+#pragma omp parallel for schedule(dynamic) private(to_clip_triangles, clipped_triangles)
     //for (int triangle_index = 1361; triangle_index < _triangles.size(); triangle_index++)
     for (int triangle_index = 0; triangle_index < _triangles.size(); triangle_index++)
     {
