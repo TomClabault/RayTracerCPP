@@ -466,6 +466,19 @@ int Renderer::clip_triangle(std::array<Triangle4, 12>& to_clip_triangles, std::a
     return nb_triangles;
 }
 
+float Renderer::perspective_inverse_projection_z(const Transform& m, const Point& vertex)
+{
+    float x = vertex.x, y = vertex.y, z = vertex.z;
+
+    float zt= m.data()[2 * 4 + 0] * x + m.data()[2 * 4 + 1] * y + m.data()[2 * 4 + 2] * z + m.data()[2 * 4 + 3];        // dot(vec4(m[2]), vec4(p, 1))
+    float wt= m.data()[3 * 4 + 0] * x + m.data()[3 * 4 + 1] * y + m.data()[3 * 4 + 2] * z + m.data()[3 * 4 + 3];        // dot(vec4(m[3]), vec4(p, 1))
+
+    if (wt == 1.0f)
+        return zt;
+    else
+        return zt / wt;
+}
+
 void Renderer::raster_trace()
 {
     Transform perspective_projection = _scene._camera._perspective_proj_mat;
@@ -485,8 +498,8 @@ void Renderer::raster_trace()
     for (int triangle_index = 0; triangle_index < _triangles.size(); triangle_index++)
     {
         Triangle& triangle = _triangles[triangle_index];
-        if (triangle_index == 1361)
-            std::cout << triangle << std::endl;
+        //if (triangle_index == 1361)
+            //std::cout << triangle << std::endl;
 
         vec4 a_clip_space = perspective_projection(vec4(triangle._a));
         vec4 b_clip_space = perspective_projection(vec4(triangle._b));
@@ -560,15 +573,18 @@ void Renderer::raster_trace()
                     v *= invTriangleArea;
                     w *= invTriangleArea;
 
-                    //Inverse projecting the triangle back into camera space to interpolate the z coordinate correctly
-                    Triangle clipped_triangle_camera_space = perspective_projection_inv(clipped_triangle_NDC);
-                    //TODO opti ça pour ne pas recalculer le x et le y dont on a pas besoin, on veut juste la coordonnées z projetée, pas les autres donc on peut s'éviter des calculs
+                    //Inverse projecting the z coordinates (because only the z coordinate is interesting here)
+                    //of the vertices of the triangle back into camera space
+                    //These will be used to interpolate the z coordinate at the "intersection" point
+                    float clipped_triangle_cam_space_a_z = perspective_inverse_projection_z(perspective_projection_inv, clipped_triangle_NDC._a);
+                    float clipped_triangle_cam_space_b_z = perspective_inverse_projection_z(perspective_projection_inv, clipped_triangle_NDC._b);
+                    float clipped_triangle_cam_space_c_z = perspective_inverse_projection_z(perspective_projection_inv, clipped_triangle_NDC._c);
 
                     //Z coordinate of the point on the "real 3D" (not the triangle projected on the image plane) triangle
                     //by interpolating the z coordinates of the 3 vertices
                     //Interpolating the z coordinate is going to give a positive z. The bigger the z, the farther away the point
                     //on the triangle from the camera
-                    float zTriangle = -1 / (1 / clipped_triangle_camera_space._a.z * w + 1 / clipped_triangle_camera_space._b.z * u + 1 / clipped_triangle_camera_space._c.z * v);
+                    float zTriangle = -1 / (1 / clipped_triangle_cam_space_a_z * w + 1 / clipped_triangle_cam_space_b_z * u + 1 / clipped_triangle_cam_space_c_z * v);
 
                     if (zTriangle < _z_buffer(py, px))
                     {

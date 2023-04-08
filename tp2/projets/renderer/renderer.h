@@ -139,11 +139,20 @@ private:
 	template<int plane_index, int plane_sign>
 	int clip_triangles_to_plane(std::array<Triangle4, 12>& to_clip, int nb_triangles, std::array<Triangle4, 12>& out_clipped) const;
 
-	/*
-	 * Clips a triangle in homogeneous clip space coordinates and outputs the clipped triangles in @param clipped_triangles
+    /**
+     * @brief Clips a triangle in homogeneous clip space coordinates and outputs the clipped triangles in @param clipped_triangles
 	 */
-	int clip_triangle(std::array<Triangle4, 12>& to_clip_triangles, std::array<Triangle4, 12>& clipped_triangles) const;
-	//int clip_triangle(const Triangle4& to_clip_triangle, std::array<Triangle4, 12>& clipped_triangles) const;
+    int clip_triangle(std::array<Triangle4, 12>& to_clip_triangles, std::array<Triangle4, 12>& clipped_triangles) const;
+
+    /**
+     * @brief Inverse project only the z coordinate of the given vertex with the given
+     * inverse of the perspective projection matrix
+     * @param perspective_projection_matrix_inverse Inverse of the perspective projection
+     * matrix
+     * @param vertex The vertex whose z coordinate is to be inverse-projected
+     * @return The inversed projected z coordinate of the given vertex
+     */
+    float perspective_inverse_projection_z(const Transform& perspective_projection_matrix_inverse, const Point& vertex);
 
 private:
     Buffer<float> _z_buffer;
