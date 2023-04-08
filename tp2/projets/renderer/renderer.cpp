@@ -24,6 +24,8 @@ Material init_default_material()
     return mat;
 }
 
+//TODO problème d'initialisation de renderSettings.shading_method ?
+
 Material init_debug_material_1()
 {
     Material mat = Material(Color(0.5f, 0.5f, 1.0f));//Blueish color
