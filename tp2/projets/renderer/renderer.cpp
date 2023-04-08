@@ -88,69 +88,8 @@ void Renderer::init_buffers(int width, int height)
             _image(j, i) = Renderer::BACKGROUND_COLOR;
 }
 
-Color Renderer::computeDiffuse(const Material& hitMaterial, const Vector& normal, const Vector& direction_to_light) const
-{
-    return hitMaterial.diffuse * std::max(0.0f, dot(normal, direction_to_light));
-}
-
-//TODO faire un thread qui tourne en permanence et qui display l'image
-
-Color Renderer::computeSpecular(const Material& hit_material, const Vector& ray_direction, const Vector& normal, const Vector& direction_to_light) const
-{
-    Vector incident_direction = -direction_to_light;
-    Vector reflection_ray = incident_direction - 2 * dot(normal, incident_direction) * normal;
-    float angle = dot(reflection_ray, -ray_direction);
-
-    //Specular optimization to avoid computing the exponentiation when not necessary (i.e. when it corresponds to a negligeable visual impact)
-    //if (angle <= hit_material.specular_threshold)//We're below the visibility threshold so we're not going to notice the specular anyway, returning no specular
-        //return Color(0, 0, 0);
-    //else
-        return hit_material.specular * std::pow(std::max(0.0f, angle), hit_material.ns);
-}
-
-bool Renderer::is_shadowed(const Point& inter_point, const Point& light_position) const
-{
-    if (_render_settings.compute_shadows)
-    {
-        Ray ray(inter_point, light_position - inter_point);
-        HitInfo hitInfo;
-
-        if (_render_settings.enable_bvh)
-        {
-            if (_bvh.intersect(ray, hitInfo))
-            {
-                Point new_inter_point = ray._origin + ray._direction * hitInfo.t;
-
-                //If we found an object that is between the light and the current inter_point: the point is shadowed
-                if (length2(Point(inter_point) - Point(new_inter_point)) < length2(Point(inter_point) - Point(light_position)))
-                    return true;
-            }
-        }
-        else
-        {
-            for (const Triangle& triangle : _triangles)
-            {
-                if (triangle.intersect(ray, hitInfo))
-                {
-                    Point new_inter_point = ray._origin + ray._direction * hitInfo.t;
-
-                    if (length2(Point(inter_point) - Point(new_inter_point)) < length2(Point(inter_point) - Point(light_position)))
-                    {
-                        //We found an object that is between the light and the current inter_point: the point is shadowed
-
-                        return true;
-                    }
-                }
-            }
-        }
-
-
-    }	//We haven't found any object between the light source and the intersection point, the point isn't shadowed
-
-    return false;
-}
-
 void Renderer::set_triangles(std::vector<Triangle> triangles)
+
 {
     _triangles = triangles;
 
@@ -238,53 +177,127 @@ void Renderer::change_render_size(int width, int height)
     _scene._camera.set_aspect_ratio((float)render_width / render_height);
 }
 
+Color Renderer::computeDiffuse(const Material& hitMaterial, const Vector& normal, const Vector& direction_to_light) const
+{
+    return hitMaterial.diffuse * std::max(0.0f, dot(normal, direction_to_light));
+}
+
+//TODO faire un thread qui tourne en permanence et qui display l'image
+
+Color Renderer::computeSpecular(const Material& hit_material, const Vector& ray_direction, const Vector& normal, const Vector& direction_to_light) const
+{
+    Vector incident_direction = -direction_to_light;
+    Vector reflection_ray = incident_direction - 2 * dot(normal, incident_direction) * normal;
+    float angle = dot(reflection_ray, -ray_direction);
+
+    //Specular optimization to avoid computing the exponentiation when not necessary (i.e. when it corresponds to a negligeable visual impact)
+    //if (angle <= hit_material.specular_threshold)//We're below the visibility threshold so we're not going to notice the specular anyway, returning no specular
+    //return Color(0, 0, 0);
+    //else
+    return hit_material.specular * std::pow(std::max(0.0f, angle), hit_material.ns);
+}
+
+bool Renderer::is_shadowed(const Point& inter_point, const Point& light_position) const
+{
+    if (_render_settings.compute_shadows)
+    {
+        Ray ray(inter_point, light_position - inter_point);
+        HitInfo hitInfo;
+
+        if (_render_settings.enable_bvh)
+        {
+            if (_bvh.intersect(ray, hitInfo))
+            {
+                Point new_inter_point = ray._origin + ray._direction * hitInfo.t;
+
+                //If we found an object that is between the light and the current inter_point: the point is shadowed
+                if (length2(Point(inter_point) - Point(new_inter_point)) < length2(Point(inter_point) - Point(light_position)))
+                    return true;
+            }
+        }
+        else
+        {
+            for (const Triangle& triangle : _triangles)
+            {
+                if (triangle.intersect(ray, hitInfo))
+                {
+                    Point new_inter_point = ray._origin + ray._direction * hitInfo.t;
+
+                    if (length2(Point(inter_point) - Point(new_inter_point)) < length2(Point(inter_point) - Point(light_position)))
+                    {
+                        //We found an object that is between the light and the current inter_point: the point is shadowed
+
+                        return true;
+                    }
+                }
+            }
+        }
+
+
+    }	//We haven't found any object between the light source and the intersection point, the point isn't shadowed
+
+    return false;
+}
+
+Color Renderer::shade_ray_inter_point(const Ray& ray, const HitInfo& hit_info) const
+{
+    Color final_color = Color(0.0f, 0.0f, 0.0f);
+
+    if (_render_settings.shading_method == RenderSettings::ShadingMethod::RT_SHADING)
+    {
+        Point inter_point = ray._origin + ray._direction * (hit_info.t + Renderer::EPSILON);
+        Vector direction_to_light = normalize(_scene._point_light._position - inter_point);
+        Vector normal = normalize(hit_info.normal_at_intersection);
+
+        Material hit_material;
+        if (hit_info.mat_index == -1)
+            hit_material = Renderer::DEFAULT_MATERIAL;
+        else if (hit_info.mat_index == -2)//Debug material
+            hit_material = Renderer::DEBUG_MATERIAL_1;
+        else
+            hit_material = _materials(hit_info.mat_index);
+
+        final_color = final_color + computeDiffuse(hit_material, normal, direction_to_light);
+        final_color = final_color + computeSpecular(hit_material, ray._direction, normal, direction_to_light);
+        if (is_shadowed(inter_point, _scene._point_light._position))
+            final_color = final_color * Color(Renderer::SHADOW_INTENSITY);
+        final_color = final_color + hit_material.emission;
+
+        final_color = final_color + Renderer::AMBIENT_COLOR * hit_material.ambient_coeff;
+    }
+    else if (_render_settings.shading_method == RenderSettings::ShadingMethod::ABS_NORMALS_SHADING)
+    {
+        //Color triangles with std::abs(normal)
+        Vector normalized_normal = normalize(hit_info.normal_at_intersection);
+        final_color = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
+    }
+    else if (_render_settings.shading_method == RenderSettings::ShadingMethod::PASTEL_NORMALS_SHADING)
+    {
+        //Color triangles with (normal + 1) * 0.5
+        Vector normalized_normal = normalize(hit_info.normal_at_intersection);
+        final_color = (Color(normalized_normal.x, normalized_normal.y, normalized_normal.z) + Color(1.0f, 1.0f, 1.0f)) * 0.5;
+    }
+    else if (_render_settings.shading_method == RenderSettings::ShadingMethod::BARYCENTRIC_COORDINATES_SHADING)
+    {
+        //Color triangles with barycentric coordinates
+        float u = hit_info.u;
+        float v = hit_info.v;
+
+        final_color = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
+    }
+    else if (_render_settings.shading_method == RenderSettings::ShadingMethod::VISUALIZE_AO)
+        final_color = Color(0.9f, 0.9f, 0.9f);//Almost pure white
+
+    return final_color;
+}
+
 Color Renderer::trace_triangle(const Ray& ray, const Triangle& triangle) const
 {
     HitInfo hit_info;
     Color finalColor = Color(0, 0, 0);
 
     if (triangle.intersect(ray, hit_info))
-    {
-        if (_render_settings.use_shading)
-        {
-            Point inter_point = ray._origin + ray._direction * (hit_info.t + Renderer::EPSILON);
-            Vector direction_to_light = normalize(_scene._point_light._position - inter_point);
-            Vector normal = normalize(hit_info.normal_at_intersection);
-
-            Material hit_material;
-            if (hit_info.mat_index == -1)
-                hit_material = Renderer::DEFAULT_MATERIAL;
-            else if (hit_info.mat_index == -2)//Debug material
-                hit_material = Renderer::DEBUG_MATERIAL_1;
-            else
-                hit_material = _materials(hit_info.mat_index);
-
-            finalColor = finalColor + computeDiffuse(hit_material, normal, direction_to_light);
-            finalColor = finalColor + computeSpecular(hit_material, ray._direction, normal, direction_to_light);
-            if (is_shadowed(inter_point, _scene._point_light._position))
-                finalColor = finalColor * Color(Renderer::SHADOW_INTENSITY);
-            finalColor = finalColor + hit_material.emission;
-
-            finalColor = finalColor + Renderer::AMBIENT_COLOR * hit_material.ambient_coeff;
-        }
-        else
-        {
-            if (_render_settings.color_normal_or_barycentric)
-            {
-                //Color triangles with normal
-                Vector normalized_normal = normalize(hit_info.normal_at_intersection);
-                finalColor = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
-            }
-            else
-            {
-                //Color triangles with barycentric coordinates
-                float u = hit_info.u;
-                float v = hit_info.v;
-
-                finalColor = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
-            }
-        }
-    }
+        finalColor = shade_ray_inter_point(ray, hit_info);
 
     return finalColor;
 }
@@ -565,15 +578,24 @@ void Renderer::raster_trace()
                             _normal_buffer(py, px) = triangle._normal;
 
                         Color final_color;
-                        if (_render_settings.use_shading)
+                        if (_render_settings.shading_method == RenderSettings::ShadingMethod::RT_SHADING)
                             final_color = trace_triangle(Ray(_scene._camera._position, normalize(perspective_projection_inv(pixel_point) - _scene._camera._position)), perspective_projection_inv(clipped_triangle_NDC));
-                        else if (_render_settings.color_normal_or_barycentric)
+                        else if (_render_settings.shading_method == RenderSettings::ShadingMethod::ABS_NORMALS_SHADING)
                         {
-                            Vector normalized_normal = normalize(cross(triangle._b - triangle._a, triangle._c - triangle._a));
+                            //Color triangles with std::abs(normal)
+                            Vector normalized_normal = normalize(triangle._normal);
                             final_color = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
                         }
-                        else //Color triangles with barycentric coordinates
+                        else if (_render_settings.shading_method == RenderSettings::ShadingMethod::PASTEL_NORMALS_SHADING)
+                        {
+                            //Color triangles with (normal + 1) * 0.5
+                            Vector normalized_normal = normalize(triangle._normal);
+                            final_color = (Color(normalized_normal.x, normalized_normal.y, normalized_normal.z) + Color(1.0f, 1.0f, 1.0f)) * 0.5;
+                        }
+                        else if (_render_settings.shading_method == RenderSettings::ShadingMethod::BARYCENTRIC_COORDINATES_SHADING)
                             final_color = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
+                        else if (_render_settings.shading_method == RenderSettings::ShadingMethod::VISUALIZE_AO)
+                            final_color = Color(0.9f ,0.9f , 0.9f);
 
                         _image(px, py) = final_color;
 
@@ -641,39 +663,7 @@ void Renderer::ray_trace()
                     _normal_buffer(py, px) = finalHitInfo.normal_at_intersection;
                 }
 
-                //TODO factoriser ça dans une fonction parce que ce morcaeu de code où on teste (if shading) ... on le fait partout à plein d'endroit donc l'idée serait de faire une fonction qui fait tout ça pour nous
-                if (_render_settings.use_shading)
-                {
-                    Point inter_point = ray._origin + ray._direction * (finalHitInfo.t + Renderer::EPSILON);
-                    Vector direction_to_light = normalize(_scene._point_light._position - inter_point);
-                    Vector normal = normalize(finalHitInfo.normal_at_intersection);
-
-                    Material hit_material;
-                    if (finalHitInfo.mat_index == -1)
-                        hit_material = Renderer::DEFAULT_MATERIAL;
-                    else
-                        hit_material = _materials(finalHitInfo.mat_index);
-
-                    finalColor = finalColor + computeDiffuse(hit_material, normal, direction_to_light);
-                    finalColor = finalColor + computeSpecular(hit_material, ray._direction, normal, direction_to_light);
-                    finalColor = finalColor + hit_material.emission;
-                    if (is_shadowed(inter_point, _scene._point_light._position))
-                        finalColor = finalColor * Color(Renderer::SHADOW_INTENSITY);
-
-                    finalColor = finalColor + Renderer::AMBIENT_COLOR * hit_material.ambient_coeff;
-                }
-                else if (_render_settings.color_normal_or_barycentric) //Color triangles with normal
-                {
-                    Vector normalized_normal = normalize(finalHitInfo.normal_at_intersection);
-                    finalColor = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
-                }
-                else //Color triangles with barycentric coordinates
-                {
-                    float u = finalHitInfo.u;
-                    float v = finalHitInfo.v;
-
-                    finalColor = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
-                }
+                finalColor = shade_ray_inter_point(ray, hit_info);
 
                 _image(px, py) = finalColor;
             }

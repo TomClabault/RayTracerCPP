@@ -18,8 +18,8 @@ void Benchmark::benchmark_bvh_parameters(const char* filepath, Transform model_t
 		{
 			RenderSettings render_settings = RenderSettings::basic_settings(1920, 1080, false);
 			render_settings.bvh_leaf_object_count = obj_count;
-			render_settings.bvh_max_depth = depth;
-			render_settings.use_shading = true;
+            render_settings.bvh_max_depth = depth;
+            render_settings.shading_method = RenderSettings::ShadingMethod::RT_SHADING;
 
 			Renderer renderer(scene, triangles, render_settings);
 

@@ -231,11 +231,8 @@ void MainWindow::load_obj(const char* filepath, Transform transform)
 
     timer.start();
 
-    MeshIOData meshData = read_meshio_data("data/xyzrgb_dragon.obj");
-    //std::vector<Triangle> triangles = MeshIOUtils::create_triangles(meshData, transform);
-    std::vector<Triangle> triangles = MeshIOUtils::create_triangles(meshData, Translation(0.25, 0, -3) * RotationY(22.5 + 180) * RotationX(90) * Scale(1.3, 1.3, 1.3));
-    //std::vector<Triangle> triangles;
-    //triangles.push_back(Triangle(Point(0.032414,0.763173,-5.07584), Point(-0.055944,0.887663,-2.90412), Point(-0.579099,0.855624,-3.02897)));
+    MeshIOData meshData = read_meshio_data(filepath);
+    std::vector<Triangle> triangles = MeshIOUtils::create_triangles(meshData, transform);
 
     _renderer.set_triangles(triangles);
     _renderer.set_materials(meshData.materials);
@@ -389,21 +386,26 @@ void MainWindow::on_light_position_edit_returnPressed() { on_light_position_edit
 
 void MainWindow::on_shade_obj_material_radio_button_toggled(bool checked)
 {
-    _renderer.render_settings().use_shading = checked;
+    _renderer.render_settings().shading_method = RenderSettings::ShadingMethod::RT_SHADING;
 }
 
-void MainWindow::on_shade_normals_radio_button_toggled(bool checked)
+void MainWindow::on_shade_pastels_normals_radio_button_toggled(bool checked)
 {
-    _renderer.render_settings().color_normal_or_barycentric = checked;
+    _renderer.render_settings().shading_method = RenderSettings::ShadingMethod::PASTEL_NORMALS_SHADING;
+}
 
-    if (checked)
-        _renderer.render_settings().use_shading = false;
+void MainWindow::on_shade_abs_normals_radio_button_toggled(bool checked)
+{
+    _renderer.render_settings().shading_method = RenderSettings::ShadingMethod::ABS_NORMALS_SHADING;
 }
 
 void MainWindow::on_shade_barycentric_radio_button_toggled(bool checked)
 {
-    _renderer.render_settings().color_normal_or_barycentric = !checked;
-
-    if (checked)
-        _renderer.render_settings().use_shading = false;
+    _renderer.render_settings().shading_method = RenderSettings::ShadingMethod::BARYCENTRIC_COORDINATES_SHADING;
 }
+
+void MainWindow::on_shade_visualize_ao_radio_button_toggled(bool checked)
+{
+    _renderer.render_settings().shading_method = RenderSettings::ShadingMethod::VISUALIZE_AO;
+}
+

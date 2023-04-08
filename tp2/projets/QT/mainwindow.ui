@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>996</width>
-    <height>874</height>
+    <height>879</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -300,13 +300,27 @@
           <property name="title">
            <string>  Shading method:</string>
           </property>
-          <layout class="QGridLayout" name="gridLayout_3" columnstretch="0,0,0">
+          <layout class="QGridLayout" name="gridLayout_3" columnstretch="0,0,0,0,0">
            <property name="topMargin">
             <number>0</number>
            </property>
            <property name="bottomMargin">
             <number>0</number>
            </property>
+           <item row="0" column="3">
+            <widget class="QRadioButton" name="shade_barycentric_radio_button">
+             <property name="text">
+              <string>Barycentric</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QRadioButton" name="shade_abs_normals_radio_button">
+             <property name="text">
+              <string>Abs normals</string>
+             </property>
+            </widget>
+           </item>
            <item row="0" column="0">
             <widget class="QRadioButton" name="shade_obj_material_radio_button">
              <property name="text">
@@ -317,20 +331,20 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="1">
-            <widget class="QRadioButton" name="shade_normals_radio_button">
+           <item row="0" column="2">
+            <widget class="QRadioButton" name="shade_pastels_normals_radio_button">
              <property name="text">
-              <string>Normals</string>
+              <string>Pastel normals</string>
              </property>
              <property name="checked">
               <bool>false</bool>
              </property>
             </widget>
            </item>
-           <item row="0" column="2">
-            <widget class="QRadioButton" name="shade_barycentric_radio_button">
+           <item row="1" column="0">
+            <widget class="QRadioButton" name="shade_visualize_ao_radio_button">
              <property name="text">
-              <string>Barycentric</string>
+              <string>Visualize AO</string>
              </property>
             </widget>
            </item>

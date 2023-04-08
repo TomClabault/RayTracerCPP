@@ -5,6 +5,25 @@
 
 struct RenderSettings
 {
+    enum ShadingMethod
+    {
+        //Shades by ray tracing the material of the triangle
+        RT_SHADING,
+
+        //Shades with the std::abs(normal) of the triangle
+        ABS_NORMALS_SHADING,
+
+        //Shades with the (normal + 1) * 0.5 of the triangle
+        PASTEL_NORMALS_SHADING,
+
+        //Shades with the barycentric coordinates of the triangle
+        BARYCENTRIC_COORDINATES_SHADING,
+
+        //Shades with a white material that helps visualize where
+        //ambient occlusion has been applied
+        VISUALIZE_AO,
+    };
+
     RenderSettings() {}
     RenderSettings(int width, int height) : image_width(width), image_height(height) {}
 
@@ -29,16 +48,11 @@ struct RenderSettings
     //1 for rasterization/ray-tracing
     bool hybrid_rasterization_tracing = true;
 
-    //1 to use shading, false to use 'color_normal_or_barycentric' for the shading.
-    //If this is true, 'color_normal_or_barycentric' is ignored
-    bool use_shading = true;
+    //Shading method used to shade the triangles
+    ShadingMethod shading_method = RT_SHADING;
+
     //true to compute shadows, false not to
     bool compute_shadows = true;
-
-    //true to color the triangles with the normal
-    //false to color the triangles with the barycentric coordinates
-    //This parameter is only used if the SHADING define is set to false
-    bool color_normal_or_barycentric = true;
 
     //Whether or not to use a BVH to intersect the scene
     bool enable_bvh = true;

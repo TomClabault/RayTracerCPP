@@ -111,7 +111,16 @@ private:
      * @return Returns true if the point is shadowed by another object
      * according to the given light position, false otherwise.
 	 */
-	bool is_shadowed(const Point& inter_point, const Point& light_position) const;
+    bool is_shadowed(const Point& inter_point, const Point& light_position) const;
+
+    /**
+     * @brief Computes the color of the point intersection of a ray and the scene
+     * @param ray The ray that intersected the scene
+     * @param hit_info The information about the intersection that occured
+     * @return The color at the point of intersection. The color depends on the
+     * shading method set in the renderer settings
+     */
+    Color shade_ray_inter_point(const Ray& ray, const HitInfo& hit_info) const;
 
     /**
 	 * Clips triangles given in @to_clip against the plane defined by the given @plane_index and @plane_sign and
