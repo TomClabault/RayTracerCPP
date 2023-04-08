@@ -206,25 +206,7 @@ void MainWindow::on_render_button_clicked()
 
     timer.start();
     if (_renderer.render_settings().hybrid_rasterization_tracing)
-    {
-        float min_time = std::numeric_limits<float>::max();
-
-        for (int i = 0; i < 20; i++)
-        {
-            timer.start();
             _renderer.raster_trace();
-            timer.stop();
-
-            //1037, 1036
-
-            //prepare_renderer_buffers();//Updates the various buffers of the renderer
-            std::cout << "time: " << timer.elapsed() << std::endl;
-            if (timer.elapsed() < min_time)
-                min_time = timer.elapsed();
-        }
-
-        std::cout << "min time: " << min_time << "ms" << std::endl;
-    }
     else
         _renderer.ray_trace();
     timer.stop();
