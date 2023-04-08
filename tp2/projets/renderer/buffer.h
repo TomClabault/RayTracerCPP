@@ -2,6 +2,7 @@
 #define BUFFER_H
 
 #include <iostream>
+#include <vector>
 
 template <typename T>
 class Buffer
@@ -9,12 +10,13 @@ class Buffer
 public:
     Buffer();
     Buffer(int width, int height);
-    Buffer(Buffer& buffer);
-    Buffer(Buffer&& buffer);
-    Buffer& operator=(const Buffer& buffer);
-    Buffer& operator=(Buffer&& buffer);
+    Buffer(int width, int height, const T& value);
+//    Buffer(Buffer& buffer);
+//    Buffer(Buffer&& buffer);
+//    Buffer& operator=(const Buffer& buffer);
+//    Buffer& operator=(Buffer&& buffer);
 
-    ~Buffer();
+    //~Buffer();
 
     T* data();
     /*
@@ -22,7 +24,7 @@ public:
      */
     T* row(int index);
 
-    void fill_values(T value);
+    void fill_values(const T& value);
 
     T& operator ()(int y, int x);
     const T& operator ()(int y, int x) const;
@@ -33,94 +35,97 @@ private:
 
     int _width, _height;
 
-    T* _elements;
+    std::vector<T> _elements;
 };
 
 template <typename T>
-Buffer<T>::Buffer()
+Buffer<T>::Buffer() :_initialized(false) {}
+
+template <typename T>
+Buffer<T>::Buffer(int width, int height) : _width(width), _height(height), _initialized(true)
 {
-    _initialized = false;
+    _elements = std::vector<T>(height * width);
 }
 
 template <typename T>
-Buffer<T>::Buffer(int width, int height) : _width(width), _height(height)
+Buffer<T>::Buffer(int width, int height, const T& value) : _width(width), _height(height), _initialized(true)
 {
     _initialized = true;
 
-    _elements = new T[height * width];
-    if (_elements == nullptr)
-    {
-        std::cout << "Not enough memory to allocate buffer..."    << std::endl;
+    _elements = std::vector<T>(width * height, value);
+//    if (_elements == nullptr)
+//    {
+//        std::cout << "Not enough memory to allocate buffer..."    << std::endl;
 
-        std::exit(-1);
-    }
+//        std::exit(-1);
+//    }
 }
 
-template <typename T>
-Buffer<T>::Buffer(Buffer& buffer) : Buffer(buffer._width, buffer._height)
-{
-    _initialized = buffer._initialized;
-    _width = buffer._width;
-    _height = buffer._height;
+//template <typename T>
+//Buffer<T>::Buffer(Buffer& buffer) : Buffer(buffer._width, buffer._height)
+//{
+//    _initialized = buffer._initialized;
+//    _width = buffer._width;
+//    _height = buffer._height;
 
-    if (_initialized)
-        for (int i = 0; i < buffer._height; i++)
-            for (int j = 0; j < buffer._width; j++)
-                _elements[i * _width + j] = buffer._elements[i * _width + j];
-}
+//    if (_initialized)
+//        for (int i = 0; i < buffer._height; i++)
+//            for (int j = 0; j < buffer._width; j++)
+//                _elements[i * _width + j] = buffer._elements[i * _width + j];
+//}
 
-template <typename T>
-Buffer<T>::Buffer(Buffer&& buffer)
-{
-    _elements = buffer._elements;
-    buffer._elements = nullptr;
+//template <typename T>
+//Buffer<T>::Buffer(Buffer&& buffer)
+//{
+//    _elements = buffer._elements;
+//    buffer._elements = nullptr;
 
-    _initialized = buffer._initialized;
-    _width = buffer._width;
-    _height = buffer._height;
-}
+//    _initialized = buffer._initialized;
+//    _width = buffer._width;
+//    _height = buffer._height;
+//}
 
-template <typename T>
-Buffer<T>& Buffer<T>::operator=(const Buffer<T>& buffer)
-{
-    _initialized = buffer._initialized;
-    _width = buffer._width;
-    _height = buffer._height;
+//template <typename T>
+//Buffer<T>& Buffer<T>::operator=(const Buffer<T>& buffer)
+//{
+//    _initialized = buffer._initialized;
+//    _width = buffer._width;
+//    _height = buffer._height;
 
-    if (_initialized)
-        for (int i = 0; i < buffer._height; i++)
-            for (int j = 0; j < buffer._width; j++)
-                _elements[i * _width + j] = buffer._elements[i * _width + j];
+//    if (_initialized)
+//        for (int i = 0; i < buffer._height; i++)
+//            for (int j = 0; j < buffer._width; j++)
+//                _elements[i * _width + j] = buffer._elements[i * _width + j];
 
-    return *this;
-}
+//    return *this;
+//}
 
-template <typename T>
-Buffer<T>& Buffer<T>::operator=(Buffer<T>&& buffer)
-{
-    _elements = buffer._elements;
-    buffer._elements = nullptr;
+//template <typename T>
+//Buffer<T>& Buffer<T>::operator=(Buffer<T>&& buffer)
+//{
+//    _elements = buffer._elements;
+//    buffer._elements = nullptr;
 
-    _initialized = buffer._initialized;
-    buffer._initialized = false;
+//    _initialized = buffer._initialized;
+//    buffer._initialized = false;
 
-    _width = buffer._width;
-    _height = buffer._height;
+//    _width = buffer._width;
+//    _height = buffer._height;
 
-    return *this;
-}
+//    return *this;
+//}
 
-template <typename T>
-Buffer<T>::~Buffer()
-{
-    if (_initialized)
-        delete[] _elements;
-}
+//template <typename T>
+//Buffer<T>::~Buffer()
+//{
+//    if (_initialized)
+//        delete[] _elements;
+//}
 
 template <typename T>
 T* Buffer<T>::data()
 {
-    return _elements;
+    return _elements.data();
 }
 
 template <typename T>
@@ -130,14 +135,15 @@ T* Buffer<T>::row(int index)
 }
 
 template <typename T>
-void Buffer<T>::fill_values(T value)
+void Buffer<T>::fill_values(const T& value)
 {
     if (!_initialized)
         return;
 
-    for (int i = 0; i < _height; i++)
-        for (int j = 0; j < _width; j++)
-            _elements[i * _width + j] = value;
+    std::fill_n(_elements.begin(), _width * _height, value);
+//    for (int i = 0; i < _height; i++)
+//        for (int j = 0; j < _width; j++)
+//            _elements[i * _width + j] = value;
 }
 
 template <typename T>

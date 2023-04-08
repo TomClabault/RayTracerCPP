@@ -76,10 +76,7 @@ void Renderer::init_buffers(int width, int height)
 {
     //Initializing the z-buffer if we're using the rasterization approach or post-processing that needs it
     if (_render_settings.hybrid_rasterization_tracing || _render_settings.enable_ssao)
-    {
-        _z_buffer = Buffer<float>(width, height);
-        _z_buffer.fill_values(INFINITY);
-    }
+        _z_buffer = Buffer<float>(width, height, INFINITY);
 
     if (_render_settings.enable_ssao)
         _normal_buffer = Buffer<Vector>(width, height);
