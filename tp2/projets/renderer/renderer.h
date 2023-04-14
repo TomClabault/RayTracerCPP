@@ -51,6 +51,12 @@ public:
 
     void set_light_position(const Point& position);
 
+    void set_ao_map(const Image& ao_map);
+
+    Color sample_texture(const Image& _ao_map, float& tex_coord_u, float& tex_coord_v) const;
+
+    void transform_triangles(const Transform& object_transform);
+
     /**
      * @brief Builds the BVH using the present triangles and the BVH
      * settings held in the RenderSettings
@@ -161,6 +167,10 @@ private:
 	//(64 bit pointer) instead of 12 (3*4 floats)
 
     std::vector<Triangle> _triangles;
+    //Last transform used to transform the triangles. It is used to avoid
+    //"stacking" transforms on top of each other by inverting the previous
+    //transformation that was applied
+    Transform _previous_transform = Identity();
     Materials _materials;//Materials of the triangles
 	 
 	RenderSettings _render_settings;
@@ -168,6 +178,8 @@ private:
 	BVH _bvh;
 
 	Image _image;
+    Image _ao_map;
+
 	Scene _scene;
 };
 

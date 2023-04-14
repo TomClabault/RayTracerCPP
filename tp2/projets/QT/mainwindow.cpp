@@ -10,6 +10,8 @@
 
 #include <iostream>
 
+#include <QFileDialog>
+
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
@@ -159,7 +161,7 @@ void MainWindow::prepare_renderer_buffers()
     new_ssaa_factor = safe_text_to_int(this->ui->ssaa_factor_edit->text());
     if (new_ssaa_factor == -1)
         new_ssaa_factor = _renderer.render_settings().ssaa_factor;
-    new_ssao = this->ui->enable_ssao_1_checkbox->isChecked();
+    new_ssao = this->ui->ssao_1_radio_button->isChecked();
 
     bool render_size_changed = (new_width != _renderer.render_settings().image_width)   ||
                                (new_height != _renderer.render_settings().image_height) ||
@@ -191,6 +193,14 @@ void MainWindow::prepare_renderer_buffers()
     _renderer.clear_image();
 }
 
+void MainWindow::transform_object()
+{
+    Transform object_transform = get_transform_from_edits();
+    _renderer.transform_triangles(object_transform);
+}
+
+#include <thread>
+
 void MainWindow::on_render_button_clicked()
 {
     std::stringstream ss;
@@ -201,8 +211,12 @@ void MainWindow::on_render_button_clicked()
     prepare_renderer_buffers();//Updates the various buffers of the renderer
     //if necessary
     timer.stop();
-
     ss << std::endl << "Buffer intialization time: " << timer.elapsed() << "ms" << std::endl;
+
+    timer.start();
+    transform_object();
+    timer.stop();
+    ss << std::endl << "Object transformation time: " << timer.elapsed() << "ms" << std::endl;
 
     timer.start();
     if (_renderer.render_settings().hybrid_rasterization_tracing)
@@ -238,12 +252,15 @@ void MainWindow::load_obj(const char* filepath, Transform transform)
     _renderer.set_materials(meshData.materials);
     precompute_materials(_renderer.get_materials());
 
-    //TODO clear buffer --> utiliser memset
-
     timer.stop();
 
     ss << "OBJ Loading time: " << timer.elapsed() << "ms";
     write_to_console(ss);
+}
+
+Image MainWindow::load_ao_map(const char* filepath)
+{
+    return read_image(filepath, true);
 }
 
 void MainWindow::write_to_console(const std::stringstream& ss)
@@ -256,12 +273,18 @@ void MainWindow::write_to_console(const std::stringstream& ss)
 
 void MainWindow::on_load_robot_obj_button_clicked()
 {
-    load_obj("./data/robot.obj", Translation(Vector(0, -2, -4)));
+    load_obj("./data/robot.obj", Identity());
+
+    this->ui->object_translation_edit->setText("0.0/-2.0/-4.0");
 }
 
 void MainWindow::on_load_geometry_obj_button_clicked()
 {
-    load_obj("./data/geometry.obj", Translation(Vector(-1, -3, -12)) * RotationY(160) * Scale(0.02f));
+    load_obj("./data/geometry.obj", Identity());
+
+    this->ui->object_translation_edit->setText("-1.0/-3.0/-12.0");
+    this->ui->object_rotation_edit->setText("0.0/160.0/0.0");
+    this->ui->object_scale_edit->setText("2.0/2.0/2.0");
 }
 
 void MainWindow::on_hybrid_check_box_stateChanged(int value)
@@ -286,16 +309,6 @@ void MainWindow::on_dump_render_to_file_button_clicked()
 
 void MainWindow::on_render_width_edit_returnPressed() { on_render_button_clicked(); }
 void MainWindow::on_render_height_edit_returnPressed() { on_render_button_clicked(); }
-
-void MainWindow::on_enable_ssao_1_checkbox_stateChanged(int value)
-{
-    this->ui->ssao_1_radius_edit->setEnabled(value);
-    this->ui->ssao_1_radius_label->setEnabled(value);
-    this->ui->ssao_1_sample_count_edit->setEnabled(value);
-    this->ui->ssao_1_sample_count_label->setEnabled(value);
-    this->ui->ssao_1_amount_edit->setEnabled(value);
-    this->ui->ssao_1_amount_label->setEnabled(value);
-}
 
 void MainWindow::on_ssao_1_radius_edit_editingFinished()
 {
@@ -409,3 +422,109 @@ void MainWindow::on_shade_visualize_ao_radio_button_toggled(bool checked)
     _renderer.render_settings().shading_method = RenderSettings::ShadingMethod::VISUALIZE_AO;
 }
 
+void MainWindow::on_ssao_1_radio_button_toggled(bool checked)
+{
+    _renderer.render_settings().enable_ssao = checked;
+
+    this->ui->ssao_1_sample_count_label->setEnabled(checked);
+    this->ui->ssao_1_sample_count_edit->setEnabled(checked);
+
+    this->ui->ssao_1_radius_label->setEnabled(checked);
+    this->ui->ssao_1_radius_edit->setEnabled(checked);
+
+    this->ui->ssao_1_amount_label->setEnabled(checked);
+    this->ui->ssao_1_amount_edit->setEnabled(checked);
+}
+
+void MainWindow::on_ao_map_radio_button_toggled(bool checked)
+{
+    _renderer.render_settings().enable_ao_mapping = checked;
+
+    this->ui->load_ao_map_button->setEnabled(checked);
+    this->ui->ao_map_edit->setEnabled(checked);
+}
+
+void MainWindow::on_load_ao_map_button_clicked()
+{
+    QFileDialog dialog(this, "Open AO Map");
+    dialog.setFileMode(QFileDialog::ExistingFile);
+    dialog.setNameFilter(tr("Image File (*.png *.jpg)"));
+
+    if (dialog.exec())
+    {
+        QStringList files = dialog.selectedFiles();
+        QString file_path = files[0];
+
+        Image ao_map = load_ao_map(file_path.toStdString().c_str());//TODO Image pas en float c'est trop lourd
+
+        _renderer.set_ao_map(ao_map);
+
+        QStringList split_path = file_path.split("/");
+        this->ui->ao_map_edit->setText(split_path[split_path.size() - 1]);
+    }
+}
+
+void MainWindow::on_load_obj_file_button_clicked()
+{
+    QFileDialog dialog(this, "Open OBJ File");
+    dialog.setFileMode(QFileDialog::ExistingFile);
+    dialog.setNameFilter(tr("OBJ File (*.obj)"));
+
+    if (dialog.exec())
+    {
+        QStringList files = dialog.selectedFiles();
+        QString file_path = files[0];
+
+        load_obj(file_path.toStdString().c_str(), Identity());
+    }
+}
+
+Transform MainWindow::get_transform_from_edits()
+{
+    Transform transform = Identity();
+
+    QString translation_text = this->ui->object_translation_edit->text();
+    QStringList translation = translation_text.split("/");
+    if (translation.size() == 3)
+    {
+        bool ok_x, ok_y, ok_z;
+        float x = safe_text_to_float(translation.at(0), ok_x);
+        float y = safe_text_to_float(translation.at(1), ok_y);
+        float z = safe_text_to_float(translation.at(2), ok_z);
+
+        if (ok_x && ok_y && ok_z)
+            transform = transform * Translation(x, y, z);
+    }
+
+    QString rotation_text = this->ui->object_rotation_edit->text();
+    QStringList rotation = rotation_text.split("/");
+    if (rotation.size() == 3)
+    {
+        bool ok_x, ok_y, ok_z;
+        float x = safe_text_to_float(rotation.at(0), ok_x);
+        float y = safe_text_to_float(rotation.at(1), ok_y);
+        float z = safe_text_to_float(rotation.at(2), ok_z);
+
+        if (ok_x && ok_y && ok_z)
+            transform = transform * RotationZ(z) * RotationY(y) * RotationX(x);
+    }
+
+    QString scale_text = this->ui->object_scale_edit->text();
+    QStringList scale = scale_text.split("/");
+    if (scale.size() == 3)
+    {
+        bool ok_x, ok_y, ok_z;
+        float x = safe_text_to_float(scale.at(0), ok_x);
+        float y = safe_text_to_float(scale.at(1), ok_y);
+        float z = safe_text_to_float(scale.at(2), ok_z);
+
+        if (ok_x && ok_y && ok_z)
+            transform = transform * Scale(x, y, z);
+    }
+
+    return transform;
+}
+
+void MainWindow::on_object_translation_edit_returnPressed() { on_render_button_clicked(); }
+void MainWindow::on_object_rotation_edit_returnPressed() { on_render_button_clicked(); }
+void MainWindow::on_object_scale_edit_returnPressed() { on_render_button_clicked(); }

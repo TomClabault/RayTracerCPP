@@ -153,6 +153,26 @@ void Renderer::set_light_position(const Point& position)
     _scene._point_light._position = position;
 }
 
+void Renderer::set_ao_map(const Image& ao_map)
+{
+    _ao_map = ao_map;
+}
+
+Color Renderer::sample_texture(const Image& _ao_map, float& tex_coord_u, float& tex_coord_v) const
+{
+    return _ao_map.texture(tex_coord_u, tex_coord_v);
+}
+
+void Renderer::transform_triangles(const Transform& object_transform)
+{
+    _previous_transform = _previous_transform.inverse();
+
+    for (Triangle& triangle : _triangles)
+        triangle = (_previous_transform * object_transform)(triangle);
+
+    _previous_transform = object_transform;
+}
+
 void Renderer::reconstruct_bvh_new()
 {
     _bvh = BVH(&_triangles, _render_settings.bvh_max_depth, _render_settings.bvh_leaf_object_count);
@@ -190,10 +210,10 @@ Color Renderer::computeSpecular(const Material& hit_material, const Vector& ray_
     float angle = dot(reflection_ray, -ray_direction);
 
     //Specular optimization to avoid computing the exponentiation when not necessary (i.e. when it corresponds to a negligeable visual impact)
-    //if (angle <= hit_material.specular_threshold)//We're below the visibility threshold so we're not going to notice the specular anyway, returning no specular
-    //return Color(0, 0, 0);
-    //else
-    return hit_material.specular * std::pow(std::max(0.0f, angle), hit_material.ns);
+    if (angle <= hit_material.specular_threshold)//We're below the visibility threshold so we're not going to notice the specular anyway, returning no specular
+        return Color(0, 0, 0);
+    else
+        return hit_material.specular * std::pow(std::max(0.0f, angle), hit_material.ns);
 }
 
 bool Renderer::is_shadowed(const Point& inter_point, const Point& light_position) const
@@ -232,7 +252,6 @@ bool Renderer::is_shadowed(const Point& inter_point, const Point& light_position
             }
         }
 
-
     }	//We haven't found any object between the light source and the intersection point, the point isn't shadowed
 
     return false;
@@ -256,7 +275,24 @@ Color Renderer::shade_ray_inter_point(const Ray& ray, const HitInfo& hit_info) c
         else
             hit_material = _materials(hit_info.mat_index);
 
-        final_color = final_color + computeDiffuse(hit_material, normal, direction_to_light);
+//        float ao_map_contribution = 1.0f;
+//        if (_render_settings.enable_ao_mapping)
+//        {
+//            float tex_coord_u, tex_coord_v;
+//            hit_info.triangle->interpolate_texcoords(hit_info.u, hit_info.v, tex_coord_u, tex_coord_v);
+
+//            ao_map_contribution = sample_texture(_ao_map, tex_coord_u, tex_coord_v).r;
+//        }
+        if (_render_settings.enable_ao_mapping)
+        {
+            float tex_coord_u, tex_coord_v;
+            hit_info.triangle->interpolate_texcoords(hit_info.u, hit_info.v, tex_coord_u, tex_coord_v);
+
+            return sample_texture(_ao_map, tex_coord_u, tex_coord_v);
+        }
+
+        //final_color = final_color + computeDiffuse(hit_material, normal, direction_to_light) * ao_map_contribution;
+        final_color = final_color + computeDiffuse(hit_material, normal, direction_to_light) * 1;
         final_color = final_color + computeSpecular(hit_material, ray._direction, normal, direction_to_light);
         if (is_shadowed(inter_point, _scene._point_light._position))
             final_color = final_color * Color(Renderer::SHADOW_INTENSITY);
@@ -510,8 +546,7 @@ void Renderer::raster_trace()
         for (int clipped_triangle_index = 0; clipped_triangle_index < nb_clipped; clipped_triangle_index++)
         {
             Triangle4 clipped_triangle = clipped_triangles[clipped_triangle_index];
-            Triangle clipped_triangle_NDC = Triangle(clipped_triangle, triangle._materialIndex);
-
+            Triangle clipped_triangle_NDC = Triangle(clipped_triangle, triangle._materialIndex, triangle._tex_coords_u, triangle._tex_coords_v);
 
             Point a_image_plane = clipped_triangle_NDC._a;
             Point b_image_plane = clipped_triangle_NDC._b;
@@ -594,6 +629,7 @@ void Renderer::raster_trace()
 
                         Color final_color;
                         if (_render_settings.shading_method == RenderSettings::ShadingMethod::RT_SHADING)
+                            //final_color = ((triangle_index == 0) ? Color(0.5, 0.0, 0.0) : Color(0.0, 0.5, 0.0)) + trace_triangle(Ray(_scene._camera._position, normalize(perspective_projection_inv(pixel_point) - _scene._camera._position)), perspective_projection_inv(clipped_triangle_NDC));//TODO remove
                             final_color = trace_triangle(Ray(_scene._camera._position, normalize(perspective_projection_inv(pixel_point) - _scene._camera._position)), perspective_projection_inv(clipped_triangle_NDC));
                         else if (_render_settings.shading_method == RenderSettings::ShadingMethod::ABS_NORMALS_SHADING)
                         {
@@ -803,16 +839,19 @@ void Renderer::post_process_ssao_SIMD()
     __m256 fov_multiplier = _mm256_set1_ps(fov_multiplier_value);
 
     __m256_XorShiftGenerator rand_generator;
+    XorShiftGenerator rand_generator_scalar;
 #pragma omp parallel private(rand_generator)
     {
         rand_generator = __m256_XorShiftGenerator(_mm256_set_epi32(omp_get_thread_num() * 24183 + rand(),
-                                                  omp_get_thread_num() * 24183 + rand(),
-                                                  omp_get_thread_num() * 24183 + rand(),
-                                                  omp_get_thread_num() * 24183 + rand(),
-                                                  omp_get_thread_num() * 24183 + rand(),
-                                                  omp_get_thread_num() * 24183 + rand(),
-                                                  omp_get_thread_num() * 24183 + rand(),
-                                                  omp_get_thread_num() * 24183 + rand()));
+                                                                   omp_get_thread_num() * 24183 + rand(),
+                                                                   omp_get_thread_num() * 24183 + rand(),
+                                                                   omp_get_thread_num() * 24183 + rand(),
+                                                                   omp_get_thread_num() * 24183 + rand(),
+                                                                   omp_get_thread_num() * 24183 + rand(),
+                                                                   omp_get_thread_num() * 24183 + rand(),
+                                                                   omp_get_thread_num() * 24183 + rand()));
+
+        rand_generator_scalar = XorShiftGenerator(omp_get_thread_num() * 24183 + rand());
 #pragma omp for
         for (int y = 0; y < render_height; y++)
         {
@@ -906,13 +945,58 @@ void Renderer::post_process_ssao_SIMD()
                     pixel_occlusion = _mm256_add_epi32(pixel_occlusion, _mm256_cvtps_epi32(occluded_mask));
                 }
 
-                //TODO handle scalar leftover
-
-                //TODO align buffers and benchmark performance
                 _mm256_storeu_si256((__m256i*) & ao_buffer[y * render_width + x], pixel_occlusion);
             }
 
-            //TODO handle scalar leftover
+            int leftover = render_width % 8;
+            for (int x = render_width - leftover; x < render_width; x++)
+            {
+                //No information here, there's no pixel to shade: background at this pixel on the image
+                if (_z_buffer(y, x) == INFINITY)
+                    continue;
+
+                float x_ndc = (float)x / render_width * 2 - 1;
+                float y_ndc = (float)y / render_height * 2 - 1;
+
+                float view_z = _z_buffer(y, x);
+                float view_ray_x = x_ndc * _scene._camera._aspect_ratio * std::tan(radians(_scene._camera._fov / 2));
+                float view_ray_y = y_ndc * std::tan(radians(_scene._camera._fov / 2));
+                Point camera_space_point = Point(view_ray_x * view_z, view_ray_y * view_z, -view_z);
+
+                Vector normal = normalize(_normal_buffer(y, x));
+
+                short int pixel_occlusion = 0;
+                for (int i = 0; i < _render_settings.ssao_sample_count; i++)
+                {
+                    float rand_x = rand_generator_scalar.get_rand_bilateral();
+                    float rand_y = rand_generator_scalar.get_rand_bilateral();
+                    float rand_z = rand_generator_scalar.get_rand_bilateral();
+
+                    Point random_sample = Point(normalize(Vector(rand_x, rand_y, rand_z)));
+                    random_sample = random_sample * (rand_generator_scalar.get_rand_lateral() + 0.0001);
+                    random_sample = random_sample * _render_settings.ssao_radius;
+                    random_sample = random_sample + camera_space_point;
+                    if (dot(random_sample - camera_space_point, normal) < 0)//The point is not in front of the normal
+                        random_sample = random_sample + 2 * (camera_space_point - random_sample);
+
+                    Point random_sample_ndc = _scene._camera._perspective_proj_mat(random_sample);
+                    int random_point_pixel_x = (int)((random_sample_ndc.x + 1) * 0.5 * render_width);
+                    int random_point_pixel_y = (int)((random_sample_ndc.y + 1) * 0.5 * render_height);
+
+                    random_point_pixel_x = std::min(std::max(0, random_point_pixel_x), render_width - 1);
+                    random_point_pixel_y = std::min(std::max(0, random_point_pixel_y), render_height - 1);
+
+                    float sample_geometry_depth = -_z_buffer(random_point_pixel_y, random_point_pixel_x);
+
+                    //Range check
+                    if (std::abs(sample_geometry_depth - camera_space_point.z) > _render_settings.ssao_radius)
+                        continue;
+                    if (random_sample.z < sample_geometry_depth)
+                        pixel_occlusion++;
+                }
+
+                ao_buffer[y * render_width + x] = pixel_occlusion;
+            }
         }
     }
 

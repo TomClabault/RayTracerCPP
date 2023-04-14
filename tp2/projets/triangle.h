@@ -11,8 +11,12 @@
 //Whether or not to render triangles that are facing away from the camera
 #define BACKFACE_CULLING 1
 
+class Triangle;
+
 struct HitInfo
 {
+    const Triangle* triangle = nullptr;
+
     //Intersection distance to the triangle
     float t = -1;
 
@@ -44,12 +48,13 @@ public:
     constexpr static double EPSILON = 1.0e-4;
 
     Triangle();
-    Triangle(Point a, Point b, Point c, int material_index = -1);
+    Triangle(Point a, Point b, Point c, int material_index = -1, const Point& tex_coords_u = Point(-1, -1, -1), const Point& tex_coords_v = Point(-1, -1, -1));
 
     /*
-     * Converts a triangle 4 in homogeneous coordinates to a cartesian triangle by dividing each verte by their homogeneous w component
+     * Converts a triangle 4 in homogeneous coordinates to a cartesian
+     * triangle by dividing each verte by their homogeneous w component
      */
-    Triangle(Triangle4 triangle, int material_index = -1);
+    Triangle(const Triangle4& triangle, int material_index = -1, const Point& tex_coords_u = Point(-1, -1, -1), const Point& tex_coords_v = Point(-1, -1, -1));
 
     bool intersect(const Ray& ray, HitInfo& hitInfo) const;
     bool intersect(const Ray& ray, float& t, float& u, float& v) const;
@@ -67,6 +72,16 @@ public:
 
     bool barycentric_coordinates(const Point& point, float& u, float& v) const;
 
+    /**
+     * @brief Given UV barycentric coordinates, computes and stores the UV texture coordinates
+     * of the same point in \param out_tex_u and \param out_tex_v
+     * @param [in] u Barycentric coordinate u
+     * @param [in] v Barycentric coordinate v
+     * @param [out] out_tex_u Texture coordinate u
+     * @param [out] out_tex_v Texture coordinate v
+     */
+    void interpolate_texcoords(float u, float v, float& out_tex_u, float& out_tex_v) const;
+
     Point bbox_centroid() const;
 
     friend std::ostream& operator << (std::ostream& os, const Triangle& triangle);
@@ -81,6 +96,12 @@ public:
     Vector _normal;
 
     int _materialIndex;
+
+    //Organized as:
+    //_tex_coords_u[0], _tex_coords_u[1], _tex_coords_u[2] = A.u, B.u, C.u respectively
+    //a,d
+    //_tex_coords_v[0], _tex_coords_v[1], _tex_coords_v[2] = A.v, B.v, C.v respectively
+    Point _tex_coords_u, _tex_coords_v;
 };
 
 #endif

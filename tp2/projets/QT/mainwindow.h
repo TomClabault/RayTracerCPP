@@ -22,9 +22,11 @@ public:
 
     void prepare_bvh();
     void prepare_renderer_buffers();
+    void transform_object();
     void handle_image_processing();
     void set_render_image(const Image* const image);
     void load_obj(const char* filepath, Transform transform);
+    Image load_ao_map(const char* filepath);
 
     void write_to_console(const std::stringstream& ss);
 
@@ -42,40 +44,46 @@ private slots:
     void on_render_height_edit_returnPressed();
 
     void on_camera_fov_edit_editingFinished();
+    void on_camera_fov_edit_returnPressed();
 
+    void on_ssaa_factor_edit_returnPressed();
     void on_ssaa_radio_button_toggled(bool checked);
 
-    void on_enable_ssao_1_checkbox_stateChanged(int arg1);
+    void on_ssao_1_radio_button_toggled(bool checked);
+
     void on_ssao_1_radius_edit_editingFinished();
     void on_ssao_1_sample_count_edit_editingFinished();
     void on_ssao_1_amount_edit_editingFinished();
 
     void on_ssao_1_sample_count_edit_returnPressed();
     void on_ssao_1_radius_edit_returnPressed();
-    void on_ssao_1_amount_edit_returnPressed();
-
-    void on_camera_fov_edit_returnPressed();
-
-    void on_ssaa_factor_edit_returnPressed();
+    void on_ssao_1_amount_edit_returnPressed();    
 
     void on_bvh_max_leaf_object_edit_returnPressed();
-
     void on_bvh_max_depth_edit_returnPressed();
-
     void on_enable_bvh_check_box_stateChanged(int arg1);
 
     void on_enable_shadows_check_box_stateChanged(int arg1);
 
     void on_light_position_edit_editingFinished();
-
     void on_light_position_edit_returnPressed();
 
     void on_shade_obj_material_radio_button_toggled(bool checked);
     void on_shade_abs_normals_radio_button_toggled(bool checked);
     void on_shade_pastels_normals_radio_button_toggled(bool checked);
     void on_shade_barycentric_radio_button_toggled(bool checked);
-
     void on_shade_visualize_ao_radio_button_toggled(bool checked);
+
+    void on_ao_map_radio_button_toggled(bool checked);
+    void on_load_ao_map_button_clicked();
+
+    void on_load_obj_file_button_clicked();
+
+    Transform get_transform_from_edits();
+
+    void on_object_translation_edit_returnPressed();
+    void on_object_rotation_edit_returnPressed();
+    void on_object_scale_edit_returnPressed();
 
 private:
     Ui::MainWindow *ui;

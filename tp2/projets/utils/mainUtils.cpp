@@ -20,27 +20,6 @@ float render(Renderer& renderer)
     return timer.elapsed();
 }
 
-//float writeImage(Renderer& renderer, const char* filepath)
-//{
-//    Timer timer;
-
-//    Image image_to_write;
-//    // enregistre l'image, de plusieurs manieres...
-//    timer.start();
-//    if (renderer.render_settings().enable_ssaa)
-//        downscale_image(*renderer.getImage(), image_to_write, renderer.render_settings().ssaa_factor);
-//    else
-//        image_to_write = *renderer.getImage();
-//    write_image_png(image_to_write, filepath);
-//    timer.stop();
-
-//    std::cout << "Image writing time: " << timer.elapsed() << "ms\n";
-//    //write_image_bmp(*renderer.getImage(), "image.bmp");
-//    //write_image_hdr(*renderer.getImage(), "image.hdr");
-
-//    return timer.elapsed();
-//}
-
 float loadOBJ(MeshIOData& meshData, std::vector<Triangle>& triangles)
 {
     Timer timer;

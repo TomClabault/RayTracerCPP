@@ -130,13 +130,13 @@ vec4 Transform::operator() ( const vec4& v ) const
     return vec4(xt, yt, zt, wt);
 }
 
-Triangle Transform::operator() (const Triangle& v) const
+Triangle Transform::operator() (const Triangle& triangle) const
 {
-    Point at = this->operator()(v._a);
-    Point bt = this->operator()(v._b);
-    Point ct = this->operator()(v._c);
+    Point at = this->operator()(triangle._a);
+    Point bt = this->operator()(triangle._b);
+    Point ct = this->operator()(triangle._c);
 
-    return Triangle(at, bt, ct, v._materialIndex);
+    return Triangle(at, bt, ct, triangle._materialIndex, triangle._tex_coords_u, triangle._tex_coords_v);
 }
 
 //! renvoie la transposee de la matrice.

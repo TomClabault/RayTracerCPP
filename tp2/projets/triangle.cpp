@@ -6,10 +6,11 @@ Triangle::Triangle() :  _a(Point(0, 0, 0)),
                         _normal(cross(_b - _a, _c - _a)),
                         _materialIndex(-1) {}
 
-Triangle::Triangle(Point a, Point b, Point c, int material_index) : _a(a), _b(b), _c(c), _normal(cross(_b - _a, _c - _a)), _materialIndex(material_index) {};
+Triangle::Triangle(Point a, Point b, Point c, int material_index, const Point& tex_coords_u, const Point& tex_coords_v) :
+    _a(a), _b(b), _c(c), _normal(cross(_b - _a, _c - _a)), _materialIndex(material_index), _tex_coords_u(tex_coords_u), _tex_coords_v(tex_coords_v) {};
 
-//TODO const Triangle4& here
-Triangle::Triangle(Triangle4 triangle, int material_index) : _materialIndex(material_index)
+Triangle::Triangle(const Triangle4& triangle, int material_index, const Point& tex_coords_u, const Point& tex_coords_v) :
+    _materialIndex(material_index), _tex_coords_u(tex_coords_u), _tex_coords_v(tex_coords_v)
 {
     float iaw, ibw, icw;
     iaw = 1.0f / triangle._a.w;
@@ -48,12 +49,10 @@ bool Triangle::intersect(const Ray& ray, HitInfo& hitInfo) const
     u = dot(minusDcrossOA, ac) * Mdet;
     if (u < 0 || u > 1)
         return false;
-    hitInfo.u = u;
 
     v = dot(minusDcrossOA, -ab) * Mdet;
     if (v < 0 || u + v > 1)
         return false;
-    hitInfo.v = v;
 
     //Intersection point in the triangle at this point, computing t
     t = dot(_normal, OA) * Mdet;
@@ -84,6 +83,7 @@ bool Triangle::intersect(const Ray& ray, HitInfo& hitInfo) const
     hitInfo.v = v;
     hitInfo.mat_index = _materialIndex;
     hitInfo.normal_at_intersection = _normal;
+    hitInfo.triangle = this;
 
     return true;
 }
@@ -129,6 +129,12 @@ bool Triangle::barycentric_coordinates(const Point& point, float& u, float& v) c
     return true;
 }
 
+void Triangle::interpolate_texcoords(float u, float v, float& out_tex_u, float& out_tex_v) const
+{
+    out_tex_u = u * _tex_coords_u.x + v * _tex_coords_u.y + (1 - u - v) * _tex_coords_u.z;
+    out_tex_v = u * _tex_coords_v.x + v * _tex_coords_v.y + (1 - u - v) * _tex_coords_v.z;
+}
+
 Point Triangle::bbox_centroid() const
 {
     return (min(_a, min(_b, _c)) + max(_a, max(_b, _c))) / 2;
@@ -153,7 +159,9 @@ bool Triangle::inside_outside_2D(const Point& point) const
 
 std::ostream& operator << (std::ostream& os, const Triangle& triangle)
 {
-    os << "[" << triangle._a << ", " << triangle._b << ", " << triangle._c << "]";
+    os << "Triangle[" << triangle._a << ", " << triangle._b << ", " << triangle._c << "], UVs: ";
+    for (int i = 0; i < 3; i++)
+        os << "(" << triangle._tex_coords_u(i) << ", " << triangle._tex_coords_v(i) << "), ";
 
     return os;
 }

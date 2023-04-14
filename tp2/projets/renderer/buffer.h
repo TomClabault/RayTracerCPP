@@ -11,12 +11,6 @@ public:
     Buffer();
     Buffer(int width, int height);
     Buffer(int width, int height, const T& value);
-//    Buffer(Buffer& buffer);
-//    Buffer(Buffer&& buffer);
-//    Buffer& operator=(const Buffer& buffer);
-//    Buffer& operator=(Buffer&& buffer);
-
-    //~Buffer();
 
     T* data();
     /*
@@ -53,74 +47,7 @@ Buffer<T>::Buffer(int width, int height, const T& value) : _width(width), _heigh
     _initialized = true;
 
     _elements = std::vector<T>(width * height, value);
-//    if (_elements == nullptr)
-//    {
-//        std::cout << "Not enough memory to allocate buffer..."    << std::endl;
-
-//        std::exit(-1);
-//    }
 }
-
-//template <typename T>
-//Buffer<T>::Buffer(Buffer& buffer) : Buffer(buffer._width, buffer._height)
-//{
-//    _initialized = buffer._initialized;
-//    _width = buffer._width;
-//    _height = buffer._height;
-
-//    if (_initialized)
-//        for (int i = 0; i < buffer._height; i++)
-//            for (int j = 0; j < buffer._width; j++)
-//                _elements[i * _width + j] = buffer._elements[i * _width + j];
-//}
-
-//template <typename T>
-//Buffer<T>::Buffer(Buffer&& buffer)
-//{
-//    _elements = buffer._elements;
-//    buffer._elements = nullptr;
-
-//    _initialized = buffer._initialized;
-//    _width = buffer._width;
-//    _height = buffer._height;
-//}
-
-//template <typename T>
-//Buffer<T>& Buffer<T>::operator=(const Buffer<T>& buffer)
-//{
-//    _initialized = buffer._initialized;
-//    _width = buffer._width;
-//    _height = buffer._height;
-
-//    if (_initialized)
-//        for (int i = 0; i < buffer._height; i++)
-//            for (int j = 0; j < buffer._width; j++)
-//                _elements[i * _width + j] = buffer._elements[i * _width + j];
-
-//    return *this;
-//}
-
-//template <typename T>
-//Buffer<T>& Buffer<T>::operator=(Buffer<T>&& buffer)
-//{
-//    _elements = buffer._elements;
-//    buffer._elements = nullptr;
-
-//    _initialized = buffer._initialized;
-//    buffer._initialized = false;
-
-//    _width = buffer._width;
-//    _height = buffer._height;
-
-//    return *this;
-//}
-
-//template <typename T>
-//Buffer<T>::~Buffer()
-//{
-//    if (_initialized)
-//        delete[] _elements;
-//}
 
 template <typename T>
 T* Buffer<T>::data()
@@ -141,9 +68,6 @@ void Buffer<T>::fill_values(const T& value)
         return;
 
     std::fill_n(_elements.begin(), _width * _height, value);
-//    for (int i = 0; i < _height; i++)
-//        for (int j = 0; j < _width; j++)
-//            _elements[i * _width + j] = value;
 }
 
 template <typename T>

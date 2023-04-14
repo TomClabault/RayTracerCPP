@@ -74,6 +74,9 @@ struct RenderSettings
     //Direct multiplier on the SSAO occlusion strength
     float ssao_amount = 1.0;
 
+    //Whether or not to use a texture to compute the ambient occlusion
+    bool enable_ao_mapping = false;
+
     friend std::ostream& operator << (std::ostream& os, const RenderSettings& settings);
 };
 
