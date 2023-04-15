@@ -161,7 +161,7 @@ void MainWindow::prepare_renderer_buffers()
     new_ssaa_factor = safe_text_to_int(this->ui->ssaa_factor_edit->text());
     if (new_ssaa_factor == -1)
         new_ssaa_factor = _renderer.render_settings().ssaa_factor;
-    new_ssao = this->ui->ssao_1_radio_button->isChecked();
+    new_ssao = this->ui->ssao_1_check_box->isChecked();
 
     bool render_size_changed = (new_width != _renderer.render_settings().image_width)   ||
                                (new_height != _renderer.render_settings().image_height) ||
@@ -195,11 +195,22 @@ void MainWindow::prepare_renderer_buffers()
 
 void MainWindow::transform_object()
 {
-    Transform object_transform = get_transform_from_edits();
-    _renderer.transform_triangles(object_transform);
+    //First checking that there has been some changes in the object transform options
+    //before going through all the computations
+    if (object_transform_edits_changed())
+    {
+        Transform object_transform = get_object_transform_from_edits();
+
+        _renderer.set_object_transform(object_transform);
+    }
 }
 
-#include <thread>
+void MainWindow::build_camera_to_world_matrix()
+{
+    Transform ctx_matrix = get_camera_transform_from_edits();
+
+    _renderer.set_camera_transform(ctx_matrix);
+}
 
 void MainWindow::on_render_button_clicked()
 {
@@ -215,6 +226,7 @@ void MainWindow::on_render_button_clicked()
 
     timer.start();
     transform_object();
+    build_camera_to_world_matrix();
     timer.stop();
     ss << std::endl << "Object transformation time: " << timer.elapsed() << "ms" << std::endl;
 
@@ -252,13 +264,19 @@ void MainWindow::load_obj(const char* filepath, Transform transform)
     _renderer.set_materials(meshData.materials);
     precompute_materials(_renderer.get_materials());
 
+    //This is used to invalidate the cached object transform so that the
+    //transform that is currently written in the UI edits will be reapplied
+    //to the new OBJ being loaded. If we were not invalidating the transform
+    //the new OBJ wouldn't be coherent with the transform of the edits of the UI
+    _cached_object_transform_translation.x = -INFINITY;
+
     timer.stop();
 
     ss << "OBJ Loading time: " << timer.elapsed() << "ms";
     write_to_console(ss);
 }
 
-Image MainWindow::load_ao_map(const char* filepath)
+Image MainWindow::load_texture_map(const char* filepath)
 {
     return read_image(filepath, true);
 }
@@ -275,7 +293,7 @@ void MainWindow::on_load_robot_obj_button_clicked()
 {
     load_obj("./data/robot.obj", Identity());
 
-    this->ui->object_translation_edit->setText("0.0/-2.0/-4.0");
+    //this->ui->object_translation_edit->setText("0.0/-2.0/-4.0");
 }
 
 void MainWindow::on_load_geometry_obj_button_clicked()
@@ -422,28 +440,6 @@ void MainWindow::on_shade_visualize_ao_radio_button_toggled(bool checked)
     _renderer.render_settings().shading_method = RenderSettings::ShadingMethod::VISUALIZE_AO;
 }
 
-void MainWindow::on_ssao_1_radio_button_toggled(bool checked)
-{
-    _renderer.render_settings().enable_ssao = checked;
-
-    this->ui->ssao_1_sample_count_label->setEnabled(checked);
-    this->ui->ssao_1_sample_count_edit->setEnabled(checked);
-
-    this->ui->ssao_1_radius_label->setEnabled(checked);
-    this->ui->ssao_1_radius_edit->setEnabled(checked);
-
-    this->ui->ssao_1_amount_label->setEnabled(checked);
-    this->ui->ssao_1_amount_edit->setEnabled(checked);
-}
-
-void MainWindow::on_ao_map_radio_button_toggled(bool checked)
-{
-    _renderer.render_settings().enable_ao_mapping = checked;
-
-    this->ui->load_ao_map_button->setEnabled(checked);
-    this->ui->ao_map_edit->setEnabled(checked);
-}
-
 void MainWindow::on_load_ao_map_button_clicked()
 {
     QFileDialog dialog(this, "Open AO Map");
@@ -455,12 +451,32 @@ void MainWindow::on_load_ao_map_button_clicked()
         QStringList files = dialog.selectedFiles();
         QString file_path = files[0];
 
-        Image ao_map = load_ao_map(file_path.toStdString().c_str());//TODO Image pas en float c'est trop lourd
+        Image ao_map = load_texture_map(file_path.toStdString().c_str());//TODO Image pas en float c'est trop lourd
 
         _renderer.set_ao_map(ao_map);
 
         QStringList split_path = file_path.split("/");
         this->ui->ao_map_edit->setText(split_path[split_path.size() - 1]);
+    }
+}
+
+void MainWindow::on_load_diffuse_map_button_clicked()
+{
+    QFileDialog dialog(this, "Open Diffuse Map");
+    dialog.setFileMode(QFileDialog::ExistingFile);
+    dialog.setNameFilter(tr("Image File (*.png *.jpg)"));
+
+    if (dialog.exec())
+    {
+        QStringList files = dialog.selectedFiles();
+        QString file_path = files[0];
+
+        Image diffuse_map = load_texture_map(file_path.toStdString().c_str());//TODO Image pas en float c'est trop lourd
+
+        _renderer.set_diffuse_map(diffuse_map);
+
+        QStringList split_path = file_path.split("/");
+        this->ui->diffuse_map_edit->setText(split_path[split_path.size() - 1]);
     }
 }
 
@@ -479,7 +495,51 @@ void MainWindow::on_load_obj_file_button_clicked()
     }
 }
 
-Transform MainWindow::get_transform_from_edits()
+bool MainWindow::object_transform_edits_changed()
+{
+    QString translation_text = this->ui->object_translation_edit->text();
+    QStringList translation = translation_text.split("/");
+    if (translation.size() == 3)
+    {
+        bool ok_x, ok_y, ok_z;
+        float x = safe_text_to_float(translation.at(0), ok_x);
+        float y = safe_text_to_float(translation.at(1), ok_y);
+        float z = safe_text_to_float(translation.at(2), ok_z);
+
+        if (_cached_object_transform_translation.x != x || _cached_object_transform_translation.y != y || _cached_object_transform_translation.z != z)
+            return true;
+    }
+
+    QString rotation_text = this->ui->object_rotation_edit->text();
+    QStringList rotation = rotation_text.split("/");
+    if (rotation.size() == 3)
+    {
+        bool ok_x, ok_y, ok_z;
+        float x = safe_text_to_float(rotation.at(0), ok_x);
+        float y = safe_text_to_float(rotation.at(1), ok_y);
+        float z = safe_text_to_float(rotation.at(2), ok_z);
+
+        if (_cached_object_transform_rotation.x != x || _cached_object_transform_rotation.y != y || _cached_object_transform_rotation.z != z)
+            return true;
+    }
+
+    QString scale_text = this->ui->object_scale_edit->text();
+    QStringList scale = scale_text.split("/");
+    if (scale.size() == 3)
+    {
+        bool ok_x, ok_y, ok_z;
+        float x = safe_text_to_float(scale.at(0), ok_x);
+        float y = safe_text_to_float(scale.at(1), ok_y);
+        float z = safe_text_to_float(scale.at(2), ok_z);
+
+        if (_cached_object_transform_scale.x != x || _cached_object_transform_scale.y != y || _cached_object_transform_scale.z != z)
+            return true;
+    }
+
+    return false;
+}
+
+Transform MainWindow::get_object_transform_from_edits()
 {
     Transform transform = Identity();
 
@@ -493,7 +553,8 @@ Transform MainWindow::get_transform_from_edits()
         float z = safe_text_to_float(translation.at(2), ok_z);
 
         if (ok_x && ok_y && ok_z)
-            transform = transform * Translation(x, y, z);
+            transform = transform(Translation(x, y, z));
+        _cached_object_transform_translation = Vector(x, y, z);
     }
 
     QString rotation_text = this->ui->object_rotation_edit->text();
@@ -506,7 +567,8 @@ Transform MainWindow::get_transform_from_edits()
         float z = safe_text_to_float(rotation.at(2), ok_z);
 
         if (ok_x && ok_y && ok_z)
-            transform = transform * RotationZ(z) * RotationY(y) * RotationX(x);
+            transform = transform(RotationZ(z))(RotationY(y))(RotationX(x));
+        _cached_object_transform_rotation = Vector(x, y, z);
     }
 
     QString scale_text = this->ui->object_scale_edit->text();
@@ -519,7 +581,41 @@ Transform MainWindow::get_transform_from_edits()
         float z = safe_text_to_float(scale.at(2), ok_z);
 
         if (ok_x && ok_y && ok_z)
-            transform = transform * Scale(x, y, z);
+            transform = transform(Scale(x, y, z));
+        _cached_object_transform_scale = Vector(x, y, z);
+    }
+
+    return transform;
+}
+
+Transform MainWindow::get_camera_transform_from_edits()
+{
+    Transform transform = Identity();
+
+    QString translation_text = this->ui->camera_translation_edit->text();
+    QStringList translation = translation_text.split("/");
+    if (translation.size() == 3)
+    {
+        bool ok_x, ok_y, ok_z;
+        float x = safe_text_to_float(translation.at(0), ok_x);
+        float y = safe_text_to_float(translation.at(1), ok_y);
+        float z = safe_text_to_float(translation.at(2), ok_z);
+
+        if (ok_x && ok_y && ok_z)
+            transform = transform(Translation(x, y, z));
+    }
+
+    QString rotation_text = this->ui->camera_rotation_edit->text();
+    QStringList rotation = rotation_text.split("/");
+    if (rotation.size() == 3)
+    {
+        bool ok_x, ok_y, ok_z;
+        float x = safe_text_to_float(rotation.at(0), ok_x);
+        float y = safe_text_to_float(rotation.at(1), ok_y);
+        float z = safe_text_to_float(rotation.at(2), ok_z);
+
+        if (ok_x && ok_y && ok_z)
+            transform = transform(RotationZ(z))(RotationY(y))(RotationX(x));
     }
 
     return transform;
@@ -528,3 +624,41 @@ Transform MainWindow::get_transform_from_edits()
 void MainWindow::on_object_translation_edit_returnPressed() { on_render_button_clicked(); }
 void MainWindow::on_object_rotation_edit_returnPressed() { on_render_button_clicked(); }
 void MainWindow::on_object_scale_edit_returnPressed() { on_render_button_clicked(); }
+
+void MainWindow::on_ao_map_check_box_stateChanged(int checked)
+{
+    _renderer.render_settings().enable_ao_mapping = checked;
+
+    this->ui->load_ao_map_button->setEnabled(checked);
+    this->ui->ao_map_edit->setEnabled(checked);
+}
+
+void MainWindow::on_diffuse_map_check_box_stateChanged(int checked)
+{
+    _renderer.render_settings().enable_diffuse_mapping = checked;
+
+    this->ui->load_diffuse_map_button->setEnabled(checked);
+    this->ui->diffuse_map_edit->setEnabled(checked);
+}
+
+void MainWindow::on_ssao_1_check_box_stateChanged(int checked)
+{
+    _renderer.render_settings().enable_ssao = checked;
+
+    this->ui->ssao_1_sample_count_label->setEnabled(checked);
+    this->ui->ssao_1_sample_count_edit->setEnabled(checked);
+
+    this->ui->ssao_1_radius_label->setEnabled(checked);
+    this->ui->ssao_1_radius_edit->setEnabled(checked);
+
+    this->ui->ssao_1_amount_label->setEnabled(checked);
+    this->ui->ssao_1_amount_edit->setEnabled(checked);
+}
+
+void MainWindow::on_camera_rotation_edit_returnPressed() { on_render_button_clicked(); }
+void MainWindow::on_camera_translation_edit_returnPressed() { on_render_button_clicked(); }
+
+void MainWindow::on_enable_ambient_checkbox_stateChanged(int checked) { _renderer.render_settings().enable_ambient = checked; }
+void MainWindow::on_enable_diffuse_checkbox_stateChanged(int checked) { _renderer.render_settings().enable_diffuse = checked; }
+void MainWindow::on_enable_specular_checkbox_stateChanged(int checked) { _renderer.render_settings().enable_specular = checked; }
+void MainWindow::on_enable_emissive_checkbox_stateChanged(int checked) { _renderer.render_settings().enable_emissive = checked; }

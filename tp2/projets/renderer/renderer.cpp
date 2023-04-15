@@ -158,19 +158,41 @@ void Renderer::set_ao_map(const Image& ao_map)
     _ao_map = ao_map;
 }
 
-Color Renderer::sample_texture(const Image& _ao_map, float& tex_coord_u, float& tex_coord_v) const
+void Renderer::set_diffuse_map(const Image& diffuse_map)
 {
-    return _ao_map.texture(tex_coord_u, tex_coord_v);
+    _diffuse_map = diffuse_map;
 }
 
-void Renderer::transform_triangles(const Transform& object_transform)
+Color Renderer::sample_texture(const Image& texture, float& tex_coord_u, float& tex_coord_v) const
 {
-    _previous_transform = _previous_transform.inverse();
+    return texture.texture(tex_coord_u, tex_coord_v);
+}
+
+void Renderer::set_object_transform(const Transform& object_transform)
+{
+    _previous_object_transform = _previous_object_transform.inverse();
+    Transform transform = object_transform(_previous_object_transform);
 
     for (Triangle& triangle : _triangles)
-        triangle = (_previous_transform * object_transform)(triangle);
+        triangle = transform(triangle);
+    _bvh = BVH(&_triangles, _render_settings.bvh_max_depth, _render_settings.bvh_leaf_object_count);
 
-    _previous_transform = object_transform;
+    std::cout << _triangles[0] << std::endl;
+
+    _previous_object_transform = object_transform;
+}
+
+void Renderer::set_camera_transform(const Transform& camera_transform)
+{
+    _previous_camera_transform = _previous_camera_transform.inverse();
+
+    //Reverting the position of the camera to its original
+    _scene._camera._position = _previous_camera_transform(_scene._camera._position);
+
+    //Applying the camera transform
+    _scene._camera._position = camera_transform(_scene._camera._position);
+
+    _previous_camera_transform = camera_transform;
 }
 
 void Renderer::reconstruct_bvh_new()
@@ -210,9 +232,9 @@ Color Renderer::computeSpecular(const Material& hit_material, const Vector& ray_
     float angle = dot(reflection_ray, -ray_direction);
 
     //Specular optimization to avoid computing the exponentiation when not necessary (i.e. when it corresponds to a negligeable visual impact)
-    if (angle <= hit_material.specular_threshold)//We're below the visibility threshold so we're not going to notice the specular anyway, returning no specular
-        return Color(0, 0, 0);
-    else
+    //if (angle <= hit_material.specular_threshold)//We're below the visibility threshold so we're not going to notice the specular anyway, returning no specular
+//        return Color(0, 0, 0);
+//    else
         return hit_material.specular * std::pow(std::max(0.0f, angle), hit_material.ns);
 }
 
@@ -275,30 +297,33 @@ Color Renderer::shade_ray_inter_point(const Ray& ray, const HitInfo& hit_info) c
         else
             hit_material = _materials(hit_info.mat_index);
 
-//        float ao_map_contribution = 1.0f;
-//        if (_render_settings.enable_ao_mapping)
-//        {
-//            float tex_coord_u, tex_coord_v;
-//            hit_info.triangle->interpolate_texcoords(hit_info.u, hit_info.v, tex_coord_u, tex_coord_v);
-
-//            ao_map_contribution = sample_texture(_ao_map, tex_coord_u, tex_coord_v).r;
-//        }
+        float ao_map_contribution = 1.0f;
         if (_render_settings.enable_ao_mapping)
         {
             float tex_coord_u, tex_coord_v;
             hit_info.triangle->interpolate_texcoords(hit_info.u, hit_info.v, tex_coord_u, tex_coord_v);
 
-            return sample_texture(_ao_map, tex_coord_u, tex_coord_v);
+            ao_map_contribution = sample_texture(_ao_map, tex_coord_u, tex_coord_v).r;
         }
 
-        //final_color = final_color + computeDiffuse(hit_material, normal, direction_to_light) * ao_map_contribution;
-        final_color = final_color + computeDiffuse(hit_material, normal, direction_to_light) * 1;
-        final_color = final_color + computeSpecular(hit_material, ray._direction, normal, direction_to_light);
+        Color diffuse_color;
+        if (_render_settings.enable_diffuse_mapping)
+        {
+            float tex_coord_u, tex_coord_v;
+            hit_info.triangle->interpolate_texcoords(hit_info.u, hit_info.v, tex_coord_u, tex_coord_v);
+
+            diffuse_color = sample_texture(_diffuse_map, tex_coord_u, tex_coord_v);
+        }
+        else
+            diffuse_color = computeDiffuse(hit_material, normal, direction_to_light);
+
+        final_color = final_color + diffuse_color * ao_map_contribution * _render_settings.enable_diffuse;
+        final_color = final_color + computeSpecular(hit_material, ray._direction, normal, direction_to_light) * _render_settings.enable_specular;
         if (is_shadowed(inter_point, _scene._point_light._position))
             final_color = final_color * Color(Renderer::SHADOW_INTENSITY);
-        final_color = final_color + hit_material.emission;
+        final_color = final_color + hit_material.emission * _render_settings.enable_emissive;
 
-        final_color = final_color + Renderer::AMBIENT_COLOR * hit_material.ambient_coeff;
+        final_color = final_color + Renderer::AMBIENT_COLOR * hit_material.ambient_coeff * _render_settings.enable_ambient;
     }
     else if (_render_settings.shading_method == RenderSettings::ShadingMethod::ABS_NORMALS_SHADING)
     {

@@ -20,6 +20,8 @@ std::vector<Triangle> MeshIOUtils::create_triangles(const MeshIOData& meshData, 
         triangle._tex_coords_v = Point(meshData.texcoords[index0].y, meshData.texcoords[index1].y, meshData.texcoords[index2].y);
 
 		_triangles.push_back(triangle);
+
+        std::cout << triangle << std::endl;
 	}
 
 	return _triangles;

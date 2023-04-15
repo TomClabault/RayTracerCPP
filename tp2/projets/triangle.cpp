@@ -79,6 +79,7 @@ bool Triangle::intersect(const Ray& ray, HitInfo& hitInfo) const
 
     //Common operations to both algorithms
     hitInfo.t = t;
+    //Barycentric coordinates are: P = (1 - u - v)A + uB + vC
     hitInfo.u = u;
     hitInfo.v = v;
     hitInfo.mat_index = _materialIndex;
@@ -131,8 +132,9 @@ bool Triangle::barycentric_coordinates(const Point& point, float& u, float& v) c
 
 void Triangle::interpolate_texcoords(float u, float v, float& out_tex_u, float& out_tex_v) const
 {
-    out_tex_u = u * _tex_coords_u.x + v * _tex_coords_u.y + (1 - u - v) * _tex_coords_u.z;
-    out_tex_v = u * _tex_coords_v.x + v * _tex_coords_v.y + (1 - u - v) * _tex_coords_v.z;
+    //Barycentric coordinates are: P = wA + uB + vC
+    out_tex_u = (1 - u - v) * _tex_coords_u.x + u * _tex_coords_u.y + v * _tex_coords_u.z;
+    out_tex_v = (1 - u - v) * _tex_coords_v.x + u * _tex_coords_v.y + v * _tex_coords_v.z;
 }
 
 Point Triangle::bbox_centroid() const

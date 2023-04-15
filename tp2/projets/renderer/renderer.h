@@ -52,10 +52,12 @@ public:
     void set_light_position(const Point& position);
 
     void set_ao_map(const Image& ao_map);
+    void set_diffuse_map(const Image& diffuse_map);
 
-    Color sample_texture(const Image& _ao_map, float& tex_coord_u, float& tex_coord_v) const;
-
-    void transform_triangles(const Transform& object_transform);
+    Color sample_texture(const Image& texture, float& tex_coord_u, float& tex_coord_v) const;
+    
+    void set_object_transform(const Transform& object_transform);
+    void set_camera_transform(const Transform& camera_transform);
 
     /**
      * @brief Builds the BVH using the present triangles and the BVH
@@ -170,7 +172,9 @@ private:
     //Last transform used to transform the triangles. It is used to avoid
     //"stacking" transforms on top of each other by inverting the previous
     //transformation that was applied
-    Transform _previous_transform = Identity();
+    Transform _previous_object_transform = Identity();
+    Transform _previous_camera_transform = Identity();
+
     Materials _materials;//Materials of the triangles
 	 
 	RenderSettings _render_settings;
@@ -179,6 +183,7 @@ private:
 
 	Image _image;
     Image _ao_map;
+    Image _diffuse_map;
 
 	Scene _scene;
 };

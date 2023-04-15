@@ -20,13 +20,18 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    void handle_image_processing();
+    void set_render_image(const Image* const image);
+
     void prepare_bvh();
     void prepare_renderer_buffers();
     void transform_object();
-    void handle_image_processing();
-    void set_render_image(const Image* const image);
+    void build_camera_to_world_matrix();
+    bool object_transform_edits_changed();
+
+
     void load_obj(const char* filepath, Transform transform);
-    Image load_ao_map(const char* filepath);
+    Image load_texture_map(const char* filepath);
 
     void write_to_console(const std::stringstream& ss);
 
@@ -49,7 +54,7 @@ private slots:
     void on_ssaa_factor_edit_returnPressed();
     void on_ssaa_radio_button_toggled(bool checked);
 
-    void on_ssao_1_radio_button_toggled(bool checked);
+    void on_ssao_1_check_box_stateChanged(int arg1);
 
     void on_ssao_1_radius_edit_editingFinished();
     void on_ssao_1_sample_count_edit_editingFinished();
@@ -74,19 +79,39 @@ private slots:
     void on_shade_barycentric_radio_button_toggled(bool checked);
     void on_shade_visualize_ao_radio_button_toggled(bool checked);
 
-    void on_ao_map_radio_button_toggled(bool checked);
+    void on_ao_map_check_box_stateChanged(int arg1);
     void on_load_ao_map_button_clicked();
 
     void on_load_obj_file_button_clicked();
 
-    Transform get_transform_from_edits();
+    Transform get_object_transform_from_edits();
+    Transform get_camera_transform_from_edits();
 
     void on_object_translation_edit_returnPressed();
     void on_object_rotation_edit_returnPressed();
     void on_object_scale_edit_returnPressed();
 
+    void on_camera_rotation_edit_returnPressed();
+    void on_camera_translation_edit_returnPressed();
+
+    void on_load_diffuse_map_button_clicked();
+
+    void on_diffuse_map_check_box_stateChanged(int arg1);
+
+    void on_enable_ambient_checkbox_stateChanged(int arg1);
+
+    void on_enable_diffuse_checkbox_stateChanged(int arg1);
+
+    void on_enable_specular_checkbox_stateChanged(int arg1);
+
+    void on_enable_emissive_checkbox_stateChanged(int arg1);
+
 private:
     Ui::MainWindow *ui;
+
+    Vector _cached_object_transform_translation;
+    Vector _cached_object_transform_rotation;
+    Vector _cached_object_transform_scale;
 
     Renderer _renderer;
     QImage* q_image = nullptr;//QImage displayed on the screen

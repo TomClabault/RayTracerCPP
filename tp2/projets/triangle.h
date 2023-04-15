@@ -11,6 +11,14 @@
 //Whether or not to render triangles that are facing away from the camera
 #define BACKFACE_CULLING 1
 
+/**
+ *  -------- UV Coordinates Convention Used --------
+ *  A point on a triangle is P = wA + uB + vC
+ *  u and v are in [0, 1].
+ *  [u, v] = [0, 0] corresponds to the bottom left corner of a texture.
+ *  -------- UV Coordinates Convention Used --------
+ */
+
 class Triangle;
 
 struct HitInfo
@@ -21,7 +29,9 @@ struct HitInfo
     float t = -1;
 
     //Barycentric coordinates of the intersection point in the triangle
+    //P = wA + uB + vC
     float u = 1.0, v = 0.0;
+
     int mat_index = -1;//Index of the material of the intersected triangle. 
     //This index can be used to retrieve the material in the Materials array in the Scene
 

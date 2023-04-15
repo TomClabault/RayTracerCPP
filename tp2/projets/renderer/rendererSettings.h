@@ -74,8 +74,19 @@ struct RenderSettings
     //Direct multiplier on the SSAO occlusion strength
     float ssao_amount = 1.0;
 
+    //Whether or not to compute the ambient component of 'RT_SHADING'
+    bool enable_ambient = true;
+    //Whether or not to compute the diffuse component of 'RT_SHADING'
+    bool enable_diffuse = true;
+    //Whether or not to compute the specular component of 'RT_SHADING'
+    bool enable_specular = true;
+    //Whether or not to compute the emissive component of 'RT_SHADING'
+    bool enable_emissive = true;
+
     //Whether or not to use a texture to compute the ambient occlusion
     bool enable_ao_mapping = false;
+    //Whether or not to use a texture to compute the diffuse color
+    bool enable_diffuse_mapping = false;
 
     friend std::ostream& operator << (std::ostream& os, const RenderSettings& settings);
 };
