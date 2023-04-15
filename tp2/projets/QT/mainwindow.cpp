@@ -293,7 +293,7 @@ void MainWindow::on_load_robot_obj_button_clicked()
 {
     load_obj("./data/robot.obj", Identity());
 
-    //this->ui->object_translation_edit->setText("0.0/-2.0/-4.0");
+    this->ui->object_translation_edit->setText("0.0/-2.0/-4.0");
 }
 
 void MainWindow::on_load_geometry_obj_button_clicked()

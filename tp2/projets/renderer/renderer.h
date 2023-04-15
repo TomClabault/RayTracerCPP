@@ -122,6 +122,38 @@ private:
     bool is_shadowed(const Point& inter_point, const Point& light_position) const;
 
     /**
+     * @brief Returns the color based on the given normalized normal vector
+     * @param normalized_normal Normalized normal
+     * @return (Color(normalized_normal.x, normalized_normal.y, normalized_normal.z) + Color(1.0f, 1.0f, 1.0f)) * 0.5
+     */
+    Color shade_abs_normals(const Vector& normalized_normal) const;
+
+    /**
+     * @brief Returns the color based on the given normalized normal vector
+     * @param normalized_normal Normalized normal
+     * @return (Color(normalized_normal.x, normalized_normal.y, normalized_normal.z) + Color(1.0f, 1.0f, 1.0f)) * 0.5
+     */
+    Color shade_pastel_normals(const Vector& normalized_normal) const;
+
+    /**
+     * @brief Returns the color based on the given barycentric coordinates
+     * @param u U barycentric coordinate
+     * @param v V barycentric coordinate
+     * @return u * Red + v * Green + (1 - u - v) * w
+     */
+    Color shade_barycentric_coordinates(float u, float v) const;
+
+    /**
+     * @brief Shades a given intersection point (contained in hit_info) with a technique
+     * that helps visualizing ambient occlusion
+     * @param triangle The intersected triangle
+     * @param u The u coordinate on the triangle at the intersection point
+     * @param v The u coordinate on the triangle at the intersection point
+     * @return The color at the shaded point
+     */
+    Color shade_visualize_ao(const Triangle& triangle, float u, float v) const;
+
+    /**
      * @brief Computes the color of the point intersection of a ray and the scene
      * @param ray The ray that intersected the scene
      * @param hit_info The information about the intersection that occured

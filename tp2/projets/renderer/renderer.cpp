@@ -279,6 +279,38 @@ bool Renderer::is_shadowed(const Point& inter_point, const Point& light_position
     return false;
 }
 
+Color Renderer::shade_abs_normals(const Vector& normalized_normal) const
+{
+    return Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
+}
+
+Color Renderer::shade_pastel_normals(const Vector& normalized_normal) const
+{
+    return (Color(normalized_normal.x, normalized_normal.y, normalized_normal.z) + Color(1.0f, 1.0f, 1.0f)) * 0.5;
+}
+
+Color Renderer::shade_barycentric_coordinates(float u, float v) const
+{
+    return Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
+}
+
+Color Renderer::shade_visualize_ao(const Triangle& triangle, float u, float v) const
+{
+    Color color;
+
+    color = Color(0.9f, 0.9f, 0.9f);//Almost pure white
+
+    if (_render_settings.enable_ao_mapping)
+    {
+        float tex_coord_u, tex_coord_v;
+        triangle.interpolate_texcoords(u, v, tex_coord_u, tex_coord_v);
+
+        color = color * Color(sample_texture(_ao_map, tex_coord_u, tex_coord_v).r);
+    }
+
+    return color;
+}
+
 Color Renderer::shade_ray_inter_point(const Ray& ray, const HitInfo& hit_info) const
 {
     Color final_color = Color(0.0f, 0.0f, 0.0f);
@@ -326,27 +358,16 @@ Color Renderer::shade_ray_inter_point(const Ray& ray, const HitInfo& hit_info) c
         final_color = final_color + Renderer::AMBIENT_COLOR * hit_material.ambient_coeff * _render_settings.enable_ambient;
     }
     else if (_render_settings.shading_method == RenderSettings::ShadingMethod::ABS_NORMALS_SHADING)
-    {
         //Color triangles with std::abs(normal)
-        Vector normalized_normal = normalize(hit_info.normal_at_intersection);
-        final_color = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
-    }
+        final_color = shade_abs_normals(normalize(hit_info.normal_at_intersection));
     else if (_render_settings.shading_method == RenderSettings::ShadingMethod::PASTEL_NORMALS_SHADING)
-    {
         //Color triangles with (normal + 1) * 0.5
-        Vector normalized_normal = normalize(hit_info.normal_at_intersection);
-        final_color = (Color(normalized_normal.x, normalized_normal.y, normalized_normal.z) + Color(1.0f, 1.0f, 1.0f)) * 0.5;
-    }
+        final_color = shade_pastel_normals(normalize(hit_info.normal_at_intersection));
     else if (_render_settings.shading_method == RenderSettings::ShadingMethod::BARYCENTRIC_COORDINATES_SHADING)
-    {
         //Color triangles with barycentric coordinates
-        float u = hit_info.u;
-        float v = hit_info.v;
-
-        final_color = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
-    }
+        final_color = shade_barycentric_coordinates(hit_info.u, hit_info.v);
     else if (_render_settings.shading_method == RenderSettings::ShadingMethod::VISUALIZE_AO)
-        final_color = Color(0.9f, 0.9f, 0.9f);//Almost pure white
+        final_color = shade_visualize_ao(*hit_info.triangle, hit_info.u, hit_info.v);
 
     return final_color;
 }
@@ -554,12 +575,9 @@ void Renderer::raster_trace()
     std::array<Triangle4, 12> clipped_triangles;
 
 #pragma omp parallel for schedule(dynamic) private(to_clip_triangles, clipped_triangles)
-    //for (int triangle_index = 1361; triangle_index < _triangles.size(); triangle_index++)
     for (int triangle_index = 0; triangle_index < _triangles.size(); triangle_index++)
     {
         Triangle& triangle = _triangles[triangle_index];
-        //if (triangle_index == 1361)
-            //std::cout << triangle << std::endl;
 
         vec4 a_clip_space = perspective_projection(vec4(triangle._a));
         vec4 b_clip_space = perspective_projection(vec4(triangle._b));
@@ -599,15 +617,10 @@ void Renderer::raster_trace()
             float image_x_increment = render_width_scaling;
             float image_y_increment = render_height_scaling;
             for (int py = minYPixels; py <= maxYPixels; py++, image_y += image_y_increment)
-            //for (int py = render_height - 833; py <= maxYPixels; py++, image_y += image_y_increment)
             {
                 float image_x = minXPixels * render_width_scaling - 1;
                 for (int px = minXPixels; px <= maxXPixels; px++, image_x += image_x_increment)
-                //for (int px = 1847; px <= maxXPixels; px++, image_x += image_x_increment)
                 {
-                    //if (px == 1847 && py == render_height - 833)
-                        //_image(px, py) = Color(1.0, 0, 0);//std::cout << "index: " << triangle_index << std::endl;
-
                     //NOTE If there are still issues with the clipping algorithm creating new points
                     //just a little over the edge of the view frustum, consider using a simple std::max(0, ...)
                     assert(px >= 0 && px < render_width);
@@ -654,29 +667,19 @@ void Renderer::raster_trace()
 
                         Color final_color;
                         if (_render_settings.shading_method == RenderSettings::ShadingMethod::RT_SHADING)
-                            //final_color = ((triangle_index == 0) ? Color(0.5, 0.0, 0.0) : Color(0.0, 0.5, 0.0)) + trace_triangle(Ray(_scene._camera._position, normalize(perspective_projection_inv(pixel_point) - _scene._camera._position)), perspective_projection_inv(clipped_triangle_NDC));//TODO remove
                             final_color = trace_triangle(Ray(_scene._camera._position, normalize(perspective_projection_inv(pixel_point) - _scene._camera._position)), perspective_projection_inv(clipped_triangle_NDC));
                         else if (_render_settings.shading_method == RenderSettings::ShadingMethod::ABS_NORMALS_SHADING)
-                        {
                             //Color triangles with std::abs(normal)
-                            Vector normalized_normal = normalize(triangle._normal);
-                            final_color = Color(std::abs(normalized_normal.x), std::abs(normalized_normal.y), std::abs(normalized_normal.z));
-                        }
+                            final_color = shade_abs_normals(normalize(triangle._normal));
                         else if (_render_settings.shading_method == RenderSettings::ShadingMethod::PASTEL_NORMALS_SHADING)
-                        {
                             //Color triangles with (normal + 1) * 0.5
-                            Vector normalized_normal = normalize(triangle._normal);
-                            final_color = (Color(normalized_normal.x, normalized_normal.y, normalized_normal.z) + Color(1.0f, 1.0f, 1.0f)) * 0.5;
-                        }
+                            final_color = shade_pastel_normals(normalize(triangle._normal));
                         else if (_render_settings.shading_method == RenderSettings::ShadingMethod::BARYCENTRIC_COORDINATES_SHADING)
-                            final_color = Color(1, 0, 0) * u + Color(0, 1.0, 0) * v + Color(0, 0, 1) * (1 - u - v);
+                            final_color = shade_barycentric_coordinates(u, v);
                         else if (_render_settings.shading_method == RenderSettings::ShadingMethod::VISUALIZE_AO)
-                            final_color = Color(0.9f ,0.9f , 0.9f);
+                            final_color = shade_visualize_ao(perspective_projection_inv(clipped_triangle_NDC), u, v);
 
                         _image(px, py) = final_color;
-
-                        //index: 1362
-                        //index: 1964
                     }
 
                 }
@@ -692,7 +695,7 @@ void Renderer::ray_trace()
 
     float fov_scaling = tan(radians(_scene._camera._fov / 2));
 
-#pragma omp parallel for schedule(dynamic)
+//#pragma omp parallel for schedule(dynamic)
     for (int py = 0; py < render_height; py++)
     {
         //Adding 0.5 to consider the center of the pixel
