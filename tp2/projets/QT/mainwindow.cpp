@@ -269,6 +269,7 @@ void MainWindow::load_obj(const char* filepath, Transform transform)
     //to the new OBJ being loaded. If we were not invalidating the transform
     //the new OBJ wouldn't be coherent with the transform of the edits of the UI
     _cached_object_transform_translation.x = -INFINITY;
+    _renderer.reset_previous_transform();
 
     timer.stop();
 
@@ -643,7 +644,8 @@ void MainWindow::on_diffuse_map_check_box_stateChanged(int checked)
 
 void MainWindow::on_ssao_1_check_box_stateChanged(int checked)
 {
-    _renderer.render_settings().enable_ssao = checked;
+    //We're not changing the render settings here as this will be done
+    //lazily upon calling the "on_render_button_clicked" function
 
     this->ui->ssao_1_sample_count_label->setEnabled(checked);
     this->ui->ssao_1_sample_count_edit->setEnabled(checked);

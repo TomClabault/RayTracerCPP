@@ -56,6 +56,8 @@ public:
 
     Color sample_texture(const Image& texture, float& tex_coord_u, float& tex_coord_v) const;
     
+    void reset_previous_transform();
+
     void set_object_transform(const Transform& object_transform);
     void set_camera_transform(const Transform& camera_transform);
 

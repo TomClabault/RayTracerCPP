@@ -168,6 +168,11 @@ Color Renderer::sample_texture(const Image& texture, float& tex_coord_u, float& 
     return texture.texture(tex_coord_u, tex_coord_v);
 }
 
+void Renderer::reset_previous_transform()
+{
+    _previous_object_transform = Identity();
+}
+
 void Renderer::set_object_transform(const Transform& object_transform)
 {
     _previous_object_transform = _previous_object_transform.inverse();
