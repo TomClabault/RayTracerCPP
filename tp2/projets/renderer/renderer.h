@@ -103,9 +103,9 @@ public:
 	 */
 	void post_process();
 
-	/*
-	 * Applies screen space ambient occlusion
-	 */
+    /**
+     * @brief Applies screen space ambient occlusion
+     */
     void post_process_ssao_SIMD();
     void post_process_ssao_scalar();
 
@@ -190,14 +190,12 @@ private:
     int clip_triangle(std::array<Triangle4, 12>& to_clip_triangles, std::array<Triangle4, 12>& clipped_triangles) const;
 
     /**
-     * @brief Inverse project only the z coordinate of the given vertex with the given
-     * inverse of the perspective projection matrix
-     * @param perspective_projection_matrix_inverse Inverse of the perspective projection
-     * matrix
-     * @param vertex The vertex whose z coordinate is to be inverse-projected
-     * @return The inversed projected z coordinate of the given vertex
+     * @brief Transforms only the z coordinate of the given vertex with the given matrix
+     * @param matrix The matrix
+     * @param vertex The vertex whose z coordinate is to be transformed
+     * @return The transformed z coordinate of the given vertex
      */
-    float perspective_inverse_projection_z(const Transform& perspective_projection_matrix_inverse, const Point& vertex);
+    float matrix_transform_z(const Transform& matrix, const Point& vertex);
 
 private:
     Buffer<float> _z_buffer;
@@ -210,7 +208,6 @@ private:
     //"stacking" transforms on top of each other by inverting the previous
     //transformation that was applied
     Transform _previous_object_transform = Identity();
-    Transform _previous_camera_transform = Identity();
 
     Materials _materials;//Materials of the triangles
 	 

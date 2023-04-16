@@ -67,8 +67,6 @@ struct RenderSettings
     //Number of sample for the SSAO. The higher the sample count, the more precise
     //and less noisy the SSAO but this also means higher computation times
     int ssao_sample_count = 64;
-    //Number of samples used to randomly rotate the ssao samples
-    int ssao_noise_size = 16;//TODO remove
     //Radius within which to look for occlusion
     float ssao_radius = 0.5;
     //Direct multiplier on the SSAO occlusion strength

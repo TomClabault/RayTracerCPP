@@ -295,14 +295,16 @@ void MainWindow::on_load_robot_obj_button_clicked()
     load_obj("./data/robot.obj", Identity());
 
     this->ui->object_translation_edit->setText("0.0/-2.0/-4.0");
+    this->ui->object_rotation_edit->setText("0.0/0.0/0.0");
+    this->ui->object_scale_edit->setText("1.0/1.0/1.0");
 }
 
 void MainWindow::on_load_geometry_obj_button_clicked()
 {
     load_obj("./data/geometry.obj", Identity());
 
-    this->ui->object_translation_edit->setText("-1.0/-3.0/-12.0");
-    this->ui->object_rotation_edit->setText("0.0/160.0/0.0");
+    this->ui->object_translation_edit->setText("-1.0/-3.0/-10.0");
+    this->ui->object_rotation_edit->setText("0.0/170.0/0.0");
     this->ui->object_scale_edit->setText("2.0/2.0/2.0");
 }
 

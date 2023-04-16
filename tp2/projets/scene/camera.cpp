@@ -20,7 +20,7 @@ void Camera::set_fov(float fov)
 
 std::ostream& operator << (std::ostream& os, const Camera& camera)
 {
-	os << "Camera[" << camera._position << ", [fovY, near, far] = [" << camera._fov << ", " << camera._near << ", " << camera._far << "]\n";
+    os << "Camera[" << camera._position << ", [fovY, near, far] = [" << camera._fov << ", " << camera._near << ", " << camera._far << "]\n";
 
 	return os;
 }

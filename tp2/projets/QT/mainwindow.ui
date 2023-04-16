@@ -63,7 +63,7 @@
            </sizepolicy>
           </property>
           <property name="currentIndex">
-           <number>2</number>
+           <number>0</number>
           </property>
           <property name="documentMode">
            <bool>false</bool>
@@ -1046,6 +1046,9 @@
                </item>
                <item row="1" column="0">
                 <widget class="QLabel" name="ssao_1_sample_count_label">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                    <horstretch>0</horstretch>
@@ -1059,6 +1062,9 @@
                </item>
                <item row="1" column="1">
                 <widget class="QLineEdit" name="ssao_1_sample_count_edit">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                    <horstretch>0</horstretch>
@@ -1072,6 +1078,9 @@
                </item>
                <item row="2" column="0">
                 <widget class="QLabel" name="ssao_1_radius_label">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                    <horstretch>0</horstretch>
@@ -1085,6 +1094,9 @@
                </item>
                <item row="2" column="1">
                 <widget class="QLineEdit" name="ssao_1_radius_edit">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                    <horstretch>0</horstretch>
@@ -1098,6 +1110,9 @@
                </item>
                <item row="3" column="0">
                 <widget class="QLabel" name="ssao_1_amount_label">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                    <horstretch>0</horstretch>
@@ -1111,6 +1126,9 @@
                </item>
                <item row="3" column="1">
                 <widget class="QLineEdit" name="ssao_1_amount_edit">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                    <horstretch>0</horstretch>

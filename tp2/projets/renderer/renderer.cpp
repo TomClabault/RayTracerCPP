@@ -164,22 +164,16 @@ void Renderer::set_object_transform(const Transform& object_transform)
         triangle = transform(triangle);
     _bvh = BVH(&_triangles, _render_settings.bvh_max_depth, _render_settings.bvh_leaf_object_count);
 
-    std::cout << _triangles[0] << std::endl;
-
     _previous_object_transform = object_transform;
 }
 
 void Renderer::set_camera_transform(const Transform& camera_transform)
 {
-    _previous_camera_transform = _previous_camera_transform.inverse();
+    _scene._camera._camera_to_world_mat = camera_transform;
+    _scene._camera._world_to_camera_mat = camera_transform.inverse();
 
-    //Reverting the position of the camera to its original
-    _scene._camera._position = _previous_camera_transform(_scene._camera._position);
-
-    //Applying the camera transform
-    _scene._camera._position = camera_transform(_scene._camera._position);
-
-    _previous_camera_transform = camera_transform;
+    //Transforming the original position of the camera
+    _scene._camera._position = camera_transform(Point(0, 0, 0));
 }
 
 void Renderer::reconstruct_bvh_new()
@@ -531,7 +525,7 @@ int Renderer::clip_triangle(std::array<Triangle4, 12>& to_clip_triangles, std::a
     return nb_triangles;
 }
 
-float Renderer::perspective_inverse_projection_z(const Transform& m, const Point& vertex)
+float Renderer::matrix_transform_z(const Transform& m, const Point& vertex)
 {
     float x = vertex.x, y = vertex.y, z = vertex.z;
 
@@ -561,11 +555,12 @@ void Renderer::raster_trace()
 #pragma omp parallel for schedule(dynamic) private(to_clip_triangles, clipped_triangles)
     for (int triangle_index = 0; triangle_index < _triangles.size(); triangle_index++)
     {
-        Triangle& triangle = _triangles[triangle_index];
+        Triangle& original_triangle = _triangles[triangle_index];//World space
+        Triangle transformed_triangle = _scene._camera._world_to_camera_mat(original_triangle);
 
-        vec4 a_clip_space = perspective_projection(vec4(triangle._a));
-        vec4 b_clip_space = perspective_projection(vec4(triangle._b));
-        vec4 c_clip_space = perspective_projection(vec4(triangle._c));
+        vec4 a_clip_space = perspective_projection(vec4(transformed_triangle._a));
+        vec4 b_clip_space = perspective_projection(vec4(transformed_triangle._b));
+        vec4 c_clip_space = perspective_projection(vec4(transformed_triangle._c));
 
         to_clip_triangles[0] = Triangle4(a_clip_space, b_clip_space, c_clip_space);
         int nb_clipped = clip_triangle(to_clip_triangles, clipped_triangles);
@@ -573,7 +568,8 @@ void Renderer::raster_trace()
         for (int clipped_triangle_index = 0; clipped_triangle_index < nb_clipped; clipped_triangle_index++)
         {
             Triangle4 clipped_triangle = clipped_triangles[clipped_triangle_index];
-            Triangle clipped_triangle_NDC = Triangle(clipped_triangle, triangle._materialIndex, triangle._tex_coords_u, triangle._tex_coords_v);
+            Triangle clipped_triangle_NDC = Triangle(clipped_triangle, original_triangle._materialIndex, original_triangle._tex_coords_u, original_triangle._tex_coords_v);
+            Triangle clipped_triangle_cam_space = perspective_projection_inv(clipped_triangle_NDC);
 
             Point a_image_plane = clipped_triangle_NDC._a;
             Point b_image_plane = clipped_triangle_NDC._b;
@@ -630,34 +626,41 @@ void Renderer::raster_trace()
                     w *= invTriangleArea;
 
                     //Inverse projecting the z coordinates (because only the z coordinate is interesting here)
-                    //of the vertices of the triangle back into camera space
+                    //of the vertices of the triangle back into camera space (from NDC)
                     //These will be used to interpolate the z coordinate at the "intersection" point
-                    float clipped_triangle_cam_space_a_z = perspective_inverse_projection_z(perspective_projection_inv, clipped_triangle_NDC._a);
-                    float clipped_triangle_cam_space_b_z = perspective_inverse_projection_z(perspective_projection_inv, clipped_triangle_NDC._b);
-                    float clipped_triangle_cam_space_c_z = perspective_inverse_projection_z(perspective_projection_inv, clipped_triangle_NDC._c);
+                    //We're using the clipped triangle but non-transformed by the camera matrix because
+                    //we want our z-buffer to represent "true" depth, not the depth of the triangles that we
+                    //transformed by the camera matrix just for rasterizing purposes
+                    float clipped_triangle_world_space_a_z = matrix_transform_z(_scene._camera._camera_to_world_mat, perspective_projection_inv(clipped_triangle_NDC._a));
+                    float clipped_triangle_world_space_b_z = matrix_transform_z(_scene._camera._camera_to_world_mat, perspective_projection_inv(clipped_triangle_NDC._b));
+                    float clipped_triangle_world_space_c_z = matrix_transform_z(_scene._camera._camera_to_world_mat, perspective_projection_inv(clipped_triangle_NDC._c));
 
                     //Z coordinate of the point on the "real 3D" (not the triangle projected on the image plane) triangle
                     //by interpolating the z coordinates of the 3 vertices
                     //Interpolating the z coordinate is going to give a positive z. The bigger the z, the farther away the point
                     //on the triangle from the camera
-                    float zTriangle = -1 / (1 / clipped_triangle_cam_space_a_z * w + 1 / clipped_triangle_cam_space_b_z * u + 1 / clipped_triangle_cam_space_c_z * v);
+                    float zTriangle = -1 / (1 / clipped_triangle_world_space_a_z * w + 1 / clipped_triangle_world_space_b_z * u + 1 / clipped_triangle_world_space_c_z * v);
 
                     if (zTriangle < _z_buffer(py, px))
                     {
                         _z_buffer(py, px) = zTriangle;
 
                         if (_render_settings.enable_ssao)
-                            _normal_buffer(py, px) = triangle._normal;
+                            _normal_buffer(py, px) = original_triangle._normal;
 
                         Color final_color;
                         if (_render_settings.shading_method == RenderSettings::ShadingMethod::RT_SHADING)
-                            final_color = trace_triangle(Ray(_scene._camera._position, normalize(perspective_projection_inv(pixel_point) - _scene._camera._position)), perspective_projection_inv(clipped_triangle_NDC));
+                        {
+                            final_color = trace_triangle(Ray(_scene._camera._position,
+                                                             normalize(_scene._camera._camera_to_world_mat(perspective_projection_inv(pixel_point)) - _scene._camera._position)),
+                                                            _scene._camera._camera_to_world_mat(clipped_triangle_cam_space));
+                        }
                         else if (_render_settings.shading_method == RenderSettings::ShadingMethod::ABS_NORMALS_SHADING)
                             //Color triangles with std::abs(normal)
-                            final_color = shade_abs_normals(normalize(triangle._normal));
+                            final_color = shade_abs_normals(normalize(original_triangle._normal));
                         else if (_render_settings.shading_method == RenderSettings::ShadingMethod::PASTEL_NORMALS_SHADING)
                             //Color triangles with (normal + 1) * 0.5
-                            final_color = shade_pastel_normals(normalize(triangle._normal));
+                            final_color = shade_pastel_normals(normalize(original_triangle._normal));
                         else if (_render_settings.shading_method == RenderSettings::ShadingMethod::BARYCENTRIC_COORDINATES_SHADING)
                             final_color = shade_barycentric_coordinates(u, v);
                         else if (_render_settings.shading_method == RenderSettings::ShadingMethod::VISUALIZE_AO)
@@ -688,10 +691,11 @@ void Renderer::ray_trace()
             //Adding 0.5 to consider the center of the pixel
             float x_world = ((float)px + 0.5) / render_width * 2 - 1;
 
-            Point image_plane_point = _scene._camera._perspective_proj_mat_inv(Point(x_world, y_world, -1));
+            Point image_plane_point_vs = _scene._camera._perspective_proj_mat_inv(Point(x_world, y_world, -1));//View space
+            Point image_plane_point_ws = _scene._camera._camera_to_world_mat(image_plane_point_vs); //World space
 
             Point camera_position = _scene._camera._position;
-            Vector ray_direction = normalize(image_plane_point - camera_position);
+            Vector ray_direction = normalize(image_plane_point_ws - camera_position);
             Ray ray(camera_position, ray_direction);
 
             HitInfo finalHitInfo;
@@ -830,6 +834,8 @@ void Renderer::post_process_ssao_scalar()
 
 void Renderer::post_process_ssao_SIMD()
 {
+    std::cout << "in ssao, " << _render_settings.ssao_amount << ", " << _render_settings.ssao_sample_count << ", " << _render_settings.ssao_radius << std::endl;
+
     int render_width, render_height;
     get_render_width_height(_render_settings, render_width, render_height);
 
@@ -847,7 +853,7 @@ void Renderer::post_process_ssao_SIMD()
 
     __m256_XorShiftGenerator rand_generator;
     XorShiftGenerator rand_generator_scalar;
-#pragma omp parallel private(rand_generator)
+//#pragma omp parallel private(rand_generator)
     {
         rand_generator = __m256_XorShiftGenerator(_mm256_set_epi32(omp_get_thread_num() * 24183 + rand(),
                                                                    omp_get_thread_num() * 24183 + rand(),
@@ -859,10 +865,10 @@ void Renderer::post_process_ssao_SIMD()
                                                                    omp_get_thread_num() * 24183 + rand()));
 
         rand_generator_scalar = XorShiftGenerator(omp_get_thread_num() * 24183 + rand());
-#pragma omp for
+//#pragma omp for
         for (int y = 0; y < render_height; y++)
         {
-            __m256 y_vec = _mm256_set1_ps(y);
+            __m256 y_vec = _mm256_set1_ps((float)y);
             __m256 y_ndc = _mm256_div_ps(y_vec, render_height_vec);
             y_ndc = _mm256_mul_ps(y_ndc, twos);
             y_ndc = _mm256_sub_ps(y_ndc, ones);
@@ -877,7 +883,7 @@ void Renderer::post_process_ssao_SIMD()
                 if (sum == 0.0)//We have no _z_buffer information on any pixels i.e. all pixels are background pixels
                     continue;//Skipping all these pixels
 
-                __m256 x_vec = _mm256_set1_ps(x);
+                __m256 x_vec = _mm256_set1_ps((float)x);
 
                 __m256 xs = _mm256_set_ps(7, 6, 5, 4, 3, 2, 1, 0);
                 xs = _mm256_add_ps(xs, x_vec);
@@ -901,7 +907,7 @@ void Renderer::post_process_ssao_SIMD()
                     __m256 rand_z = rand_generator.get_rand_bilateral();
 
                     __m256Point random_sample = __m256Point(_mm256_normalize(__m256Vector(rand_x, rand_y, rand_z)));
-                    random_sample = random_sample * _mm256_add_ps(rand_generator.get_rand_lateral(), _mm256_set1_ps(0.0001));
+                    random_sample = random_sample * _mm256_add_ps(rand_generator.get_rand_lateral(), _mm256_set1_ps(0.0001f));
                     random_sample = random_sample * _mm256_set1_ps(_render_settings.ssao_radius);
                     random_sample = random_sample + camera_space_point;
 
@@ -980,7 +986,7 @@ void Renderer::post_process_ssao_SIMD()
                     float rand_z = rand_generator_scalar.get_rand_bilateral();
 
                     Point random_sample = Point(normalize(Vector(rand_x, rand_y, rand_z)));
-                    random_sample = random_sample * (rand_generator_scalar.get_rand_lateral() + 0.0001);
+                    random_sample = random_sample * (rand_generator_scalar.get_rand_lateral() + 0.0001f);
                     random_sample = random_sample * _render_settings.ssao_radius;
                     random_sample = random_sample + camera_space_point;
                     if (dot(random_sample - camera_space_point, normal) < 0)//The point is not in front of the normal
