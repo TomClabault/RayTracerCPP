@@ -106,6 +106,10 @@ private slots:
 
     void on_enable_emissive_checkbox_stateChanged(int arg1);
 
+    void on_clear_diffuse_map_button_clicked();
+
+    void on_clear_ao_map_button_clicked();
+
 private:
     Ui::MainWindow *ui;
 

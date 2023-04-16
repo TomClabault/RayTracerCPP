@@ -367,9 +367,9 @@ void MainWindow::on_ssaa_radio_button_toggled(bool checked)
 
 void MainWindow::on_ssaa_factor_edit_returnPressed() { on_render_button_clicked(); }
 
-void MainWindow::on_ssao_1_sample_count_edit_returnPressed() { on_render_button_clicked(); }
-void MainWindow::on_ssao_1_radius_edit_returnPressed() { on_render_button_clicked(); }
-void MainWindow::on_ssao_1_amount_edit_returnPressed() { on_render_button_clicked(); }
+void MainWindow::on_ssao_1_sample_count_edit_returnPressed() { on_ssao_1_sample_count_edit_editingFinished(); on_render_button_clicked(); }
+void MainWindow::on_ssao_1_radius_edit_returnPressed() { on_ssao_1_radius_edit_editingFinished(); on_render_button_clicked(); }
+void MainWindow::on_ssao_1_amount_edit_returnPressed() { on_ssao_1_amount_edit_editingFinished(); on_render_button_clicked(); }
 
 void MainWindow::on_camera_fov_edit_editingFinished()
 {
@@ -664,3 +664,6 @@ void MainWindow::on_enable_ambient_checkbox_stateChanged(int checked) { _rendere
 void MainWindow::on_enable_diffuse_checkbox_stateChanged(int checked) { _renderer.render_settings().enable_diffuse = checked; }
 void MainWindow::on_enable_specular_checkbox_stateChanged(int checked) { _renderer.render_settings().enable_specular = checked; }
 void MainWindow::on_enable_emissive_checkbox_stateChanged(int checked) { _renderer.render_settings().enable_emissive = checked; }
+
+void MainWindow::on_clear_diffuse_map_button_clicked() { _renderer.clear_diffuse_map(); this->ui->diffuse_map_edit->clear(); }
+void MainWindow::on_clear_ao_map_button_clicked(){ _renderer.clear_ao_map(); this->ui->ao_map_edit->clear(); }

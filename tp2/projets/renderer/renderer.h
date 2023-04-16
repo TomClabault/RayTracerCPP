@@ -54,6 +54,9 @@ public:
     void set_ao_map(const Image& ao_map);
     void set_diffuse_map(const Image& diffuse_map);
 
+    void clear_ao_map();
+    void clear_diffuse_map();
+
     Color sample_texture(const Image& texture, float& tex_coord_u, float& tex_coord_v) const;
     
     void reset_previous_transform();

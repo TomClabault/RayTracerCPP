@@ -138,40 +138,22 @@ void Renderer::clear_image()
             _image(j, i) = Renderer::BACKGROUND_COLOR;
 }
 
-void Renderer::change_camera_fov(float fov)
-{
-    _scene._camera.set_fov(fov);
-}
+void Renderer::change_camera_fov(float fov) { _scene._camera.set_fov(fov); }
+void Renderer::change_camera_aspect_ratio(float aspect_ratio) { _scene._camera.set_aspect_ratio(aspect_ratio); }
+void Renderer::set_light_position(const Point& position) { _scene._point_light._position = position; }
 
-void Renderer::change_camera_aspect_ratio(float aspect_ratio)
-{
-    _scene._camera.set_aspect_ratio(aspect_ratio);
-}
+void Renderer::set_ao_map(const Image& ao_map) { _ao_map = ao_map; }
+void Renderer::set_diffuse_map(const Image& diffuse_map) { _diffuse_map = diffuse_map; }
 
-void Renderer::set_light_position(const Point& position)
-{
-    _scene._point_light._position = position;
-}
-
-void Renderer::set_ao_map(const Image& ao_map)
-{
-    _ao_map = ao_map;
-}
-
-void Renderer::set_diffuse_map(const Image& diffuse_map)
-{
-    _diffuse_map = diffuse_map;
-}
+void Renderer::clear_ao_map() { _ao_map = Image(); }
+void Renderer::clear_diffuse_map() { _diffuse_map = Image(); }
 
 Color Renderer::sample_texture(const Image& texture, float& tex_coord_u, float& tex_coord_v) const
 {
     return texture.texture(tex_coord_u, tex_coord_v);
 }
 
-void Renderer::reset_previous_transform()
-{
-    _previous_object_transform = Identity();
-}
+void Renderer::reset_previous_transform() { _previous_object_transform = Identity(); }
 
 void Renderer::set_object_transform(const Transform& object_transform)
 {
@@ -205,10 +187,7 @@ void Renderer::reconstruct_bvh_new()
     _bvh = BVH(&_triangles, _render_settings.bvh_max_depth, _render_settings.bvh_leaf_object_count);
 }
 
-void Renderer::destroy_bvh()
-{
-    _bvh = BVH();//Empty BVH basically destroying the previous one
-}
+void Renderer::destroy_bvh() { _bvh = BVH();/* Empty BVH basically destroying the previous one */ }
 
 void Renderer::change_render_size(int width, int height)
 {
