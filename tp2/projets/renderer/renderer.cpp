@@ -688,7 +688,7 @@ void Renderer::ray_trace()
             //Adding 0.5 to consider the center of the pixel
             float x_world = ((float)px + 0.5) / render_width * 2 - 1;
 
-            Point image_plane_point = _scene._camera._perspective_proj_mat_inv(Point(x_world, y_world, -1));// Point(x_world, y_world, -1);
+            Point image_plane_point = _scene._camera._perspective_proj_mat_inv(Point(x_world, y_world, -1));
 
             Point camera_position = _scene._camera._position;
             Vector ray_direction = normalize(image_plane_point - camera_position);
