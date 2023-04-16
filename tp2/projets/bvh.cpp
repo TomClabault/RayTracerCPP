@@ -8,14 +8,14 @@
 Vector BVH::BoundingVolume::PLANE_NORMALS[7] = {
 	Vector(1, 0, 0),
 	Vector(0, 1, 0),
-	Vector(0, 0, 1),
-	Vector(std::sqrt(3) / 3, std::sqrt(3) / 3, std::sqrt(3) / 3),
-	Vector(-std::sqrt(3) / 3, std::sqrt(3) / 3, std::sqrt(3) / 3),
-	Vector(-std::sqrt(3) / 3, -std::sqrt(3) / 3, std::sqrt(3) / 3),
-	Vector(std::sqrt(3) / 3, -std::sqrt(3) / 3, std::sqrt(3) / 3),
+    Vector(0, 0, 1),
+    Vector(std::sqrt(3.0f) / 3, std::sqrt(3.0f) / 3, std::sqrt(3.0f) / 3),
+    Vector(-std::sqrt(3.0f) / 3, std::sqrt(3.0f) / 3, std::sqrt(3.0f) / 3),
+    Vector(-std::sqrt(3.0f) / 3, -std::sqrt(3.0f) / 3, std::sqrt(3.0f) / 3),
+    Vector(std::sqrt(3.0f) / 3, -std::sqrt(3.0f) / 3, std::sqrt(3.0f) / 3),
 };
 
-BVH::BVH() : _triangles(nullptr), _root(nullptr) {}
+BVH::BVH() : _root(nullptr), _triangles(nullptr) {}
 BVH::BVH(std::vector<Triangle>* triangles, int max_depth, int leaf_max_obj_count) : _triangles(triangles)
 {
 	Timer timer;

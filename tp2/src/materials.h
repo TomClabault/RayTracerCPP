@@ -1,4 +1,3 @@
-
 #ifndef _MATERIALS_H
 #define _MATERIALS_H
 
@@ -21,8 +20,8 @@ struct Material
     Color specular;             //!< couleur du reflet.
     Color emission;             //!< pour une source de lumiere.
     float ns;                   //!< concentration des reflets, exposant pour les reflets blinn-phong.
-    float specular_threshold;   //!< seuil pour l'angle de réflexion de la lumière par rapport à la direction de regard. 
-                                //   En dessous de ce seuil, la spéculaire ne sera pas visible et n'a pas besoin d'être calculée
+    float specular_threshold;   //!< seuil pour l'angle de reflexion de la lumiere par rapport Ã  la direction de regard. 
+                                //   En dessous de ce seuil, la speculaire ne sera pas visible et n'a pas besoin d'Ãªtre calculee
     float ni;                   //!< indice de refraction, cf coefficients de Fresnel.
     Color transmission;         //!< transmission, "couleur" des objets transparents.
     

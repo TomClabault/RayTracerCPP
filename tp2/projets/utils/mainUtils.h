@@ -4,14 +4,9 @@
 #include "meshIOUtils.h"
 #include "renderer.h"
 
-float loadOBJ(MeshIOData& meshData, std::vector<Triangle>& triangles);
-
-/*
- * Does some pre-computations on the materials. Notably the specular visiblity threshold
- */
-void precompute_materials(Materials& materials);
+//float loadOBJ(MeshIOData& meshData, std::vector<Triangle>& triangles);
 
 float render(Renderer& renderer);
-float writeImage(Renderer& renderer, const char* filepath);
+//float writeImage(Renderer& renderer, const char* filepath);
 
 #endif // ! MAIN_UTILS_H

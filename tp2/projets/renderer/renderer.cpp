@@ -607,7 +607,7 @@ void Renderer::raster_trace()
                     assert(py >= 0 && py < render_height);
 
                     //Adding 0.5*increment to consider the center of the pixel
-                    Point pixel_point(image_x + image_x_increment * 0.5, image_y + image_y_increment * 0.5, -1);
+                    Point pixel_point(image_x + image_x_increment * 0.5f, image_y + image_y_increment * 0.5f, -1);
 
                     float u = Triangle::edge_function(pixel_point, c_image_plane, a_image_plane);
                     if (u < 0)
@@ -684,12 +684,12 @@ void Renderer::ray_trace()
     for (int py = 0; py < render_height; py++)
     {
         //Adding 0.5 to consider the center of the pixel
-        float y_world = ((float)py + 0.5) / render_height * 2 - 1;
+        float y_world = ((float)py + 0.5f) / render_height * 2 - 1;
 
         for (int px = 0; px < render_width; px++)
         {
             //Adding 0.5 to consider the center of the pixel
-            float x_world = ((float)px + 0.5) / render_width * 2 - 1;
+            float x_world = ((float)px + 0.5f) / render_width * 2 - 1;
 
             Point image_plane_point_vs = _scene._camera._perspective_proj_mat_inv(Point(x_world, y_world, -1));//View space
             Point image_plane_point_ws = _scene._camera._camera_to_world_mat(image_plane_point_vs); //World space
@@ -780,7 +780,7 @@ void Renderer::post_process_ssao_scalar()
                     float rand_z = rand_generator.get_rand_bilateral();
 
                     Point random_sample = Point(normalize(Vector(rand_x, rand_y, rand_z)));
-                    random_sample = random_sample * (rand_generator.get_rand_lateral() + 0.0001);
+                    random_sample = random_sample * (rand_generator.get_rand_lateral() + 0.0001f);
                     random_sample = random_sample * _render_settings.ssao_radius;
                     random_sample = random_sample + camera_space_point;
                     if (dot(random_sample - camera_space_point, normal) < 0)//The point is not in front of the normal
@@ -848,7 +848,7 @@ void Renderer::post_process_ssao_SIMD()
     __m256 ones = _mm256_set1_ps(1);
     __m256 twos = _mm256_set1_ps(2);
 
-    float fov_multiplier_value = std::tan(_scene._camera._fov / 2 / 180 * M_PI);
+    float fov_multiplier_value = (float)std::tan(_scene._camera._fov / 2 / 180 * M_PI);
     __m256 fov_multiplier = _mm256_set1_ps(fov_multiplier_value);
 
     __m256_XorShiftGenerator rand_generator;

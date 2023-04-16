@@ -250,6 +250,17 @@ void MainWindow::on_render_button_clicked()
     write_to_console(ss);
 }
 
+void MainWindow::precompute_materials(Materials& materials)
+{
+    for (Material& material : materials.materials)
+    {
+        float luminance = 0.2126f * material.specular.r + 0.7152f * material.specular.g + 0.0722 * material.specular.b;
+        float tau = std::pow(Material::SPECULAR_THRESHOLD_EPSILON / luminance, 1 / material.ns);
+
+        material.specular_threshold = tau;
+    }
+}
+
 void MainWindow::load_obj(const char* filepath, Transform transform)
 {
     std::stringstream ss;

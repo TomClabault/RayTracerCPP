@@ -29,6 +29,11 @@ public:
     void build_camera_to_world_matrix();
     bool object_transform_edits_changed();
 
+    /**
+     * @brief Does some pre-computations on the materials. Notably the specular visiblity threshold
+     * @param materials The materials
+     */
+    void precompute_materials(Materials& materials);
 
     void load_obj(const char* filepath, Transform transform);
     Image load_texture_map(const char* filepath);
