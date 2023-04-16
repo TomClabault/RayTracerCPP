@@ -14,14 +14,25 @@ class BVH
 public:
 	struct BoundingVolume
 	{
-		static Vector PLANE_NORMALS[7];
+        static constexpr int PLANES_COUNT = 7;
 
-        float _d_near[7] = { INFINITY, INFINITY, INFINITY, INFINITY, INFINITY, INFINITY, INFINITY };
-        float _d_far[7] = { -INFINITY, -INFINITY, -INFINITY, -INFINITY, -INFINITY, -INFINITY, -INFINITY };
+        static Vector PLANE_NORMALS[PLANES_COUNT];
 
-		static void triangle_volume(const Triangle& triangle, float d_near[7], float d_far[7])
+		float _d_near[PLANES_COUNT];
+		float _d_far[PLANES_COUNT];
+
+		BoundingVolume() 
 		{
-			for (int i = 0; i < 7; i++)
+			for (int i = 0; i < PLANES_COUNT; i++)
+			{
+				_d_near[i] = INFINITY;
+				_d_far[i] = -INFINITY;
+			}
+		}
+
+        static void triangle_volume(const Triangle& triangle, float d_near[PLANES_COUNT], float d_far[PLANES_COUNT])
+		{
+            for (int i = 0; i < PLANES_COUNT; i++)
 			{
 				for (int j = 0; j < 3; j++)
 				{
@@ -33,9 +44,9 @@ public:
 			}
 		}
 
-		void extend_volume(const float d_near[7], const float d_far[7])
+        void extend_volume(const float d_near[PLANES_COUNT], const float d_far[PLANES_COUNT])
 		{
-			for (int i = 0; i < 7; i++)
+            for (int i = 0; i < PLANES_COUNT; i++)
 			{
 				_d_near[i] = std::min(_d_near[i], d_near[i]);
 				_d_far[i] = std::max(_d_far[i], d_far[i]);
@@ -49,28 +60,36 @@ public:
 
 		void extend_volume(const Triangle& triangle)
 		{
-            float d_near[7] = { INFINITY, INFINITY, INFINITY, INFINITY, INFINITY, INFINITY, INFINITY };
-            float d_far[7] = { -INFINITY, -INFINITY, -INFINITY, -INFINITY, -INFINITY, -INFINITY, -INFINITY };
+            float d_near[PLANES_COUNT];
+            float d_far[PLANES_COUNT];
+
+            for (int i = 0; i < PLANES_COUNT; i++)
+            {
+                d_near[i] = INFINITY;
+                d_far[i] = -INFINITY;
+            }
 
 			triangle_volume(triangle, d_near, d_far);
 			extend_volume(d_near, d_far);
 		}
 
-		bool intersect(const Ray& ray, float& t_near, float& t_far) const
+		/**
+		 * @params denoms Precomputed denominators
+		 */
+		bool intersect(const Ray& ray, float& t_near, float& t_far, float* denoms, float* numers) const
 		{
             t_near = -INFINITY;
             t_far = INFINITY;
 
-			for (int i = 0; i < 7; i++)
+            for (int i = 0; i < PLANES_COUNT; i++)
 			{
-				//TODO: precompute denom
-				float denom = dot(BoundingVolume::PLANE_NORMALS[i], ray._direction);
+				float denom = denoms[i];
 				if (denom == 0.0)
 					continue;
 
-				//TODO precompute numerateur
-				float d_near_i = (_d_near[i] - dot(BoundingVolume::PLANE_NORMALS[i], Vector(ray._origin))) / denom;
-				float d_far_i = (_d_far[i] - dot(BoundingVolume::PLANE_NORMALS[i], Vector(ray._origin))) / denom;
+				//inverse denom to avoid division
+				float d_near_i = (_d_near[i] - numers[i]) / denom;
+				float d_far_i = (_d_far[i] - numers[i]) / denom;
 				if (denom < 0)
 					std::swap(d_near_i, d_far_i);
 
@@ -194,14 +213,23 @@ public:
 		{
 			float trash;
 
-			return intersect(ray, hit_info, trash);
+			float denoms[BVH::BoundingVolume::PLANES_COUNT];
+			float numers[BVH::BoundingVolume::PLANES_COUNT];
+
+			for (int i = 0; i < BVH::BoundingVolume::PLANES_COUNT; i++)
+			{
+				denoms[i] = dot(BoundingVolume::PLANE_NORMALS[i], ray._direction);
+				numers[i] = dot(BoundingVolume::PLANE_NORMALS[i], Vector(ray._origin));
+			}
+
+			return intersect(ray, hit_info, trash, denoms, numers);
 		}
 
-		bool intersect(const Ray& ray, HitInfo& hit_info, float& t_near) const
+		bool intersect(const Ray& ray, HitInfo& hit_info, float& t_near, float* denoms, float* numers) const
 		{
 			float t_far, trash;
 
-			if (!_bounding_volume.intersect(ray, trash, t_far))
+			if (!_bounding_volume.intersect(ray, trash, t_far, denoms, numers))
 				return false;
 
 			if (_is_leaf)
@@ -223,7 +251,7 @@ public:
 			for (int i = 0; i < 8; i++)
 			{
 				float inter_distance;
-				if (_children[i]->_bounding_volume.intersect(ray, inter_distance, t_far))
+				if (_children[i]->_bounding_volume.intersect(ray, inter_distance, t_far, denoms, numers))
 					intersection_queue.emplace(QueueElement(_children[i], inter_distance));
 			}
 
@@ -233,7 +261,7 @@ public:
 				QueueElement top_element = intersection_queue.top();
 				intersection_queue.pop();
 
-				if (top_element._node->intersect(ray, hit_info, inter_distance))
+				if (top_element._node->intersect(ray, hit_info, inter_distance, denoms, numers))
 				{
 					closest_inter = std::min(closest_inter, inter_distance);
 

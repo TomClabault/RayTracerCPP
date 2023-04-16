@@ -5,7 +5,7 @@
 #include "bvh.h"
 #include "timer.h"
 
-Vector BVH::BoundingVolume::PLANE_NORMALS[7] = {
+Vector BVH::BoundingVolume::PLANE_NORMALS[BVH::BoundingVolume::PLANES_COUNT] = {
 	Vector(1, 0, 0),
 	Vector(0, 1, 0),
     Vector(0, 0, 1),

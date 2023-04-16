@@ -125,7 +125,6 @@ Vector operator* ( const Vector& a, const Vector& b );
 //! renvoie le vecteur v/k;
 Vector operator/ ( const Vector& v, const float k );
 
-
 //! vecteur generique, utilitaire.
 struct vec2
 {

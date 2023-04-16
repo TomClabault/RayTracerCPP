@@ -161,7 +161,7 @@ Vector cross( const Vector& u, const Vector& v )
         (u.x * v.y) - (u.y * v.x));
 }
 
-float dot( const Vector& u, const Vector& v )
+float dot(const Vector& u, const Vector& v)
 {
     return u.x * v.x + u.y * v.y + u.z * v.z;
 }

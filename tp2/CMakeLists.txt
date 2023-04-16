@@ -123,7 +123,9 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 
     target_compile_options(RayTracing PRIVATE /arch:AVX2)
 
-    if (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(CMAKE_CXX_FLAGS_RELEASE "/Od /g")#Flags when compiling in debug.
+    elseif (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
         set(CMAKE_CXX_FLAGS_RELEASE "/g") #Flags when compiling in release with debug info
     elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
         set(CMAKE_CXX_FLAGS_RELEASE "/Ox") #Flags when compiling in release.
