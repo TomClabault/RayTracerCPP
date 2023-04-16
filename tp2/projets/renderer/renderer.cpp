@@ -677,23 +677,18 @@ void Renderer::ray_trace()
     int render_width, render_height;
     get_render_width_height(_render_settings, render_width, render_height);
 
-    float fov_scaling = tan(radians(_scene._camera._fov / 2));
-
-//#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)
     for (int py = 0; py < render_height; py++)
     {
         //Adding 0.5 to consider the center of the pixel
         float y_world = ((float)py + 0.5) / render_height * 2 - 1;
-        y_world *= fov_scaling;
 
         for (int px = 0; px < render_width; px++)
         {
             //Adding 0.5 to consider the center of the pixel
             float x_world = ((float)px + 0.5) / render_width * 2 - 1;
-            x_world *= (float)render_width / render_height;
-            x_world *= fov_scaling;
 
-            Point image_plane_point = Point(x_world, y_world, -1);
+            Point image_plane_point = _scene._camera._perspective_proj_mat_inv(Point(x_world, y_world, -1));// Point(x_world, y_world, -1);
 
             Point camera_position = _scene._camera._position;
             Vector ray_direction = normalize(image_plane_point - camera_position);
