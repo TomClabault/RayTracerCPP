@@ -842,8 +842,8 @@ void Renderer::post_process_ssao_SIMD()
     int* ao_buffer = new int[render_height * render_width];
     std::memset(ao_buffer, 0, sizeof(int) * render_height * render_width);
 
-    __m256 render_height_vec = _mm256_set1_ps(render_height);
-    __m256 render_width_vec = _mm256_set1_ps(render_width);
+    __m256 render_height_vec = _mm256_set1_ps((float)render_height);
+    __m256 render_width_vec = _mm256_set1_ps((float)render_width);
 
     __m256 ones = _mm256_set1_ps(1);
     __m256 twos = _mm256_set1_ps(2);
@@ -853,7 +853,7 @@ void Renderer::post_process_ssao_SIMD()
 
     __m256_XorShiftGenerator rand_generator;
     XorShiftGenerator rand_generator_scalar;
-//#pragma omp parallel private(rand_generator)
+#pragma omp parallel private(rand_generator)
     {
         rand_generator = __m256_XorShiftGenerator(_mm256_set_epi32(omp_get_thread_num() * 24183 + rand(),
                                                                    omp_get_thread_num() * 24183 + rand(),
@@ -865,7 +865,7 @@ void Renderer::post_process_ssao_SIMD()
                                                                    omp_get_thread_num() * 24183 + rand()));
 
         rand_generator_scalar = XorShiftGenerator(omp_get_thread_num() * 24183 + rand());
-//#pragma omp for
+#pragma omp for
         for (int y = 0; y < render_height; y++)
         {
             __m256 y_vec = _mm256_set1_ps((float)y);

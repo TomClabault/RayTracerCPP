@@ -126,7 +126,7 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     if (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
         set(CMAKE_CXX_FLAGS_RELEASE "/g") #Flags when compiling in release with debug info
     elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
-        set(CMAKE_CXX_FLAGS_RELEASE "/Ox /fp:fast") #Flags when compiling in release.
+        set(CMAKE_CXX_FLAGS_RELEASE "/Ox") #Flags when compiling in release.
         #We need to specify both options at the same time as another call to "set()"
         #would overwrite the previous one
     endif()
