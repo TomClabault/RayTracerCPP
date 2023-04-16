@@ -205,14 +205,13 @@ Color Renderer::computeDiffuse(const Material& hitMaterial, const Vector& normal
 
 Color Renderer::computeSpecular(const Material& hit_material, const Vector& ray_direction, const Vector& normal, const Vector& direction_to_light) const
 {
-    Vector incident_direction = -direction_to_light;
-    Vector reflection_ray = incident_direction - 2 * dot(normal, incident_direction) * normal;
-    float angle = dot(reflection_ray, -ray_direction);
+    Vector halfway_vector = normalize(direction_to_light - ray_direction);//Blinn-phong
+    float angle = dot(halfway_vector, normal);
 
     //Specular optimization to avoid computing the exponentiation when not necessary (i.e. when it corresponds to a negligeable visual impact)
-    //if (angle <= hit_material.specular_threshold)//We're below the visibility threshold so we're not going to notice the specular anyway, returning no specular
-//        return Color(0, 0, 0);
-//    else
+    if (angle <= hit_material.specular_threshold)//We're below the visibility threshold so we're not going to notice the specular anyway, returning no specular
+        return Color(0, 0, 0);
+    else
         return hit_material.specular * std::pow(std::max(0.0f, angle), hit_material.ns);
 }
 
