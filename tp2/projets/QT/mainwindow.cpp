@@ -39,6 +39,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     //Initializing the light's position
     on_light_position_edit_editingFinished();
 
+    _renderer.add_sphere(Sphere(Point(-1, 0, -3), 1));
+
     //Initializing the random generator here for later uses
     srand(time(NULL));
 }

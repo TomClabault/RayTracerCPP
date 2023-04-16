@@ -1,6 +1,7 @@
 #ifndef TRIANGLE_H
 #define TRIANGLE_H
 
+#include "hitInfo.h"
 #include "ray.h"
 #include "vec.h"
 
@@ -18,28 +19,6 @@
  *  [u, v] = [0, 0] corresponds to the bottom left corner of a texture.
  *  -------- UV Coordinates Convention Used --------
  */
-
-class Triangle;
-
-struct HitInfo
-{
-    const Triangle* triangle = nullptr;
-
-    //Intersection distance to the triangle
-    float t = -1;
-
-    //Barycentric coordinates of the intersection point in the triangle
-    //P = wA + uB + vC
-    float u = 1.0, v = 0.0;
-
-    int mat_index = -1;//Index of the material of the intersected triangle. 
-    //This index can be used to retrieve the material in the Materials array in the Scene
-
-    //Normal at the intersection point. NON NORMALIZED!!
-    Vector normal_at_intersection;
-
-    friend std::ostream& operator <<(std::ostream& os, const HitInfo& infos);
-};
 
 //Triangle with homogeneous coordinates vertices
 struct Triangle4

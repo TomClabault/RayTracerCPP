@@ -3,6 +3,7 @@
 
 #include <array>
 
+#include "analyticShape.h"
 #include "buffer.h"
 #include "image.h"
 #include "rendererSettings.h"
@@ -197,6 +198,9 @@ private:
      */
     float matrix_transform_z(const Transform& matrix, const Point& vertex);
 
+public:
+    void add_sphere(const Sphere& sphere) { spheres.push_back(sphere); }
+
 private:
     Buffer<float> _z_buffer;
     Buffer<Vector> _normal_buffer;//2D-Array of pointer to Vector.
@@ -208,8 +212,9 @@ private:
     //"stacking" transforms on top of each other by inverting the previous
     //transformation that was applied
     Transform _previous_object_transform = Identity();
+    Materials _materials;//Materials
 
-    Materials _materials;//Materials of the triangles
+    std::vector<Sphere> spheres;
 	 
 	RenderSettings _render_settings;
 

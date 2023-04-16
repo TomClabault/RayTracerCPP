@@ -714,6 +714,11 @@ void Renderer::ray_trace()
                             finalHitInfo = hit_info;
             }
 
+            for (Sphere& sphere : spheres)
+                if (sphere.intersect(ray, hit_info))
+                    if (hit_info.t < finalHitInfo.t || finalHitInfo.t == -1)
+                        finalHitInfo = hit_info;
+
             Color finalColor;
 
             if (finalHitInfo.t > 0)//We found an intersection
