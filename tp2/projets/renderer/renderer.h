@@ -85,18 +85,32 @@ public:
      */
     void change_render_size(int width, int height);
 
-	/*
-	 * Ray traces only one triangle and returns its color given a ray
-	 */
+    /**
+     * @brief Ray traces only one triangle and returns its color given a ray
+     * @param ray The ray
+     * @param triangle The triangle
+     * @return The color of the intersection between the ray and the triangle
+     * if it exists
+     */
 	Color trace_triangle(const Ray& ray, const Triangle& triangle) const;
 
-	/*
-	 * Renders the image using an hybrid rasterization / ray-tracing approach
-	 */
+    /**
+     * @brief Renders the image using an hybrid rasterization / ray-tracing approach
+     */
 	void raster_trace();
-	/*
-	 * Renders the image full ray tracing
-	 */
+
+    /**
+     * @brief trace_ray Traces a ray and computes the color returned by that ray
+     * @param ray The ray
+     * @param hit_info The hit information. Only relevant if an intersection was found
+     * @param [out] intersection_found Whether or not an intersection was found
+     * @return The color of the ray.
+     */
+    Color trace_ray(const Ray& ray, HitInfo& hit_info, bool& intersection_found) const;
+
+    /**
+     * @brief Renders the image full ray tracing
+     */
 	void ray_trace();
 
 	/*
@@ -117,9 +131,11 @@ private:
     /**
 	 * @return Returns the diffuse color of the material given the intersection normal and the direction to the light source
 	 */
-	Color computeDiffuse(const Material& hitMaterial, const Vector& normal, const Vector& direction_to_light) const;
+    Color compute_diffuse(const Material& hitMaterial, const Vector& normal, const Vector& direction_to_light) const;
+    
+    Color compute_specular(const Material& hitMaterial, const Vector& ray_direction, const Vector& normal, const Vector& direction_to_light) const;
 
-	Color computeSpecular(const Material& hitMaterial, const Vector& ray_direction, const Vector& normal, const Vector& direction_to_light) const;
+    Color compute_reflection(const Ray& ray, const HitInfo& hit_info) const;
 
     /**
      * @return Returns true if the point is shadowed by another object

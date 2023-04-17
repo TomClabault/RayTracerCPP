@@ -1,8 +1,6 @@
 #include "graphicsViewZoom.h"
 #include "image_io.h"
 #include "mainwindow.h"
-#include "mainUtils.h"
-#include "meshIOUtils.h"
 #include "qtUtils.h"
 #include "timer.h"
 
@@ -38,8 +36,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     //Initializing the light's position
     on_light_position_edit_editingFinished();
-
-    _renderer.add_sphere(Sphere(Point(-1, 0, -3), 1));
 
     //Initializing the random generator here for later uses
     srand(time(NULL));
@@ -103,7 +99,7 @@ void MainWindow::set_render_image(const Image* const image)
     this->q_image = new QImage(image_8888_data, image->width(), image->height(), QImage::Format_RGBA8888);
 #endif
 
-    //Flipping the image because our ray tracer produces flipped images
+//Flipping the image because our ray tracer produces flipped images
 #if QT_VERSION >= 0x060000
     this->q_image->mirror();
 #else
@@ -234,9 +230,27 @@ void MainWindow::on_render_button_clicked()
 
     timer.start();
     if (_renderer.render_settings().hybrid_rasterization_tracing)
-            _renderer.raster_trace();
+        _renderer.raster_trace();
     else
-        _renderer.ray_trace();
+    {
+        float min_time = INFINITY;
+        Timer timer;
+
+        for (int i = 0; i < 40; i++)
+        {
+            timer.start();
+            _renderer.ray_trace();
+            timer.stop();
+
+            std::cout << "time: " << timer.elapsed() << "ms" << std::endl;
+            if (timer.elapsed() < min_time)
+                min_time = timer.elapsed();
+        }
+
+        std::cout << "min time: " << min_time << "ms" << std::endl;
+    }
+    std::exit(0);
+
     timer.stop();
     ss << "Render time: " << timer.elapsed() << "ms" << std::endl;
 
@@ -270,12 +284,18 @@ void MainWindow::load_obj(const char* filepath, Transform transform)
 
     timer.start();
 
-    MeshIOData meshData = read_meshio_data(filepath);
-    std::vector<Triangle> triangles = MeshIOUtils::create_triangles(meshData, transform);
+    //MeshIOData meshData = read_meshio_data(filepath);
+    //std::vector<Triangle> triangles = MeshIOUtils::create_triangles(meshData, transform);
 
-    _renderer.set_triangles(triangles);
+    //_renderer.set_triangles(triangles);
+
+    MeshIOData meshData;
+    meshData.materials.materials.push_back(Renderer::DEFAULT_MATERIAL);
     _renderer.set_materials(meshData.materials);
     precompute_materials(_renderer.get_materials());
+
+    for (int i = 0; i < 60; i++)
+        _renderer.add_sphere(Sphere(Point(0, 0, -3), 1, meshData.materials.materials.size() - 1));
 
     //This is used to invalidate the cached object transform so that the
     //transform that is currently written in the UI edits will be reapplied

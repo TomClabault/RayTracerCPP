@@ -4,35 +4,51 @@
 
 #include "math.h"
 
-Sphere::Sphere(const Point& center, float radius, int mat_index) : _center(center), _radius(radius), _mat_index(mat_index) { }
+Sphere::Sphere(const Point& center, float radius, int mat_index) : _center(center), _radius(radius), _radius2(radius * radius), _mat_index(mat_index) { }
 
-bool Sphere::intersect(const Ray& ray, HitInfo& hit_info)
+bool Sphere::intersect(const Ray& ray, HitInfo& hit_info, bool compute_uv) const
 {
-    Vector origMinus2C = ray._origin - 2 * _center;
-
-    float a = dot(ray._direction, ray._direction);
-    float b  = dot(ray._direction, origMinus2C);
-    float c = dot(Vector(ray._origin), origMinus2C) + dot(Vector(_center), Vector(_center)) - _radius * _radius;
+    Vector L = ray._origin - _center;
+    constexpr float a = 1;//dot(ray._direction, ray._direction) = 1 because direction is normalized
+    float b = 2 * dot(ray._direction, L);
+    float c = dot(L, L) - _radius2;
 
     float delta = b * b - 4 * a * c;
     if (delta < 0)
         return false;
     else
     {
-        hit_info.mat_index = _mat_index;
+        constexpr float a2 = 2 * a;
 
         if (delta == 0.0)
-            hit_info.t = -b / (2 * a);
+            hit_info.t = -b / a2;
         else
-            hit_info.t = std::min((-b - std::sqrt(delta)) / (2 * a), (-b + std::sqrt(delta)) / (2 * a));
+        {
+            float sqrt_delta = std::sqrt(delta);
+
+            float t1 = (-b - sqrt_delta) / a2;
+            float t2 = (-b + sqrt_delta) / a2;
+
+            if (t1 < t2)
+            {
+                hit_info.t = t1;
+                if (hit_info.t < 0)
+                    hit_info.t = t2;
+            }
+        }
 
         if (hit_info.t < 0)
             return false;
 
         hit_info.normal_at_intersection = (ray._origin + ray._direction * hit_info.t) - _center;
 
-        hit_info.u = 0.5 + std::atan2(-hit_info.normal_at_intersection.z, -hit_info.normal_at_intersection.x) / (2 * M_PI);
-        hit_info.v = 0.5 + std::asin(-hit_info.normal_at_intersection.y) / M_PI;
+        if (compute_uv)
+        {
+            hit_info.u = 0.5 + std::atan2(-hit_info.normal_at_intersection.z, -hit_info.normal_at_intersection.x) / (2 * M_PI);
+            hit_info.v = 0.5 + std::asin(-hit_info.normal_at_intersection.y) / M_PI;
+        }
+
+        hit_info.mat_index = _mat_index;
 
         return true;
     }

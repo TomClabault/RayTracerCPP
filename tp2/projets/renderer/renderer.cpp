@@ -20,11 +20,10 @@ Material init_default_material()
     Material mat = Material(Color(1.0f, 0.0f, 0.5f));//Pink color
     mat.specular = Color(1.0f, 1.0f, 1.0f);
     mat.ns = 15;
+    mat.reflection = 1.0f;
 
     return mat;
 }
-
-//TODO problème d'initialisation de renderSettings.shading_method ?
 
 Material init_debug_material_1()
 {
@@ -196,14 +195,14 @@ void Renderer::change_render_size(int width, int height)
     _scene._camera.set_aspect_ratio((float)render_width / render_height);
 }
 
-Color Renderer::computeDiffuse(const Material& hitMaterial, const Vector& normal, const Vector& direction_to_light) const
+Color Renderer::compute_diffuse(const Material& hitMaterial, const Vector& normal, const Vector& direction_to_light) const
 {
-    return hitMaterial.diffuse * std::max(0.0f, dot(normal, direction_to_light));
+    return hitMaterial.diffuse * Color(std::max(0.0f, dot(normal, direction_to_light)));
 }
 
 //TODO faire un thread qui tourne en permanence et qui display l'image
 
-Color Renderer::computeSpecular(const Material& hit_material, const Vector& ray_direction, const Vector& normal, const Vector& direction_to_light) const
+Color Renderer::compute_specular(const Material& hit_material, const Vector& ray_direction, const Vector& normal, const Vector& direction_to_light) const
 {
     Vector halfway_vector = normalize(direction_to_light - ray_direction);//Blinn-phong
     float angle = dot(halfway_vector, normal);
@@ -212,7 +211,32 @@ Color Renderer::computeSpecular(const Material& hit_material, const Vector& ray_
     if (angle <= hit_material.specular_threshold)//We're below the visibility threshold so we're not going to notice the specular anyway, returning no specular
         return Color(0, 0, 0);
     else
-        return hit_material.specular * std::pow(std::max(0.0f, angle), hit_material.ns);
+        return hit_material.specular * Color(std::pow(std::max(0.0f, angle), hit_material.ns));
+}
+
+//TODO passer inter_point en argument pour eviter de le recalculer a chaque fois vu qu'on l'uilise deja potentiellment autre part etr donc on l'a deja potentiellement calcule
+Color Renderer::compute_reflection(const Ray& ray, const HitInfo& hit_info) const
+{
+    bool intersection_found = false;
+    HitInfo reflection_hit_info;
+
+    //TODO normaliser les normales qu'on met dans HitInfo
+    Vector normalized_normal = normalize(hit_info.normal_at_intersection);
+    Point inter_point = ray._origin + ray._direction * hit_info.t;
+
+    Point reflection_ray_origin = inter_point + normalized_normal * 0.01f;
+    Vector reflection_ray_direction = ray._direction - 2 * dot(ray._direction, normalized_normal) * normalized_normal;
+    Ray reflection_ray(reflection_ray_origin, reflection_ray_direction);
+
+//    std::cout << ray << std::endl;
+//    std::cout << inter_point << std::endl;
+//    std::cout << normalized_normal << std::endl;
+//    std::cout << reflection_ray << std::endl;
+//    std::exit(0);
+
+    Color reflection_color = trace_ray(reflection_ray, reflection_hit_info, intersection_found);
+
+    return reflection_color * Color(_materials.material(hit_info.mat_index).reflection);
 }
 
 bool Renderer::is_shadowed(const Point& inter_point, const Point& light_position) const
@@ -298,13 +322,7 @@ Color Renderer::shade_ray_inter_point(const Ray& ray, const HitInfo& hit_info) c
         Vector direction_to_light = normalize(_scene._point_light._position - inter_point);
         Vector normal = normalize(hit_info.normal_at_intersection);
 
-        Material hit_material;
-        if (hit_info.mat_index == -1)
-            hit_material = Renderer::DEFAULT_MATERIAL;
-        else if (hit_info.mat_index == -2)//Debug material
-            hit_material = Renderer::DEBUG_MATERIAL_1;
-        else
-            hit_material = _materials(hit_info.mat_index);
+        Material hit_material = _materials(hit_info.mat_index);
 
         float ao_map_contribution = 1.0f;
         if (_render_settings.enable_ao_mapping)
@@ -324,13 +342,15 @@ Color Renderer::shade_ray_inter_point(const Ray& ray, const HitInfo& hit_info) c
             diffuse_color = sample_texture(_diffuse_map, tex_coord_u, tex_coord_v);
         }
         else
-            diffuse_color = computeDiffuse(hit_material, normal, direction_to_light);
+            diffuse_color = compute_diffuse(hit_material, normal, direction_to_light);
 
         final_color = final_color + diffuse_color * ao_map_contribution * _render_settings.enable_diffuse;
-        final_color = final_color + computeSpecular(hit_material, ray._direction, normal, direction_to_light) * _render_settings.enable_specular;
+        final_color = final_color + compute_specular(hit_material, ray._direction, normal, direction_to_light) * _render_settings.enable_specular;
         if (is_shadowed(inter_point, _scene._point_light._position))
             final_color = final_color * Color(Renderer::SHADOW_INTENSITY);
         final_color = final_color + hit_material.emission * _render_settings.enable_emissive;
+        if (hit_material.reflection > 0.0f)
+            final_color = (1 - hit_material.reflection) * final_color + compute_reflection(ray, hit_info) * hit_material.reflection;
 
         final_color = final_color + Renderer::AMBIENT_COLOR * hit_material.ambient_coeff * _render_settings.enable_ambient;
     }
@@ -674,6 +694,43 @@ void Renderer::raster_trace()
     }
 }
 
+Color Renderer::trace_ray(const Ray& ray, HitInfo& final_hit_info, bool& intersection_found) const
+{
+    HitInfo local_hit_info;
+
+    if (_render_settings.enable_bvh)
+    {
+        if (_bvh.intersect(ray, local_hit_info))
+            if (local_hit_info.t < final_hit_info.t || final_hit_info.t == -1)
+                final_hit_info = local_hit_info;
+    }
+    else
+    {
+        for (const Triangle& triangle : _triangles)
+            if (triangle.intersect(ray, local_hit_info))
+                if (local_hit_info.t < final_hit_info.t || final_hit_info.t == -1)
+                    final_hit_info = local_hit_info;
+    }
+
+    for (const Sphere& sphere : spheres)
+        if (sphere.intersect(ray, local_hit_info))
+            if (local_hit_info.t < final_hit_info.t || final_hit_info.t == -1)
+                final_hit_info = local_hit_info;
+
+    Color finalColor;
+
+    if (final_hit_info.t > 0)//We found an intersection
+    {
+        intersection_found = true;
+
+        finalColor = shade_ray_inter_point(ray, local_hit_info);
+
+        return finalColor;
+    }
+    else
+        return Renderer::BACKGROUND_COLOR;
+}
+
 void Renderer::ray_trace()
 {
     int render_width, render_height;
@@ -697,44 +754,22 @@ void Renderer::ray_trace()
             Vector ray_direction = normalize(image_plane_point_ws - camera_position);
             Ray ray(camera_position, ray_direction);
 
-            HitInfo finalHitInfo;
+            bool intersection_found = false;
             HitInfo hit_info;
 
-            if (_render_settings.enable_bvh)
+            Color pixel_color = trace_ray(ray, hit_info, intersection_found);
+            if (intersection_found)
             {
-                if (_bvh.intersect(ray, hit_info))
-                    if (hit_info.t < finalHitInfo.t || finalHitInfo.t == -1)
-                        finalHitInfo = hit_info;
-            }
-            else
-            {
-                for (Triangle& triangle : _triangles)
-                    if (triangle.intersect(ray, hit_info))
-                        if (hit_info.t < finalHitInfo.t || finalHitInfo.t == -1)
-                            finalHitInfo = hit_info;
-            }
+                //We found an intersection so we can update the various buffers if needed
 
-            for (Sphere& sphere : spheres)
-                if (sphere.intersect(ray, hit_info))
-                    if (hit_info.t < finalHitInfo.t || finalHitInfo.t == -1)
-                        finalHitInfo = hit_info;
-
-            Color finalColor;
-
-            if (finalHitInfo.t > 0)//We found an intersection
-            {
                 //Updating the z_buffer for post-processing operations that need it
                 if (_render_settings.enable_ssao) {
-                    _z_buffer(py, px) = -(ray._origin.z + ray._direction.z * finalHitInfo.t);
-                    _normal_buffer(py, px) = finalHitInfo.normal_at_intersection;
+                    _z_buffer(py, px) = -(ray._origin.z + ray._direction.z * hit_info.t);
+                    _normal_buffer(py, px) = hit_info.normal_at_intersection;
                 }
-
-                finalColor = shade_ray_inter_point(ray, hit_info);
-
-                _image(px, py) = finalColor;
             }
-            else
-                _image(px, py) = Renderer::BACKGROUND_COLOR;
+
+            _image(px, py) = pixel_color;
         }
     }
 }

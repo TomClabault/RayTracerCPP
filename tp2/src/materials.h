@@ -19,6 +19,7 @@ struct Material
     Color diffuse;              //!< couleur diffuse / de base.
     Color specular;             //!< couleur du reflet.
     Color emission;             //!< pour une source de lumiere.
+    float reflection = 0.0f;    //!< intensity of the reflection for each channel
     float ns;                   //!< concentration des reflets, exposant pour les reflets blinn-phong.
     float specular_threshold;   //!< seuil pour l'angle de reflexion de la lumiere par rapport à la direction de regard. 
                                 //   En dessous de ce seuil, la speculaire ne sera pas visible et n'a pas besoin d'être calculee
