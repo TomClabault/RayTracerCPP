@@ -315,7 +315,7 @@ void MainWindow::write_to_console(const std::stringstream& ss)
 
 void MainWindow::on_load_robot_obj_button_clicked()
 {
-    load_obj("./data/robot.obj", Identity());
+    load_obj("./data/Robot/robot.obj", Identity());
 
     this->ui->object_translation_edit->setText("0.0/-2.0/-4.0");
     this->ui->object_rotation_edit->setText("0.0/0.0/0.0");
