@@ -143,6 +143,7 @@ void Renderer::set_light_position(const Point& position) { _scene._point_light._
 
 void Renderer::set_ao_map(const Image& ao_map) { _ao_map = ao_map; }
 void Renderer::set_diffuse_map(const Image& diffuse_map) { _diffuse_map = diffuse_map; }
+void Renderer::set_skybox(const Image& skybox) { _skybox = skybox; }
 
 void Renderer::clear_ao_map() { _ao_map = Image(); }
 void Renderer::clear_diffuse_map() { _diffuse_map = Image(); }
@@ -725,10 +726,25 @@ Color Renderer::trace_ray(const Ray& ray, HitInfo& final_hit_info, bool& interse
 
         finalColor = shade_ray_inter_point(ray, local_hit_info);
 
+        finalColor.a = 1.0;//This should be illegal but since we're not interested in the alpha anyway...
+        //This eliminates the problem of the alpha value being > 4, > 5 or more due
+        //to the fact that we are adding color to compute the color of a shaded point
+        //but adding colors together also adds the alpha channel.
+        //Qt then displays incorrect colors if the alpha is not between 0 and 1
         return finalColor;
     }
     else
-        return Renderer::BACKGROUND_COLOR;
+    {
+        if (_render_settings.enable_skybox)
+        {
+            float u = 0.5 + std::atan2(-ray._direction.z, -ray._direction.x) / (2 * M_PI);
+            float v = 0.5 + std::asin(-ray._direction.y) / M_PI;
+
+            return sample_texture(_skybox, u, v);
+        }
+        else
+            return Renderer::BACKGROUND_COLOR;
+    }
 }
 
 void Renderer::ray_trace()
@@ -736,7 +752,7 @@ void Renderer::ray_trace()
     int render_width, render_height;
     get_render_width_height(_render_settings, render_width, render_height);
 
-#pragma omp parallel for schedule(dynamic)
+//#pragma omp parallel for schedule(dynamic)
     for (int py = 0; py < render_height; py++)
     {
         //Adding 0.5 to consider the center of the pixel

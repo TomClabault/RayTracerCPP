@@ -54,6 +54,7 @@ public:
 
     void set_ao_map(const Image& ao_map);
     void set_diffuse_map(const Image& diffuse_map);
+    void set_skybox(const Image& skybox);
 
     void clear_ao_map();
     void clear_diffuse_map();
@@ -239,6 +240,7 @@ private:
 	Image _image;
     Image _ao_map;
     Image _diffuse_map;
+    Image _skybox;
 
 	Scene _scene;
 };

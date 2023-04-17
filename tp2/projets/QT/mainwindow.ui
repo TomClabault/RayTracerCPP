@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1069</width>
-    <height>589</height>
+    <width>1088</width>
+    <height>582</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -63,7 +63,7 @@
            </sizepolicy>
           </property>
           <property name="currentIndex">
-           <number>0</number>
+           <number>2</number>
           </property>
           <property name="documentMode">
            <bool>false</bool>
@@ -103,7 +103,7 @@
                <property name="verticalSpacing">
                 <number>12</number>
                </property>
-               <item row="0" column="0">
+               <item row="1" column="0">
                 <widget class="QPushButton" name="load_robot_obj_button">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -116,21 +116,14 @@
                  </property>
                 </widget>
                </item>
-               <item row="0" column="1">
-                <widget class="QPushButton" name="load_geometry_obj_button">
-                 <property name="text">
-                  <string>Load Geometry.obj</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="2">
+               <item row="1" column="2">
                 <widget class="QPushButton" name="load_obj_file_button">
                  <property name="text">
                   <string>Load OBJ File...</string>
                  </property>
                 </widget>
                </item>
-               <item row="1" column="0">
+               <item row="3" column="0">
                 <widget class="QPushButton" name="dump_render_to_file_button">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -143,7 +136,7 @@
                  </property>
                 </widget>
                </item>
-               <item row="1" column="1" colspan="2">
+               <item row="3" column="1" colspan="2">
                 <widget class="QLineEdit" name="dump_to_file_filename_edit">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
@@ -153,6 +146,20 @@
                  </property>
                  <property name="text">
                   <string>render.png</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QPushButton" name="load_geometry_obj_button">
+                 <property name="text">
+                  <string>Load Geometry.obj</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="1">
+                <widget class="QPushButton" name="clear_scene_button">
+                 <property name="text">
+                  <string>Clear  scene</string>
                  </property>
                 </widget>
                </item>
@@ -830,20 +837,20 @@
                <property name="verticalSpacing">
                 <number>3</number>
                </property>
-               <item row="1" column="3">
-                <widget class="QPushButton" name="clear_diffuse_map_button">
-                 <property name="text">
-                  <string>Clear</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="1" column="1">
-                <widget class="QPushButton" name="load_diffuse_map_button">
+               <item row="0" column="1">
+                <widget class="QPushButton" name="load_ao_map_button">
                  <property name="enabled">
                   <bool>false</bool>
                  </property>
                  <property name="text">
-                  <string>Load Diffuse Map...</string>
+                  <string>Load AO Map...</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="3">
+                <widget class="QPushButton" name="clear_ao_map_button">
+                 <property name="text">
+                  <string>Clear</string>
                  </property>
                 </widget>
                </item>
@@ -860,16 +867,20 @@
                  </property>
                 </widget>
                </item>
-               <item row="1" column="2">
-                <widget class="QLineEdit" name="diffuse_map_edit">
+               <item row="1" column="3">
+                <widget class="QPushButton" name="clear_diffuse_map_button">
+                 <property name="text">
+                  <string>Clear</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QPushButton" name="load_diffuse_map_button">
                  <property name="enabled">
                   <bool>false</bool>
                  </property>
                  <property name="text">
-                  <string>no diffuse map loaded</string>
-                 </property>
-                 <property name="readOnly">
-                  <bool>true</bool>
+                  <string>Load Diffuse Map...</string>
                  </property>
                 </widget>
                </item>
@@ -892,27 +903,60 @@
                  </property>
                 </widget>
                </item>
-               <item row="0" column="3">
-                <widget class="QPushButton" name="clear_ao_map_button">
-                 <property name="text">
-                  <string>Clear</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="1">
-                <widget class="QPushButton" name="load_ao_map_button">
-                 <property name="enabled">
-                  <bool>false</bool>
-                 </property>
-                 <property name="text">
-                  <string>Load AO Map...</string>
-                 </property>
-                </widget>
-               </item>
                <item row="1" column="0">
                 <widget class="QCheckBox" name="diffuse_map_check_box">
                  <property name="text">
                   <string>Diffuse map</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="2">
+                <widget class="QLineEdit" name="diffuse_map_edit">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="text">
+                  <string>no diffuse map loaded</string>
+                 </property>
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="0">
+                <widget class="QCheckBox" name="skybox_checkbox">
+                 <property name="text">
+                  <string>Skybox</string>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="1">
+                <widget class="QPushButton" name="load_skybox_button">
+                 <property name="text">
+                  <string>Load Skybox</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="2">
+                <widget class="QLineEdit" name="skybox_loaded">
+                 <property name="enabled">
+                  <bool>true</bool>
+                 </property>
+                 <property name="text">
+                  <string>skybox.jpg</string>
+                 </property>
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="3">
+                <widget class="QPushButton" name="clear_skybox">
+                 <property name="text">
+                  <string>Clear</string>
                  </property>
                 </widget>
                </item>
@@ -1227,7 +1271,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1069</width>
+     <width>1088</width>
      <height>21</height>
     </rect>
    </property>

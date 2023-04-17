@@ -1,6 +1,7 @@
 #include "graphicsViewZoom.h"
 #include "image_io.h"
 #include "mainwindow.h"
+#include "meshIOUtils.h"
 #include "qtUtils.h"
 #include "timer.h"
 
@@ -36,6 +37,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     //Initializing the light's position
     on_light_position_edit_editingFinished();
+
+    //Enabling the skybox by default
+    _renderer.set_skybox(read_image("./data/skybox.jpg", false));
+    _renderer.render_settings().enable_skybox = true;
 
     //Initializing the random generator here for later uses
     srand(time(NULL));
@@ -232,24 +237,7 @@ void MainWindow::on_render_button_clicked()
     if (_renderer.render_settings().hybrid_rasterization_tracing)
         _renderer.raster_trace();
     else
-    {
-        float min_time = INFINITY;
-        Timer timer;
-
-        for (int i = 0; i < 40; i++)
-        {
-            timer.start();
-            _renderer.ray_trace();
-            timer.stop();
-
-            std::cout << "time: " << timer.elapsed() << "ms" << std::endl;
-            if (timer.elapsed() < min_time)
-                min_time = timer.elapsed();
-        }
-
-        std::cout << "min time: " << min_time << "ms" << std::endl;
-    }
-    std::exit(0);
+        _renderer.ray_trace();
 
     timer.stop();
     ss << "Render time: " << timer.elapsed() << "ms" << std::endl;
@@ -284,18 +272,18 @@ void MainWindow::load_obj(const char* filepath, Transform transform)
 
     timer.start();
 
-    //MeshIOData meshData = read_meshio_data(filepath);
-    //std::vector<Triangle> triangles = MeshIOUtils::create_triangles(meshData, transform);
+    MeshIOData meshData = read_meshio_data(filepath);
+    std::vector<Triangle> triangles = MeshIOUtils::create_triangles(meshData, transform);
 
-    //_renderer.set_triangles(triangles);
+    _renderer.set_triangles(triangles);
 
-    MeshIOData meshData;
-    meshData.materials.materials.push_back(Renderer::DEFAULT_MATERIAL);
+    //MeshIOData meshData;
+    //meshData.materials.materials.push_back(Renderer::DEFAULT_MATERIAL);
     _renderer.set_materials(meshData.materials);
     precompute_materials(_renderer.get_materials());
 
-    for (int i = 0; i < 60; i++)
-        _renderer.add_sphere(Sphere(Point(0, 0, -3), 1, meshData.materials.materials.size() - 1));
+    //for (int i = 0; i < 60; i++)
+        //_renderer.add_sphere(Sphere(Point(0, 0, -3), 1, meshData.materials.materials.size() - 1));
 
     //This is used to invalidate the cached object transform so that the
     //transform that is currently written in the UI edits will be reapplied
@@ -702,3 +690,9 @@ void MainWindow::on_enable_emissive_checkbox_stateChanged(int checked) { _render
 
 void MainWindow::on_clear_diffuse_map_button_clicked() { _renderer.clear_diffuse_map(); this->ui->diffuse_map_edit->clear(); }
 void MainWindow::on_clear_ao_map_button_clicked(){ _renderer.clear_ao_map(); this->ui->ao_map_edit->clear(); }
+
+void MainWindow::on_clear_scene_button_clicked()
+{
+    _renderer.set_triangles(std::vector<Triangle>());
+}
+

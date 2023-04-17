@@ -115,6 +115,8 @@ private slots:
 
     void on_clear_ao_map_button_clicked();
 
+    void on_clear_scene_button_clicked();
+
 private:
     Ui::MainWindow *ui;
 

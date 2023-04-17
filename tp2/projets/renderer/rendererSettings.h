@@ -85,6 +85,9 @@ struct RenderSettings
     bool enable_ao_mapping = false;
     //Whether or not to use a texture to compute the diffuse color
     bool enable_diffuse_mapping = false;
+    //Whether or not to sample the background color from a texture or not
+    //If false, the background color of the scene will be a plain color
+    bool enable_skybox = true;
 
     friend std::ostream& operator << (std::ostream& os, const RenderSettings& settings);
 };
