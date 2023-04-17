@@ -20,7 +20,7 @@ Material init_default_material()
     Material mat = Material(Color(1.0f, 0.0f, 0.5f));//Pink color
     mat.specular = Color(1.0f, 1.0f, 1.0f);
     mat.ns = 15;
-    mat.reflection = 1.0f;
+    mat.reflection = 0.25f;
 
     return mat;
 }
@@ -86,7 +86,7 @@ void Renderer::init_buffers(int width, int height)
             _image(j, i) = Renderer::BACKGROUND_COLOR;
 }
 
-void Renderer::set_triangles(std::vector<Triangle> triangles)
+void Renderer::set_triangles(const std::vector<Triangle>& triangles)
 
 {
     _triangles = triangles;
@@ -135,6 +135,13 @@ void Renderer::clear_image()
     for (int i = 0; i < _image.height(); i++)
         for (int j = 0; j < _image.width(); j++)
             _image(j, i) = Renderer::BACKGROUND_COLOR;
+}
+
+void Renderer::clear_geometry()
+{
+    set_triangles(std::vector<Triangle>());
+    _planes = std::vector<Plane>();
+    _spheres = std::vector<Sphere>();
 }
 
 void Renderer::change_camera_fov(float fov) { _scene._camera.set_fov(fov); }
@@ -712,9 +719,14 @@ Color Renderer::trace_ray(const Ray& ray, HitInfo& final_hit_info, bool& interse
                 if (local_hit_info.t < final_hit_info.t || final_hit_info.t == -1)
                     final_hit_info = local_hit_info;
     }
-
-    for (const Sphere& sphere : spheres)
+    
+    for (const Sphere& sphere : _spheres)
         if (sphere.intersect(ray, local_hit_info))
+            if (local_hit_info.t < final_hit_info.t || final_hit_info.t == -1)
+                final_hit_info = local_hit_info;
+
+    for (const Plane& plane : _planes)
+        if (plane.intersect(ray, local_hit_info))
             if (local_hit_info.t < final_hit_info.t || final_hit_info.t == -1)
                 final_hit_info = local_hit_info;
 
@@ -752,7 +764,7 @@ void Renderer::ray_trace()
     int render_width, render_height;
     get_render_width_height(_render_settings, render_width, render_height);
 
-//#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)
     for (int py = 0; py < render_height; py++)
     {
         //Adding 0.5 to consider the center of the pixel

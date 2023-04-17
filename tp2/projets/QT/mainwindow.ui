@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1088</width>
-    <height>582</height>
+    <height>618</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -63,7 +63,7 @@
            </sizepolicy>
           </property>
           <property name="currentIndex">
-           <number>2</number>
+           <number>0</number>
           </property>
           <property name="documentMode">
            <bool>false</bool>

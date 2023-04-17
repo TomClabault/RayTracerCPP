@@ -53,3 +53,19 @@ bool Sphere::intersect(const Ray& ray, HitInfo& hit_info, bool compute_uv) const
         return true;
     }
 }
+
+Plane::Plane(const Point& point, const Vector& normal, int mat_index) : _point(point), _normal(normal), _mat_index(mat_index) {}
+
+bool Plane::intersect(const Ray& ray, HitInfo& hit_info) const
+{
+    float t = dot(_point - ray._origin, _normal) / dot(ray._direction, _normal);
+
+    if (t < 0)
+        return false;
+
+    hit_info.t = t;
+    hit_info.mat_index = _mat_index;
+    hit_info.normal_at_intersection = _normal;
+
+    return true;
+}

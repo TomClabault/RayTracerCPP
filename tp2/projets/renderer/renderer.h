@@ -35,7 +35,10 @@ public:
      */
     void get_render_width_height(const RenderSettings& settings, int& render_width, int& render_height);
 
-    void set_triangles(std::vector<Triangle> triangles);//TODO ne pas faire de copie. mais move?
+    void set_triangles(const std::vector<Triangle>& triangles);
+
+    void add_sphere(const Sphere& sphere) { _spheres.push_back(sphere); }
+    void add_plane(const Plane& plane) { _planes.push_back(plane); }
 
     Materials& get_materials();
     void set_materials(Materials materials);
@@ -46,6 +49,7 @@ public:
     void clear_z_buffer();
     void clear_normal_buffer();
     void clear_image();
+    void clear_geometry();
 
     void change_camera_fov(float fov);
     void change_camera_aspect_ratio(float aspect_ratio);
@@ -214,10 +218,6 @@ private:
      * @return The transformed z coordinate of the given vertex
      */
     float matrix_transform_z(const Transform& matrix, const Point& vertex);
-
-public:
-    void add_sphere(const Sphere& sphere) { spheres.push_back(sphere); }
-
 private:
     Buffer<float> _z_buffer;
     Buffer<Vector> _normal_buffer;//2D-Array of pointer to Vector.
@@ -231,7 +231,8 @@ private:
     Transform _previous_object_transform = Identity();
     Materials _materials;//Materials
 
-    std::vector<Sphere> spheres;
+    std::vector<Sphere> _spheres;
+    std::vector<Plane> _planes;
 	 
 	RenderSettings _render_settings;
 

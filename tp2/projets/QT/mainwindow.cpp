@@ -272,13 +272,15 @@ void MainWindow::load_obj(const char* filepath, Transform transform)
 
     timer.start();
 
-    MeshIOData meshData = read_meshio_data(filepath);
-    std::vector<Triangle> triangles = MeshIOUtils::create_triangles(meshData, transform);
+    //MeshIOData meshData = read_meshio_data(filepath);
+    //std::vector<Triangle> triangles = MeshIOUtils::create_triangles(meshData, transform);
 
-    _renderer.set_triangles(triangles);
+    //_renderer.set_triangles(triangles);
 
-    //MeshIOData meshData;
-    //meshData.materials.materials.push_back(Renderer::DEFAULT_MATERIAL);
+    MeshIOData meshData;
+    meshData.materials.materials.push_back(Renderer::DEFAULT_MATERIAL);
+    _renderer.add_plane(Plane(Point(0, -1, 0), Vector(0, 1, 0)));
+
     _renderer.set_materials(meshData.materials);
     precompute_materials(_renderer.get_materials());
 
@@ -691,8 +693,5 @@ void MainWindow::on_enable_emissive_checkbox_stateChanged(int checked) { _render
 void MainWindow::on_clear_diffuse_map_button_clicked() { _renderer.clear_diffuse_map(); this->ui->diffuse_map_edit->clear(); }
 void MainWindow::on_clear_ao_map_button_clicked(){ _renderer.clear_ao_map(); this->ui->ao_map_edit->clear(); }
 
-void MainWindow::on_clear_scene_button_clicked()
-{
-    _renderer.set_triangles(std::vector<Triangle>());
-}
+void MainWindow::on_clear_scene_button_clicked() { _renderer.clear_geometry(); }
 
