@@ -24,9 +24,17 @@
 struct Triangle4
 {
     Triangle4() {}
-    Triangle4(vec4 a, vec4 b, vec4 c) : _a(a), _b(b), _c(c) {}
+    Triangle4(const vec4&  a, const vec4&  b, const vec4&  c) : _a(a), _b(b), _c(c) {}
+    Triangle4(const vec4& a, const vec4&  b, const vec4&  c, const Point& tex_coords_u, const Point& tex_coords_v)
+        : _a(a), _b(b), _c(c), _tex_coords_u(tex_coords_u), _tex_coords_v(tex_coords_v) {}
 
     vec4 _a, _b, _c;
+
+    //Organized as:
+    //_tex_coords_u[0], _tex_coords_u[1], _tex_coords_u[2] = A.u, B.u, C.u respectively
+    //a,d
+    //_tex_coords_v[0], _tex_coords_v[1], _tex_coords_v[2] = A.v, B.v, C.v respectively
+    Point _tex_coords_u, _tex_coords_v;
 
     friend std::ostream& operator <<(std::ostream& os, const Triangle4& infos);
 };

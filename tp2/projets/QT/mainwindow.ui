@@ -53,7 +53,7 @@
            <enum>QTabWidget::Rounded</enum>
           </property>
           <property name="currentIndex">
-           <number>4</number>
+           <number>0</number>
           </property>
           <property name="elideMode">
            <enum>Qt::ElideNone</enum>
@@ -270,6 +270,9 @@
                </item>
                <item row="2" column="0">
                 <widget class="QCheckBox" name="clipping_check_box">
+                 <property name="enabled">
+                  <bool>true</bool>
+                 </property>
                  <property name="text">
                   <string>Enable clipping</string>
                  </property>

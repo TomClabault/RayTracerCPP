@@ -273,20 +273,12 @@ void MainWindow::load_obj(const char* filepath, Transform transform)
 
     timer.start();
 
-    //MeshIOData meshData = read_meshio_data(filepath);
-    //std::vector<Triangle> triangles = MeshIOUtils::create_triangles(meshData, transform);
+    MeshIOData meshData = read_meshio_data(filepath);
+    std::vector<Triangle> triangles = MeshIOUtils::create_triangles(meshData, transform);
 
-    //_renderer.set_triangles(triangles);
-
-    MeshIOData meshData;
-    meshData.materials.materials.push_back(Renderer::DEFAULT_MATERIAL);
-    _renderer.add_plane(Plane(Point(0, -1.5, 0), Vector(0, 1, 0)));
-
+    _renderer.set_triangles(triangles);
     _renderer.set_materials(meshData.materials);
     precompute_materials(_renderer.get_materials());
-
-    //for (int i = 0; i < 60; i++)
-        //_renderer.add_sphere(Sphere(Point(0, 0, -3), 1, meshData.materials.materials.size() - 1));
 
     //This is used to invalidate the cached object transform so that the
     //transform that is currently written in the UI edits will be reapplied
