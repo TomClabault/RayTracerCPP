@@ -99,26 +99,30 @@ private slots:
     void on_camera_rotation_edit_returnPressed();
     void on_camera_translation_edit_returnPressed();
 
+    void on_clear_ao_map_button_clicked();
     void on_load_diffuse_map_button_clicked();
-
     void on_diffuse_map_check_box_stateChanged(int arg1);
-
-    void on_enable_ambient_checkbox_stateChanged(int arg1);
-
-    void on_enable_diffuse_checkbox_stateChanged(int arg1);
-
-    void on_enable_specular_checkbox_stateChanged(int arg1);
-
-    void on_enable_emissive_checkbox_stateChanged(int arg1);
-
     void on_clear_diffuse_map_button_clicked();
 
-    void on_clear_ao_map_button_clicked();
+    void on_enable_ambient_checkbox_stateChanged(int arg1);
+    void on_enable_diffuse_checkbox_stateChanged(int arg1);
+    void on_enable_specular_checkbox_stateChanged(int arg1);
+    void on_enable_emissive_checkbox_stateChanged(int arg1);
 
     void on_clear_scene_button_clicked();
 
+    void on_add_sphere_button_clicked();
+    void on_sphere_center_edit_returnPressed();
+    void on_sphere_radius_edit_returnPressed();
+    void on_edit_sphere_material_button_clicked();
+
 private:
     Ui::MainWindow *ui;
+
+    //Materials of the sphere and planes that are added
+    //These materials are edited by the user using the UI
+    Material _added_sphere_material;
+    Material _added_plane_material;
 
     Vector _cached_object_transform_translation;
     Vector _cached_object_transform_rotation;

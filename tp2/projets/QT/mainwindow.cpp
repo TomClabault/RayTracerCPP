@@ -1,3 +1,4 @@
+#include "editMaterialDialog.h"
 #include "graphicsViewZoom.h"
 #include "image_io.h"
 #include "mainwindow.h"
@@ -279,7 +280,7 @@ void MainWindow::load_obj(const char* filepath, Transform transform)
 
     MeshIOData meshData;
     meshData.materials.materials.push_back(Renderer::DEFAULT_MATERIAL);
-    _renderer.add_plane(Plane(Point(0, -1, 0), Vector(0, 1, 0)));
+    _renderer.add_plane(Plane(Point(0, -1.5, 0), Vector(0, 1, 0)));
 
     _renderer.set_materials(meshData.materials);
     precompute_materials(_renderer.get_materials());
@@ -694,4 +695,45 @@ void MainWindow::on_clear_diffuse_map_button_clicked() { _renderer.clear_diffuse
 void MainWindow::on_clear_ao_map_button_clicked(){ _renderer.clear_ao_map(); this->ui->ao_map_edit->clear(); }
 
 void MainWindow::on_clear_scene_button_clicked() { _renderer.clear_geometry(); }
+
+void MainWindow::on_add_sphere_button_clicked()
+{
+    Point center;
+    float radius;
+
+    QString sphere_center_text = this->ui->sphere_center_edit->text();
+    QStringList splitted = sphere_center_text.split("/");
+    if (splitted.size() == 3)
+    {
+        bool ok_x, ok_y, ok_z;
+        float x = safe_text_to_float(splitted.at(0), ok_x);
+        float y = safe_text_to_float(splitted.at(1), ok_y);
+        float z = safe_text_to_float(splitted.at(2), ok_z);
+
+        if (ok_x && ok_y && ok_z)
+            center = Point(x, y, z);
+    }
+
+    radius = safe_text_to_float(this->ui->sphere_radius_edit->text());
+    if (radius != -1)//The input was valid
+    {
+        _renderer.get_materials().materials.push_back(_added_sphere_material);
+        _renderer.add_sphere(Sphere(center, radius, _renderer.get_materials().materials.size() - 1));
+    }
+
+    _added_sphere_material = Material();
+}
+
+void MainWindow::on_sphere_center_edit_returnPressed() { on_add_sphere_button_clicked(); }
+void MainWindow::on_sphere_radius_edit_returnPressed() { on_add_sphere_button_clicked(); }
+
+void MainWindow::on_edit_sphere_material_button_clicked()
+{
+    EditMaterialDialog material_dialog;
+    if (material_dialog.exec())
+    {
+        _added_sphere_material = material_dialog.get_material();
+        return;
+    }
+}
 
