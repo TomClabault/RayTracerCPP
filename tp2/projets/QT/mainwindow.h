@@ -58,8 +58,6 @@ struct RenderDisplayContext
     Graphics_view_zoom* _graphics_view_zoom = nullptr;
 
     QImage* _q_image = nullptr;
-
-    std::mutex _mutex;
 };
 
 class MainWindow : public QMainWindow

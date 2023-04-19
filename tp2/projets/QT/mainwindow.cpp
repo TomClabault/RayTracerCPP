@@ -71,8 +71,6 @@ void MainWindow::setup_render_display_context()
 
 void MainWindow::update_render_image()
 {
-    _render_display_context._mutex.lock();
-
     Timer timer;
     timer.start();
 
@@ -119,6 +117,8 @@ void MainWindow::update_render_image()
     delete _render_display_context._q_image;
     _render_display_context._q_image = new QImage(mirrored);
 #endif
+    //We need to recreate the graphics scene every time to avoid
+    //UI bugs (in particular when using SSAA)
     if (_render_display_context._graphics_scene != nullptr)
         delete _render_display_context._graphics_scene;
     _render_display_context._graphics_scene = new QGraphicsScene(this);
@@ -131,7 +131,6 @@ void MainWindow::update_render_image()
 
     timer.stop();
     std::cout << timer.elapsed() << "ms" << std::endl;
-    _render_display_context._mutex.unlock();
 }
 
 void MainWindow::prepare_bvh()
