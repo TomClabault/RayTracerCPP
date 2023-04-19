@@ -191,10 +191,14 @@ void MainWindow::prepare_renderer_buffers()
             _renderer.destroy_ssao_buffers();
     }
 
-    //Clearing the buffers
-    _renderer.clear_z_buffer();
-    _renderer.clear_normal_buffer();
-    _renderer.clear_image();
+    //Clearing the buffers only if rasterizing because if we're using ray tracing
+    //it's going to overwrite everything anyway
+    if (_renderer.render_settings().hybrid_rasterization_tracing)
+    {
+        _renderer.clear_z_buffer();
+        _renderer.clear_normal_buffer();
+        _renderer.clear_image();
+    }
 }
 
 void MainWindow::transform_object()
@@ -274,14 +278,11 @@ void MainWindow::load_obj(const char* filepath, Transform transform)
     timer.start();
 
     MeshIOData meshData = read_meshio_data(filepath);
-    //std::vector<Triangle> triangles = MeshIOUtils::create_triangles(meshData, _renderer.get_materials().count(), transform);
+    std::vector<Triangle> triangles = MeshIOUtils::create_triangles(meshData, _renderer.get_materials().count(), transform);
 
-    //_renderer.set_triangles(triangles);
-    //for(const Material& mat : meshData.materials.materials)
-        //_renderer.get_materials().materials.push_back(mat);
-    _renderer.get_materials().materials.push_back(Renderer::get_random_diffuse_pastel_material());
-    for (int i = 0; i < 30 * 30; i++)
-        _renderer.add_analytic_shape(Sphere(Point((std::rand() / (float)RAND_MAX * 2 - 1) * 5, -1.8f, (std::rand() / (float)RAND_MAX * -10) - 1), 0.3, 0));
+    _renderer.set_triangles(triangles);
+    for(const Material& mat : meshData.materials.materials)
+        _renderer.get_materials().materials.push_back(mat);
     precompute_materials(_renderer.get_materials());
 
     //This is used to invalidate the cached object transform so that the
