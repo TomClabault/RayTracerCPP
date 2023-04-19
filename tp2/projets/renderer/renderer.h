@@ -5,9 +5,12 @@
 
 #include "analyticShape.h"
 #include "buffer.h"
+#include "bvh.h"
 #include "image.h"
+#include "materials.h"
 #include "rendererSettings.h"
 #include "scene/scene.h"
+
 
 class Renderer
 {
@@ -15,9 +18,15 @@ public:
 	static constexpr float EPSILON = 1.0e-4f;
 	static constexpr float SHADOW_INTENSITY = 0.5f;
     static Material DEFAULT_MATERIAL;
+    static Material DEFAULT_PLANE_MATERIAL;
     static Material DEBUG_MATERIAL_1;
 	static Color AMBIENT_COLOR;
 	static Color BACKGROUND_COLOR;
+
+    /**
+     * @return A diffuse material that has a nice pastel color
+     */
+    static Material get_random_diffuse_pastel_material();
 
     Renderer(Scene scene, std::vector<Triangle> triangles, RenderSettings render_settings);
     Renderer();
@@ -37,8 +46,7 @@ public:
 
     void set_triangles(const std::vector<Triangle>& triangles);
 
-    void add_sphere(const Sphere& sphere) { _spheres.push_back(sphere); }
-    void add_plane(const Plane& plane) { _planes.push_back(plane); }
+    void add_analytic_shape(const AnalyticShapesTypes& shape);
 
     Materials& get_materials();
     void set_materials(Materials materials);
@@ -146,7 +154,7 @@ private:
      * @return Returns true if the point is shadowed by another object
      * according to the given light position, false otherwise.
 	 */
-    bool is_shadowed(const Point& inter_point, const Point& light_position) const;
+    bool is_shadowed(const Point& inter_point, const Vector& normal_at_intersection, const Point& light_position) const;
 
     /**
      * @brief Returns the color based on the given normalized normal vector
@@ -231,8 +239,7 @@ private:
     Transform _previous_object_transform = Identity();
     Materials _materials;//Materials
 
-    std::vector<Sphere> _spheres;
-    std::vector<Plane> _planes;
+    std::vector<AnalyticShapesTypes> _analytic_shapes;
 	 
 	RenderSettings _render_settings;
 

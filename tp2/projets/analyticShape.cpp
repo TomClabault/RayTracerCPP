@@ -40,7 +40,7 @@ bool Sphere::intersect(const Ray& ray, HitInfo& hit_info, bool compute_uv) const
         if (hit_info.t < 0)
             return false;
 
-        hit_info.normal_at_intersection = (ray._origin + ray._direction * hit_info.t) - _center;
+        hit_info.normal_at_intersection = normalize((ray._origin + ray._direction * hit_info.t) - _center);
 
         if (compute_uv)
         {
@@ -68,4 +68,18 @@ bool Plane::intersect(const Ray& ray, HitInfo& hit_info) const
     hit_info.normal_at_intersection = _normal;
 
     return true;
+}
+
+std::ostream& operator << (std::ostream& os, const Sphere& sphere)
+{
+    os << "Sphere[" << sphere._center << ", r=" << sphere._radius << "]";
+
+    return os;
+}
+
+std::ostream& operator << (std::ostream& os, const Plane& plane)
+{
+    os << "Plane[" << plane._point << ", " << plane._normal << "]";
+
+    return os;
 }

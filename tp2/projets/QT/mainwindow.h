@@ -116,13 +116,25 @@ private slots:
     void on_sphere_radius_edit_returnPressed();
     void on_edit_sphere_material_button_clicked();
 
+    void on_add_plane_button_clicked();
+
+    void on_plane_point_edit_returnPressed();
+
+    void on_plane_normal_edit_returnPressed();
+
+    void on_edit_plane_material_button_clicked();
+
+    void on_add_random_sphere_button_clicked();
+
+    void on_add_default_plane_button_clicked();
+
 private:
     Ui::MainWindow *ui;
 
     //Materials of the sphere and planes that are added
     //These materials are edited by the user using the UI
-    Material _added_sphere_material;
-    Material _added_plane_material;
+    Material _added_sphere_material = Renderer::DEFAULT_MATERIAL;
+    Material _added_plane_material = Renderer::DEFAULT_PLANE_MATERIAL;
 
     Vector _cached_object_transform_translation;
     Vector _cached_object_transform_rotation;

@@ -1,7 +1,8 @@
 #include "EditMaterialDialog.h"
 #include "ui_editMaterialDialog.h"
 
-#include "materials.h".h"
+#include "materials.h"
+#include "renderer.h"
 
 #include <QColorDialog>
 
@@ -11,10 +12,10 @@ EditMaterialDialog::EditMaterialDialog(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    _diffuse_color = Color(0.9f);
-    _specular_color = Color(1.0f);
-    _ambient_coeff_color = Color(1.0f);
-    _emission_color = Color(0.0f);
+    _diffuse_color = Renderer::DEFAULT_MATERIAL.diffuse;
+    _specular_color = Renderer::DEFAULT_MATERIAL.specular;
+    _ambient_coeff_color = Renderer::DEFAULT_MATERIAL.ambient_coeff;
+    _emission_color = Renderer::DEFAULT_MATERIAL.emission;
 
     connect(this->ui->diffuse_color_frame, &ClickableColorQFrame::clicked, this, &EditMaterialDialog::on_diffuse_color_button_clicked);
     connect(this->ui->specular_color_frame, &ClickableColorQFrame::clicked, this, &EditMaterialDialog::on_specular_color_button_clicked);
@@ -22,6 +23,10 @@ EditMaterialDialog::EditMaterialDialog(QWidget *parent) :
     connect(this->ui->emission_color_frame, &ClickableColorQFrame::clicked, this, &EditMaterialDialog::on_emission_color_button_clicked);
 
     update_color_frames();
+
+    this->ui->reflection_intensity_edit->setText(std::to_string(Renderer::DEFAULT_MATERIAL.reflection).c_str());
+    this->ui->shininess_edit->setText(std::to_string(Renderer::DEFAULT_MATERIAL.ns).c_str());
+    this->ui->refraction_index_edit->setText(std::to_string(Renderer::DEFAULT_MATERIAL.ni).c_str());
 }
 
 EditMaterialDialog::~EditMaterialDialog()

@@ -19,7 +19,7 @@ struct Material
     Color diffuse;              //!< couleur diffuse / de base.
     Color specular;             //!< couleur du reflet.
     Color emission;             //!< pour une source de lumiere.
-    float reflection = 0.0f;    //!< intensity of the reflection for each channel
+    float reflection;    //!< intensity of the reflection for each channel
     float ns;                   //!< concentration des reflets, exposant pour les reflets blinn-phong.
     float specular_threshold;   //!< seuil pour l'angle de reflexion de la lumiere par rapport à la direction de regard. 
                                 //   En dessous de ce seuil, la speculaire ne sera pas visible et n'a pas besoin d'être calculee
@@ -31,9 +31,9 @@ struct Material
     int ns_texture;        //!< indice de la texture, ou -1.
     
     //! constructeur par defaut. noir.
-    Material( ) : ambient_coeff(Color(1.0, 1.0, 1.0)), diffuse(), specular(), emission(), ns(0), ni(0), transmission(), diffuse_texture(-1), specular_texture(-1), ns_texture(-1) {}
+    Material( ) : ambient_coeff(Color(1.0, 1.0, 1.0)), diffuse(), specular(), emission(), reflection(0), ns(0), ni(0), transmission(), diffuse_texture(-1), specular_texture(-1), ns_texture(-1) {}
     //! matiere diffuse.
-    Material( const Color& color ) : ambient_coeff(Color(1.0, 1.0, 1.0)), diffuse(color), specular(), emission(), ns(0), ni(0), transmission(), diffuse_texture(-1), specular_texture(-1), ns_texture(-1) {}
+    Material( const Color& color ) : ambient_coeff(Color(1.0, 1.0, 1.0)), diffuse(color), specular(), emission(), reflection(0), ns(0), ni(0), transmission(), diffuse_texture(-1), specular_texture(-1), ns_texture(-1) {}
 };
 
 

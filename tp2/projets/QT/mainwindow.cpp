@@ -274,10 +274,14 @@ void MainWindow::load_obj(const char* filepath, Transform transform)
     timer.start();
 
     MeshIOData meshData = read_meshio_data(filepath);
-    std::vector<Triangle> triangles = MeshIOUtils::create_triangles(meshData, transform);
+    //std::vector<Triangle> triangles = MeshIOUtils::create_triangles(meshData, _renderer.get_materials().count(), transform);
 
-    _renderer.set_triangles(triangles);
-    _renderer.set_materials(meshData.materials);
+    //_renderer.set_triangles(triangles);
+    //for(const Material& mat : meshData.materials.materials)
+        //_renderer.get_materials().materials.push_back(mat);
+    _renderer.get_materials().materials.push_back(Renderer::get_random_diffuse_pastel_material());
+    for (int i = 0; i < 30 * 30; i++)
+        _renderer.add_analytic_shape(Sphere(Point((std::rand() / (float)RAND_MAX * 2 - 1) * 5, -1.8f, (std::rand() / (float)RAND_MAX * -10) - 1), 0.3, 0));
     precompute_materials(_renderer.get_materials());
 
     //This is used to invalidate the cached object transform so that the
@@ -704,16 +708,18 @@ void MainWindow::on_add_sphere_button_clicked()
 
         if (ok_x && ok_y && ok_z)
             center = Point(x, y, z);
+        else
+            return;
     }
 
     radius = safe_text_to_float(this->ui->sphere_radius_edit->text());
     if (radius != -1)//The input was valid
     {
         _renderer.get_materials().materials.push_back(_added_sphere_material);
-        _renderer.add_sphere(Sphere(center, radius, _renderer.get_materials().materials.size() - 1));
+        _renderer.add_analytic_shape(Sphere(center, radius, _renderer.get_materials().materials.size() - 1));
     }
 
-    _added_sphere_material = Material();
+    _added_sphere_material = Renderer::DEFAULT_MATERIAL;
 }
 
 void MainWindow::on_sphere_center_edit_returnPressed() { on_add_sphere_button_clicked(); }
@@ -727,5 +733,91 @@ void MainWindow::on_edit_sphere_material_button_clicked()
         _added_sphere_material = material_dialog.get_material();
         return;
     }
+}
+
+void MainWindow::on_add_plane_button_clicked()
+{
+    Point point;
+    Vector normal;
+
+    QString plane_point_text = this->ui->plane_point_edit->text();
+    QStringList splitted = plane_point_text.split("/");
+    if (splitted.size() == 3)
+    {
+        bool ok_x, ok_y, ok_z;
+        float x = safe_text_to_float(splitted.at(0), ok_x);
+        float y = safe_text_to_float(splitted.at(1), ok_y);
+        float z = safe_text_to_float(splitted.at(2), ok_z);
+
+        if (ok_x && ok_y && ok_z)
+            point = Point(x, y, z);
+        else
+            return;
+    }
+
+    QString plane_normal_text = this->ui->plane_normal_edit->text();
+    splitted = plane_normal_text.split("/");
+    if (splitted.size() == 3)
+    {
+        bool ok_x, ok_y, ok_z;
+        float x = safe_text_to_float(splitted.at(0), ok_x);
+        float y = safe_text_to_float(splitted.at(1), ok_y);
+        float z = safe_text_to_float(splitted.at(2), ok_z);
+
+        if (ok_x && ok_y && ok_z)
+            normal = normalize(Vector(x, y, z));
+        else
+            return;
+    }
+
+    _renderer.get_materials().materials.push_back(_added_plane_material);
+    _renderer.add_analytic_shape(Plane(point, normal, _renderer.get_materials().materials.size() - 1));
+
+    _added_plane_material = Renderer::DEFAULT_PLANE_MATERIAL;
+}
+
+
+void MainWindow::on_plane_point_edit_returnPressed() { on_add_plane_button_clicked(); }
+void MainWindow::on_plane_normal_edit_returnPressed() { on_add_plane_button_clicked(); }
+
+void MainWindow::on_edit_plane_material_button_clicked()
+{
+    EditMaterialDialog material_dialog;
+    if (material_dialog.exec())
+    {
+        _added_plane_material = material_dialog.get_material();
+
+        return;
+    }
+}
+
+void MainWindow::on_add_random_sphere_button_clicked()
+{
+    float center_x = (std::rand() / (float)RAND_MAX * 2 - 1) * 5;//[-5; 5]
+    float center_z = std::rand() / (float)RAND_MAX * -11;//[-11; 0]
+
+    float choose_mat = std::rand() / (float)RAND_MAX;
+
+    Point center(center_x + std::rand() / (float)RAND_MAX, -2 + 0.2f, center_z + std::rand() / (float)RAND_MAX);
+    if (choose_mat < 0.8f)//Diffuse sphere
+    {
+        _renderer.get_materials().materials.push_back(Renderer::get_random_diffuse_pastel_material());
+        _renderer.add_analytic_shape(Sphere(center, 0.2f, _renderer.get_materials().count() - 1));
+    }
+//            else if (choose_mat < 0.95f)
+//            {
+//                metalSpheres.push_back({Sphere{center, 0.2f},
+//                                        Metal{0.5f*(1.f+rnd3f()),0.5f*rnd()}});
+//            }
+//            else //Glass sphere
+//                dielectricSpheres.push_back({Sphere{center, 0.2f},
+//                                             Dielectric{1.5f}});
+}
+
+
+void MainWindow::on_add_default_plane_button_clicked()
+{
+    _renderer.get_materials().materials.push_back(Renderer::DEFAULT_PLANE_MATERIAL);
+    _renderer.add_analytic_shape(Plane(Point(0, -2, 0), Vector(0, 1, 0), _renderer.get_materials().count() - 1));
 }
 

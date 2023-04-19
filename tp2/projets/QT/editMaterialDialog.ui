@@ -6,83 +6,24 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>489</width>
+    <width>517</width>
     <height>248</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
   </property>
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="4" column="2">
-    <widget class="QLineEdit" name="refraction_index_edit">
-     <property name="text">
-      <string>1</string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="0">
-    <widget class="QLabel" name="reflection_intensity_label">
-     <property name="text">
-      <string>Reflection intensity :</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="2">
-    <widget class="QPushButton" name="ambient_color_button">
-     <property name="text">
-      <string>Ambient color...</string>
-     </property>
-    </widget>
-   </item>
    <item row="3" column="0">
     <widget class="QLabel" name="shininess_label">
      <property name="text">
       <string>Shininess :</string>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="2">
-    <widget class="QLineEdit" name="shininess_edit">
-     <property name="text">
-      <string>10</string>
-     </property>
-    </widget>
-   </item>
-   <item row="5" column="2">
-    <spacer name="verticalSpacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>40</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
-   <item row="7" column="2">
-    <widget class="QDialogButtonBox" name="ok_cancel_button_box">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="0">
-    <widget class="QPushButton" name="emission_color_button">
-     <property name="text">
-      <string>Emission color...</string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="2">
-    <widget class="QLineEdit" name="reflection_intensity_edit">
-     <property name="text">
-      <string>0</string>
      </property>
     </widget>
    </item>
@@ -93,17 +34,57 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="0">
-    <widget class="QLabel" name="refraction_index_label">
-     <property name="text">
-      <string>Refraction index :</string>
+   <item row="0" column="3">
+    <widget class="ClickableColorQFrame" name="specular_color_frame">
+     <property name="minimumSize">
+      <size>
+       <width>90</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
      </property>
     </widget>
    </item>
-   <item row="0" column="0">
-    <widget class="QPushButton" name="diffuse_color_button">
+   <item row="1" column="1">
+    <widget class="ClickableColorQFrame" name="emission_color_frame">
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="2">
+    <widget class="QLineEdit" name="shininess_edit">
      <property name="text">
-      <string>Diffuse color...</string>
+      <string>10</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="2">
+    <widget class="QPushButton" name="ambient_color_button">
+     <property name="text">
+      <string>Ambient color...</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="2">
+    <widget class="QLineEdit" name="reflection_intensity_edit">
+     <property name="text">
+      <string>0</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="reflection_intensity_label">
+     <property name="text">
+      <string>Reflection intensity :</string>
      </property>
     </widget>
    </item>
@@ -144,29 +125,24 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="3">
-    <widget class="ClickableColorQFrame" name="specular_color_frame">
-     <property name="minimumSize">
-      <size>
-       <width>90</width>
-       <height>0</height>
-      </size>
-     </property>
-     <property name="frameShape">
-      <enum>QFrame::StyledPanel</enum>
-     </property>
-     <property name="frameShadow">
-      <enum>QFrame::Raised</enum>
+   <item row="4" column="0">
+    <widget class="QLabel" name="refraction_index_label">
+     <property name="text">
+      <string>Refraction index :</string>
      </property>
     </widget>
    </item>
-   <item row="1" column="1">
-    <widget class="ClickableColorQFrame" name="emission_color_frame">
-     <property name="frameShape">
-      <enum>QFrame::StyledPanel</enum>
+   <item row="0" column="0">
+    <widget class="QPushButton" name="diffuse_color_button">
+     <property name="text">
+      <string>Diffuse color...</string>
      </property>
-     <property name="frameShadow">
-      <enum>QFrame::Raised</enum>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QPushButton" name="emission_color_button">
+     <property name="text">
+      <string>Emission color...</string>
      </property>
     </widget>
    </item>
@@ -177,6 +153,59 @@
      </property>
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="2">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="4" column="2">
+    <widget class="QLineEdit" name="refraction_index_edit">
+     <property name="text">
+      <string>1</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="4">
+    <spacer name="horizontalSpacer">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeType">
+      <enum>QSizePolicy::Minimum</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>40</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="7" column="3">
+    <widget class="QPushButton" name="ok_button">
+     <property name="text">
+      <string>OK</string>
+     </property>
+     <property name="default">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="4">
+    <widget class="QPushButton" name="cancel_button">
+     <property name="text">
+      <string>Cancel</string>
      </property>
     </widget>
    </item>
@@ -193,34 +222,34 @@
  <resources/>
  <connections>
   <connection>
-   <sender>ok_cancel_button_box</sender>
-   <signal>accepted()</signal>
+   <sender>ok_button</sender>
+   <signal>clicked()</signal>
    <receiver>EditMaterialDialog</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>248</x>
-     <y>254</y>
+     <x>376</x>
+     <y>226</y>
     </hint>
     <hint type="destinationlabel">
-     <x>157</x>
-     <y>274</y>
+     <x>258</x>
+     <y>123</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>ok_cancel_button_box</sender>
-   <signal>rejected()</signal>
+   <sender>cancel_button</sender>
+   <signal>clicked()</signal>
    <receiver>EditMaterialDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>316</x>
-     <y>260</y>
+     <x>467</x>
+     <y>226</y>
     </hint>
     <hint type="destinationlabel">
-     <x>286</x>
-     <y>274</y>
+     <x>258</x>
+     <y>123</y>
     </hint>
    </hints>
   </connection>

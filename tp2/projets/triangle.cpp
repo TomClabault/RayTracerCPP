@@ -83,7 +83,7 @@ bool Triangle::intersect(const Ray& ray, HitInfo& hitInfo) const
     hitInfo.u = u;
     hitInfo.v = v;
     hitInfo.mat_index = _materialIndex;
-    hitInfo.normal_at_intersection = _normal;
+    hitInfo.normal_at_intersection = normalize(_normal);
     hitInfo.triangle = this;
 
     return true;

@@ -91,8 +91,8 @@ void triangle_intersections_tests()
     MeshIOData rubikData = read_meshio_data("data/rubik.obj");
     MeshIOData robotData = read_meshio_data("data/robot.obj");
 
-    std::vector<Triangle> rubik = MeshIOUtils::create_triangles(rubikData, Translation(Vector(-15, -20, -30)));
-    std::vector<Triangle> robot = MeshIOUtils::create_triangles(robotData, Translation(Vector(0, -2, -4)));
+    std::vector<Triangle> rubik = MeshIOUtils::create_triangles(rubikData, 0, Translation(Vector(-15, -20, -30)));
+    std::vector<Triangle> robot = MeshIOUtils::create_triangles(robotData, 0, Translation(Vector(0, -2, -4)));
 
     Triangle triangleA(Point(0, 0, 0), Point(1, 0, 0), Point(0, 1, 0));
     Triangle triangleB(Point(1, -1, -9), Point(-1, -1, -9), Point(-1, -1, -11));
