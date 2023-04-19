@@ -11,8 +11,10 @@
 #include <iostream>
 
 #include <QFileDialog>
+#include <thread>
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow), _display_thread_handle(this),
+    _render_thread_handle(this)
 {
     ui->setupUi(this);
 
@@ -43,6 +45,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     _renderer.set_skybox(read_image("./data/skybox.jpg", false));
     _renderer.render_settings().enable_skybox = true;
 
+    setup_render_display_context();
+    connect(&_display_thread_handle, &DisplayThread::update_image, this, &MainWindow::update_render_image);
+    connect(&_render_thread_handle, &RenderThread::update_image, this, &MainWindow::update_render_image);
+    _display_thread_handle.start();
+
     //Initializing the random generator here for later uses
     srand(time(NULL));
 }
@@ -50,75 +57,81 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 MainWindow::~MainWindow()
 {
     delete ui;
+
+    //Clean exit of the display thread
+    _display_thread_handle.quit();
+    _display_thread_handle.wait();
 }
 
-void MainWindow::handle_image_processing()
+void MainWindow::setup_render_display_context()
 {
-    if (_rendererd_image_allocated)
-    {
-        delete _renderered_image;
-
-        _rendererd_image_allocated = false;
-    }
-
-    if (_renderer.render_settings().enable_ssaa)
-    {
-        downscale_image(*_renderer.getImage(), &_renderered_image, _renderer.render_settings().ssaa_factor);
-        _rendererd_image_allocated = true;
-    }
-    else
-        _renderered_image = _renderer.getImage();
-
-    set_render_image(_renderered_image);
+    //_render_display_context._graphics_scene = new QGraphicsScene(this);
+    _render_display_context._graphics_view_zoom = new Graphics_view_zoom(ui->graphics_view);
 }
 
-void MainWindow::set_render_image(const Image* const image)
+void MainWindow::update_render_image()
 {
-    QGraphicsScene* scene = new QGraphicsScene(this);
+    _render_display_context._mutex.lock();
 
-    if (this->q_image != nullptr)
-        delete this->q_image;
+    Timer timer;
+    timer.start();
 
-#if QT_VERSION >= 0x060000
-    this->q_image = new QImage((uchar*)image->data(), image->width(), image->height(), QImage::Format_RGBA32FPx4);
-#else
-    //Because Qt5 doesn't have the QImage::Format_RGBA32FPx4 format which our image is encoded in
-    //we're converting our image to a Format_RGBA8888 which Qt5 supports
-    uchar* image_8888_data = new uchar[image->width() * image->height() * 4];
-    for (int i = 0; i < image->height(); i++)
+    if (_render_display_context._q_image != nullptr)
     {
-        for (int j = 0; j < image->width(); j++)
-        {
-            uchar r, g, b, a;
-            r = (uchar)(std::clamp(image->operator()(j, i).r, 0.0f, 1.0f) * 255);
-            g = (uchar)(std::clamp(image->operator()(j, i).g, 0.0f, 1.0f) * 255);
-            b = (uchar)(std::clamp(image->operator()(j, i).b, 0.0f, 1.0f) * 255);
-            a = (uchar)(std::clamp(image->operator()(j, i).a, 0.0f, 1.0f) * 255);
-
-            image_8888_data[(i * image->width() + j) * 4 + 0] = r;
-            image_8888_data[(i * image->width() + j) * 4 + 1] = g;
-            image_8888_data[(i * image->width() + j) * 4 + 2] = b;
-            image_8888_data[(i * image->width() + j) * 4 + 3] = a;
-        }
+        delete _render_display_context._q_image;
+        _render_display_context._q_image = nullptr;
     }
 
-    this->q_image = new QImage(image_8888_data, image->width(), image->height(), QImage::Format_RGBA8888);
-#endif
+    if (_render_display_context._q_image == nullptr)
+    {
+        #if QT_VERSION >= 0x060000
+        _render_display_context._q_image = new QImage((uchar*)_renderer.getImage()->data(), _renderer.getImage()->width(), _renderer.getImage()->height(), QImage::Format_RGBA32FPx4);
+        #else
+            //Because Qt5 doesn't have the QImage::Format_RGBA32FPx4 format which our image is encoded in
+            //we're converting our image to a Format_RGBA8888 which Qt5 supports
+            uchar* image_8888_data = new uchar[_renderer.getImage()->width() * _renderer.getImage()->height() * 4];
+            for (int i = 0; i < _renderer.getImage()->height(); i++)
+            {
+                for (int j = 0; j < _renderer.getImage()->width(); j++)
+                {
+                    uchar r, g, b, a;
+                    r = (uchar)(std::clamp(_renderer.getImage()->operator()(j, i).r, 0.0f, 1.0f) * 255);
+                    g = (uchar)(std::clamp(_renderer.getImage()->operator()(j, i).g, 0.0f, 1.0f) * 255);
+                    b = (uchar)(std::clamp(_renderer.getImage()->operator()(j, i).b, 0.0f, 1.0f) * 255);
+                    a = (uchar)(std::clamp(_renderer.getImage()->operator()(j, i).a, 0.0f, 1.0f) * 255);
+
+                    image_8888_data[(i * _renderer.getImage()->width() + j) * 4 + 0] = r;
+                    image_8888_data[(i * _renderer.getImage()->width() + j) * 4 + 1] = g;
+                    image_8888_data[(i * _renderer.getImage()->width() + j) * 4 + 2] = b;
+                    image_8888_data[(i * _renderer.getImage()->width() + j) * 4 + 3] = a;
+                }
+            }
+
+            this->q_image = new QImage(image_8888_data, _renderer.getImage()->width(), _renderer.getImage()->height(), QImage::Format_RGBA8888);
+        #endif
+    }
 
 //Flipping the image because our ray tracer produces flipped images
 #if QT_VERSION >= 0x060000
-    this->q_image->mirror();
+    _render_display_context._q_image->mirror();
 #else
-    QImage mirrored = this->q_image->mirrored();
-    delete q_image;
-    q_image = new QImage(mirrored);
+    QImage mirrored = _render_display_context._q_image->mirrored();
+    delete _render_display_context._q_image;
+    _render_display_context._q_image = new QImage(mirrored);
 #endif
-    scene->addPixmap(QPixmap::fromImage(*this->q_image));
+    if (_render_display_context._graphics_scene != nullptr)
+        delete _render_display_context._graphics_scene;
+    _render_display_context._graphics_scene = new QGraphicsScene(this);
 
-    if (this->graphics_view_zoom != nullptr)
-        delete this->graphics_view_zoom;
-    this->graphics_view_zoom = new Graphics_view_zoom(ui->graphics_view);
-    this->ui->graphics_view->setScene(scene);
+    _render_display_context._graphics_scene->clear();
+    _render_display_context._graphics_scene->addPixmap(QPixmap::fromImage(*_render_display_context._q_image));
+    QPixmap map = QPixmap::fromImage(*_render_display_context._q_image);
+
+    this->ui->graphics_view->setScene(_render_display_context._graphics_scene);
+
+    timer.stop();
+    std::cout << timer.elapsed() << "ms" << std::endl;
+    _render_display_context._mutex.unlock();
 }
 
 void MainWindow::prepare_bvh()
@@ -191,14 +204,9 @@ void MainWindow::prepare_renderer_buffers()
             _renderer.destroy_ssao_buffers();
     }
 
-    //Clearing the buffers only if rasterizing because if we're using ray tracing
-    //it's going to overwrite everything anyway
-    if (_renderer.render_settings().hybrid_rasterization_tracing)
-    {
-        _renderer.clear_z_buffer();
-        _renderer.clear_normal_buffer();
-        _renderer.clear_image();
-    }
+    _renderer.clear_z_buffer();
+    _renderer.clear_normal_buffer();
+    _renderer.clear_image();
 }
 
 void MainWindow::transform_object()
@@ -222,6 +230,9 @@ void MainWindow::build_camera_to_world_matrix()
 
 void MainWindow::on_render_button_clicked()
 {
+    if (_render_going)
+        return;
+
     std::stringstream ss;
 
     Timer timer;
@@ -237,26 +248,9 @@ void MainWindow::on_render_button_clicked()
     build_camera_to_world_matrix();
     timer.stop();
     ss << std::endl << "Object transformation time: " << timer.elapsed() << "ms" << std::endl;
-
-    timer.start();
-    if (_renderer.render_settings().hybrid_rasterization_tracing)
-        _renderer.raster_trace();
-    else
-        _renderer.ray_trace();
-
-    timer.stop();
-    ss << "Render time: " << timer.elapsed() << "ms" << std::endl;
-
-    timer.start();
-    _renderer.post_process();
-    timer.stop();
-    ss << "Post-processing time: " << timer.elapsed() << "ms";
-
-    //Allocates the image buffer, downscales the image if SSAA was used, ....
-    //and finally display the rendered image in the QGraphicsView
-    handle_image_processing();
-
     write_to_console(ss);
+
+    _render_thread_handle.start();
 }
 
 void MainWindow::precompute_materials(Materials& materials)
@@ -311,6 +305,11 @@ void MainWindow::write_to_console(const std::stringstream& ss)
     this->ui->output_console->ensureCursorVisible();
 }
 
+bool MainWindow::get_render_going() { return _render_going; }
+void MainWindow::set_render_going(bool render_going) { _render_going = render_going; }
+
+Renderer& MainWindow::get_renderer() { return _renderer; }
+
 void MainWindow::on_load_robot_obj_button_clicked()
 {
     load_obj("./data/Robot/robot.obj", Identity());
@@ -346,7 +345,7 @@ void MainWindow::on_dump_render_to_file_button_clicked()
     if (filename == "")
         return;
 
-    this->q_image->save(filename);
+    this->_render_display_context._q_image->save(filename);
 }
 
 void MainWindow::on_render_width_edit_returnPressed() { on_render_button_clicked(); }
@@ -717,7 +716,7 @@ void MainWindow::on_add_sphere_button_clicked()
     if (radius != -1)//The input was valid
     {
         _renderer.get_materials().materials.push_back(_added_sphere_material);
-        _renderer.add_analytic_shape(Sphere(center, radius, _renderer.get_materials().materials.size() - 1));
+        _renderer.add_analytic_shape(Sphere(center, radius, (int)(_renderer.get_materials().materials.size() - 1)));
     }
 
     _added_sphere_material = Renderer::DEFAULT_MATERIAL;
@@ -772,7 +771,7 @@ void MainWindow::on_add_plane_button_clicked()
     }
 
     _renderer.get_materials().materials.push_back(_added_plane_material);
-    _renderer.add_analytic_shape(Plane(point, normal, _renderer.get_materials().materials.size() - 1));
+    _renderer.add_analytic_shape(Plane(point, normal, (int)(_renderer.get_materials().materials.size() - 1)));
 
     _added_plane_material = Renderer::DEFAULT_PLANE_MATERIAL;
 }

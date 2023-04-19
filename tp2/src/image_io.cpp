@@ -97,37 +97,6 @@ Image tone( const Image& image, const float saturation, const float gamma )
     return tmp;
 }
 
-void downscale_image(const Image& image, Image** downscaled_output, const int factor)
-{
-    if (image.width() % factor != 0)
-        std::cout << "Image width isn't divisible by the factor";
-
-    if (image.height() % factor != 0) 
-        std::cout << "Image height isn't divisible by the factor";
-
-
-    int downscaled_width = image.width() / factor;
-    int downscaled_height = image.height() / factor;
-    *downscaled_output = new Image(downscaled_width, downscaled_height);
-
-#pragma omp parallel for
-    for (int y = 0; y < downscaled_height; y++)
-    {
-        for (int x = 0; x < downscaled_width; x++)
-        {
-            Color average;
-
-            for (int i = 0; i < factor; i++)
-                for (int j = 0; j < factor; j++)
-                    average = average + image(x * factor + j, y * factor + i);
-
-            average = average / (factor * factor);
-
-            (*downscaled_output)->operator()(x, y) = average;
-        }
-    }
-}
-
 Image read_image( const char *filename, const bool flipY )
 {
     stbi_set_flip_vertically_on_load(flipY);

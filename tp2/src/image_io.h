@@ -1,4 +1,3 @@
-
 #ifndef _IMAGE_IO_H
 #define _IMAGE_IO_H
 
@@ -32,9 +31,6 @@ Image inverse_gamma( const Image& image, const float g= float(2.2) );
 float range( const Image& image );
 //! correction de l'exposition d'une image + transformation gamma.
 Image tone( const Image& image, const float saturation, const float gamma= float(2.2) );
-
-//! Downscales an image by the given factor and stores the result in the downscaled_output parameter.
-void downscale_image(const Image& image, Image** downscaled_output, const int factor);
 
 ///@}
 #endif

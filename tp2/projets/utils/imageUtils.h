@@ -1,9 +1,12 @@
 #ifndef COLOR_UTILS_H
 #define COLOR_UTILS_H
 
-#include <cmath>
+#include "image.h"
 
-class ColorUtils
+#include <cmath>
+#include <iostream>
+
+class ImageUtils
 {
 public:
 
@@ -46,6 +49,46 @@ public:
         R += M;
         G += M;
         B += M;
+    }
+
+    //! Downscales an image by the given factor and stores the result in the downscaled_output parameter.
+    static void downscale_image(const Image& input_image, Image& downscaled_output, const int factor)
+    {
+        if (input_image.width() % factor != 0)
+        {
+            std::cerr << "Image width isn't divisible by the factor";
+
+            return;
+        }
+
+        if (input_image.height() % factor != 0)
+        {
+            std::cerr << "Image height isn't divisible by the factor";
+
+            return;
+        }
+
+
+        int downscaled_width = input_image.width() / factor;
+        int downscaled_height = input_image.height() / factor;
+        downscaled_output = Image(downscaled_width, downscaled_height);
+
+#pragma omp parallel for
+        for (int y = 0; y < downscaled_height; y++)
+        {
+            for (int x = 0; x < downscaled_width; x++)
+            {
+                Color average;
+
+                for (int i = 0; i < factor; i++)
+                    for (int j = 0; j < factor; j++)
+                        average = average + input_image(x * factor + j, y * factor + i);
+
+                average = average / (factor * factor);
+
+                downscaled_output(x, y) = average;
+            }
+        }
     }
 };
 

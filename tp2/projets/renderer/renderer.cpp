@@ -1,4 +1,4 @@
-#include "colorUtils.h"
+#include "imageUtils.h"
 #include "m256Point.h"
 #include "m256Vector.h"
 #include "m256Utils.h"
@@ -68,7 +68,7 @@ Material Renderer::get_random_diffuse_pastel_material()
     float lightness = 0.75f;
 
     float r, g, b;
-    ColorUtils::HSLtoRGB(r, g, b, random_hue, saturation, lightness);
+    ImageUtils::HSLtoRGB(r, g, b, random_hue, saturation, lightness);
 
     mat.diffuse = Color(r, g, b);
 
@@ -428,6 +428,11 @@ Color Renderer::shade_ray_inter_point(const Ray& ray, const HitInfo& hit_info) c
     else if (_render_settings.shading_method == RenderSettings::ShadingMethod::VISUALIZE_AO)
         final_color = shade_visualize_ao(*hit_info.triangle, hit_info.u, hit_info.v);
 
+
+    final_color.r = std::clamp(final_color.r, 0.0f, 1.0f);
+    final_color.g = std::clamp(final_color.g, 0.0f, 1.0f);
+    final_color.b = std::clamp(final_color.b, 0.0f, 1.0f);
+    final_color.a = 1.0f;//We don't need alpha now so forcing it to 1
     return final_color;
 }
 
@@ -848,20 +853,17 @@ Color Renderer::trace_ray(const Ray& ray, HitInfo& final_hit_info, bool& interse
         }, analytic_shape);
     }
 
-    Color finalColor;
-
     if (final_hit_info.t > 0)//We found an intersection
     {
         intersection_found = true;
 
-        finalColor = shade_ray_inter_point(ray, local_hit_info);
+        Color final_color = shade_ray_inter_point(ray, local_hit_info);
+        final_color.r = std::clamp(final_color.r, 0.0f, 1.0f);
+        final_color.g = std::clamp(final_color.g, 0.0f, 1.0f);
+        final_color.b = std::clamp(final_color.b, 0.0f, 1.0f);
+        final_color.a = 1.0f;//We don't need alpha now so forcing it to 1
 
-        finalColor.a = 1.0;//This should be illegal but since we're not interested in the alpha anyway...
-        //This eliminates the problem of the alpha value being > 4, > 5 or more due
-        //to the fact that we are adding color to compute the color of a shaded point
-        //but adding colors together also adds the alpha channel.
-        //Qt then displays incorrect colors if the alpha is not between 0 and 1
-        return finalColor;
+        return final_color;
     }
     else
     {
@@ -882,7 +884,7 @@ void Renderer::ray_trace()
     int render_width, render_height;
     get_render_width_height(_render_settings, render_width, render_height);
 
-#pragma omp parallel for schedule(dynamic)
+//#pragma omp parallel for schedule(dynamic)
     for (int py = 0; py < render_height; py++)
     {
         //Adding 0.5 to consider the center of the pixel
@@ -922,6 +924,16 @@ void Renderer::post_process()
 {
     if (_render_settings.enable_ssao)
         post_process_ssao_SIMD();
+    if (_render_settings.enable_ssaa)
+        apply_ssaa();
+}
+
+void Renderer::apply_ssaa()
+{
+    Image downscaled_image;
+    ImageUtils::downscale_image(_image, downscaled_image, _render_settings.ssaa_factor);
+
+    _image = downscaled_image;
 }
 
 void Renderer::post_process_ssao_scalar()

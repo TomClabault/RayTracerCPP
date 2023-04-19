@@ -6,11 +6,61 @@
 #include "graphicsViewZoom.h"
 #include "renderer.h"
 
+#include <mutex>
 #include <sstream>
+#include <thread>
+
+#include <QThread>
+
+class MainWindow;
+
+class DisplayThread : public QThread
+{
+    Q_OBJECT
+
+public:
+    DisplayThread(MainWindow* main_window);
+
+    void run() override;
+
+signals:
+    void update_image();
+
+private:
+    MainWindow* _main_window;
+};
+
+class RenderThread : public QThread
+{
+    Q_OBJECT
+
+public:
+    RenderThread(MainWindow* main_window);
+
+    void run() override;
+
+signals:
+    void update_image();
+
+private:
+    MainWindow* _main_window;
+
+    std::stringstream _ss;
+};
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
+
+struct RenderDisplayContext
+{
+    QGraphicsScene* _graphics_scene = nullptr;
+    Graphics_view_zoom* _graphics_view_zoom = nullptr;
+
+    QImage* _q_image = nullptr;
+
+    std::mutex _mutex;
+};
 
 class MainWindow : public QMainWindow
 {
@@ -20,8 +70,9 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-    void handle_image_processing();
-    void set_render_image(const Image* const image);
+    void setup_render_display_context();
+
+    void update_render_image();
 
     void prepare_bvh();
     void prepare_renderer_buffers();
@@ -39,6 +90,15 @@ public:
     Image load_texture_map(const char* filepath);
 
     void write_to_console(const std::stringstream& ss);
+
+    bool get_render_going();
+    void set_render_going(bool render_going);
+
+    Renderer& get_renderer();
+
+private:
+    Transform get_object_transform_from_edits();
+    Transform get_camera_transform_from_edits();
 
 private slots:
     void on_render_button_clicked();
@@ -89,9 +149,6 @@ private slots:
 
     void on_load_obj_file_button_clicked();
 
-    Transform get_object_transform_from_edits();
-    Transform get_camera_transform_from_edits();
-
     void on_object_translation_edit_returnPressed();
     void on_object_rotation_edit_returnPressed();
     void on_object_scale_edit_returnPressed();
@@ -141,13 +198,12 @@ private:
     Vector _cached_object_transform_scale;
 
     Renderer _renderer;
-    QImage* q_image = nullptr;//QImage displayed on the screen
 
-    bool _rendererd_image_allocated = false;//Whether or not we need to delete the image
-    //before allocating a new one to free the old memory
-    Image* _renderered_image = nullptr;//Image buffer of the image
-    //displayed on the screen
+    bool _render_going = false;//Whether or not a render is on-going.
+    //Used by the render thread to know if the display should be updated or not
 
-    Graphics_view_zoom* graphics_view_zoom = nullptr;
+    DisplayThread _display_thread_handle;//Thread that refreshes the display on the Qt interface
+    RenderThread _render_thread_handle;//Thread that runs the ray tracing renderer
+    RenderDisplayContext _render_display_context;
 };
 #endif // MAINWINDOW_H

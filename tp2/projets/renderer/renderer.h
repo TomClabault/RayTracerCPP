@@ -132,6 +132,15 @@ public:
 	void post_process();
 
     /**
+     * @brief Takes the current frame buffer and downscales it according
+     * to the specified SSAA factor of the render settings. The frame buffer
+     * is then recreated with the proper size (and the proper anti-aliased look).
+     * The old framebuffer (that is 'SSAA_factor' times larger than the final image)
+     * is lost.
+     */
+    void apply_ssaa();
+
+    /**
      * @brief Applies screen space ambient occlusion
      */
     void post_process_ssao_SIMD();
