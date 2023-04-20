@@ -881,6 +881,8 @@ Color Renderer::trace_ray(const Ray& ray, HitInfo& final_hit_info, bool& interse
     }
 }
 
+//TODO probleme de graphics scene qui se resize bizaremment des fois
+
 void Renderer::ray_trace()
 {
     int render_width, render_height;
