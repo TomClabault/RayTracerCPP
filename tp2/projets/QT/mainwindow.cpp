@@ -41,10 +41,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     //Initializing the light's position
     on_light_position_edit_editingFinished();
 
-    //Enabling the skybox by default
-    _renderer.set_skybox(read_image("./data/skybox.jpg", false));
-    _renderer.render_settings().enable_skybox = true;
-
     setup_render_display_context();
     connect(&_display_thread_handle, &DisplayThread::update_image, this, &MainWindow::update_render_image);
     connect(&_render_thread_handle, &RenderThread::update_image, this, &MainWindow::update_render_image);
@@ -291,9 +287,12 @@ void MainWindow::load_obj(const char* filepath, Transform transform)
     write_to_console(ss);
 }
 
+//TODO les obj qui sortent de blender sont tout noir --> normals buguees ???
+//TODO opti le display thread en utilisant une QImage dans le renderer ? pour ne pas avoir a faire la conversion vers les float a chaque fois
+
 Image MainWindow::load_texture_map(const char* filepath)
 {
-    return read_image(filepath, true);
+    return read_image(filepath, false);
 }
 
 void MainWindow::write_to_console(const std::stringstream& ss)
@@ -478,7 +477,7 @@ void MainWindow::on_load_ao_map_button_clicked()
         _renderer.set_ao_map(ao_map);
 
         QStringList split_path = file_path.split("/");
-        this->ui->ao_map_edit->setText(split_path[split_path.size() - 1]);
+        this->ui->ao_map_loaded_edit->setText(split_path[split_path.size() - 1]);
     }
 }
 
@@ -498,7 +497,7 @@ void MainWindow::on_load_diffuse_map_button_clicked()
         _renderer.set_diffuse_map(diffuse_map);
 
         QStringList split_path = file_path.split("/");
-        this->ui->diffuse_map_edit->setText(split_path[split_path.size() - 1]);
+        this->ui->diffuse_map_loaded_edit->setText(split_path[split_path.size() - 1]);
     }
 }
 
@@ -524,6 +523,7 @@ bool MainWindow::object_transform_edits_changed()
     if (translation.size() == 3)
     {
         bool ok_x, ok_y, ok_z;
+        //TODO facto les 3 lignes qui suivent en 1 fonction
         float x = safe_text_to_float(translation.at(0), ok_x);
         float y = safe_text_to_float(translation.at(1), ok_y);
         float z = safe_text_to_float(translation.at(2), ok_z);
@@ -652,7 +652,7 @@ void MainWindow::on_ao_map_check_box_stateChanged(int checked)
     _renderer.render_settings().enable_ao_mapping = checked;
 
     this->ui->load_ao_map_button->setEnabled(checked);
-    this->ui->ao_map_edit->setEnabled(checked);
+    this->ui->ao_map_loaded_edit->setEnabled(checked);
 }
 
 void MainWindow::on_diffuse_map_check_box_stateChanged(int checked)
@@ -660,7 +660,7 @@ void MainWindow::on_diffuse_map_check_box_stateChanged(int checked)
     _renderer.render_settings().enable_diffuse_mapping = checked;
 
     this->ui->load_diffuse_map_button->setEnabled(checked);
-    this->ui->diffuse_map_edit->setEnabled(checked);
+    this->ui->diffuse_map_loaded_edit->setEnabled(checked);
 }
 
 void MainWindow::on_ssao_1_check_box_stateChanged(int checked)
@@ -686,8 +686,8 @@ void MainWindow::on_enable_diffuse_checkbox_stateChanged(int checked) { _rendere
 void MainWindow::on_enable_specular_checkbox_stateChanged(int checked) { _renderer.render_settings().enable_specular = checked; }
 void MainWindow::on_enable_emissive_checkbox_stateChanged(int checked) { _renderer.render_settings().enable_emissive = checked; }
 
-void MainWindow::on_clear_diffuse_map_button_clicked() { _renderer.clear_diffuse_map(); this->ui->diffuse_map_edit->clear(); }
-void MainWindow::on_clear_ao_map_button_clicked(){ _renderer.clear_ao_map(); this->ui->ao_map_edit->clear(); }
+void MainWindow::on_clear_diffuse_map_button_clicked() { _renderer.clear_diffuse_map(); this->ui->diffuse_map_loaded_edit->setText("no diffuse map loaded"); }
+void MainWindow::on_clear_ao_map_button_clicked(){ _renderer.clear_ao_map(); this->ui->ao_map_loaded_edit->setText("no ao map loaded"); }
 
 void MainWindow::on_clear_scene_button_clicked() { _renderer.clear_geometry(); }
 
@@ -803,6 +803,7 @@ void MainWindow::on_add_random_sphere_button_clicked()
         _renderer.get_materials().materials.push_back(Renderer::get_random_diffuse_pastel_material());
         _renderer.add_analytic_shape(Sphere(center, 0.2f, _renderer.get_materials().count() - 1));
     }
+    //TODO more random sphere materials here
 //            else if (choose_mat < 0.95f)
 //            {
 //                metalSpheres.push_back({Sphere{center, 0.2f},
@@ -813,10 +814,145 @@ void MainWindow::on_add_random_sphere_button_clicked()
 //                                             Dielectric{1.5f}});
 }
 
-
 void MainWindow::on_add_default_plane_button_clicked()
 {
     _renderer.get_materials().materials.push_back(Renderer::DEFAULT_PLANE_MATERIAL);
     _renderer.add_analytic_shape(Plane(Point(0, -2, 0), Vector(0, 1, 0), _renderer.get_materials().count() - 1));
 }
 
+void MainWindow::on_load_skybox_button_clicked()
+{
+    QFileDialog dialog(this, "Open skybox folder");
+    dialog.setFileMode(QFileDialog::Directory);
+
+    if (dialog.exec())
+    {
+        QString folder_path = dialog.selectedFiles()[0];
+
+        QDir skybox_directory(folder_path);
+        QStringList files = skybox_directory.entryList();
+
+        if (files.size() < 6)
+            return;
+        else
+        {
+            //right, left, top, bottom, back, front
+            Image faces[6];
+            bool found[6] = {false, false, false, false, false, false};
+
+            for (QString file : files)
+            {
+                std::string file_path = skybox_directory.absolutePath().toStdString() + "/" + file.toStdString();
+
+                if ((file.endsWith("right.jpg") || file.endsWith("right.png")) &&!found[0])
+                {
+                    faces[0] = load_texture_map(file_path.c_str());
+                    found[0] = true;
+                }
+                else if ((file.endsWith("left.jpg") || file.endsWith("left.png")) &&!found[1])
+                {
+                    faces[1] = load_texture_map(file_path.c_str());
+                    found[1] = true;
+                }
+                else if ((file.endsWith("top.jpg") || file.endsWith("top.png")) &&!found[2])
+                {
+                    faces[2] = load_texture_map(file_path.c_str());
+                    found[2] = true;
+                }
+                else if ((file.endsWith("bottom.jpg") || file.endsWith("bottom.png")) && !found[3])
+                {
+                    faces[3] = load_texture_map(file_path.c_str());
+                    found[3] = true;
+                }
+                else if ((file.endsWith("back.jpg") || file.endsWith("back.png")) &&!found[4])
+                {
+                    faces[4] = load_texture_map(file_path.c_str());
+                    found[4] = true;
+                }
+                else if ((file.endsWith("front.jpg") || file.endsWith("front.png")) &&!found[5])
+                {
+                    faces[5] = load_texture_map(file_path.c_str());
+                    found[5] = true;
+                }
+            }
+
+            //Cjecking that all the faces were found in the folder
+            char faces_name[6][8] = {"right", "left", "top", "bottom", "back", "front"};
+            for (int i = 0; i < 6; i++)
+            {
+                //If one face wasn't found
+                if (!found[i])
+                {
+                    std::stringstream ss;
+                    ss << "The face '" << faces_name[i] << "' wasn't found in the given folder. "
+                                                           "The folder must contains six images named "
+                                                           "'right', 'left', 'top', 'bottom', 'back', 'front' "
+                                                           "that all have the extension .jpg or .png.";
+
+                    write_to_console(ss);
+
+                    return;
+                }
+            }
+
+            _renderer.set_skybox(Skybox(faces));
+
+            QStringList split_path = folder_path.split("/");
+            this->ui->skybox_loaded_edit->setText(split_path[split_path.size() - 1] + "/");
+        }
+    }
+}
+
+void MainWindow::on_clear_skybox_button_clicked()
+{
+    _renderer.render_settings().enable_skybox = false;
+
+    _renderer.set_skybox(Skybox());
+    this->ui->skybox_loaded_edit->setText("no skybox loaded");
+}
+
+void MainWindow::on_load_skysphere_button_clicked()
+{
+    QFileDialog dialog(this, "Open Skysphere Image");
+    dialog.setFileMode(QFileDialog::ExistingFile);
+    dialog.setNameFilter(tr("Image File (*.png *.jpg)"));
+
+    if (dialog.exec())
+    {
+        QStringList files = dialog.selectedFiles();
+        QString file_path = files[0];
+
+        Image skysphere_tex = load_texture_map(file_path.toStdString().c_str());//TODO Image pas en float c'est trop lourd
+
+        _renderer.set_skysphere(skysphere_tex);
+
+        QStringList split_path = file_path.split("/");
+        this->ui->skysphere_loaded_edit->setText(split_path[split_path.size() - 1]);
+    }
+}
+
+void MainWindow::on_clear_skysphere_button_clicked()
+{
+    _renderer.render_settings().enable_skysphere = false;
+
+    _renderer.set_skysphere(Image());
+    this->ui->skysphere_loaded_edit->setText("no skysphere loaded");
+}
+
+
+void MainWindow::on_skysphere_radio_button_toggled(bool checked)
+{
+    _renderer.render_settings().enable_skysphere = checked;
+
+    this->ui->load_skysphere_button->setEnabled(checked);
+    this->ui->skysphere_loaded_edit->setEnabled(checked);
+}
+
+void MainWindow::on_skybox_radio_button_toggled(bool checked)
+{
+    _renderer.render_settings().enable_skybox = checked;
+
+    this->ui->load_skybox_button->setEnabled(checked);
+    this->ui->skybox_loaded_edit->setEnabled(checked);
+}
+void MainWindow::on_no_sky_texture_button_toggled(bool checked) { if (checked) _renderer.render_settings().enable_skybox = _renderer.render_settings().enable_skysphere = false; }

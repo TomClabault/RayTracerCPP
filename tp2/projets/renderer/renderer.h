@@ -10,7 +10,7 @@
 #include "materials.h"
 #include "rendererSettings.h"
 #include "scene/scene.h"
-
+#include "skybox.h"
 
 class Renderer
 {
@@ -66,7 +66,8 @@ public:
 
     void set_ao_map(const Image& ao_map);
     void set_diffuse_map(const Image& diffuse_map);
-    void set_skybox(const Image& skybox);
+    void set_skysphere(const Image& skybox);
+    void set_skybox(const Skybox& skybox);
 
     void clear_ao_map();
     void clear_diffuse_map();
@@ -257,7 +258,8 @@ private:
 	Image _image;
     Image _ao_map;
     Image _diffuse_map;
-    Image _skybox;
+    Image _skysphere;
+    Skybox _skybox;
 
 	Scene _scene;
 };

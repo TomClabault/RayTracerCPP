@@ -183,6 +183,20 @@ private slots:
 
     void on_add_default_plane_button_clicked();
 
+    void on_load_skybox_button_clicked();
+
+    void on_load_skysphere_button_clicked();
+
+    void on_clear_skybox_button_clicked();
+
+    void on_clear_skysphere_button_clicked();
+
+    void on_skysphere_radio_button_toggled(bool checked);
+
+    void on_skybox_radio_button_toggled(bool checked);
+
+    void on_no_sky_texture_button_toggled(bool checked);
+
 private:
     Ui::MainWindow *ui;
 

@@ -4,7 +4,6 @@
 #include "m256Utils.h"
 #include "mat.h"
 #include "renderer.h"
-#include "timer.h"
 #include "xorshift.h"
 
 #include <cmath>
@@ -181,7 +180,8 @@ void Renderer::set_light_position(const Point& position) { _scene._point_light._
 
 void Renderer::set_ao_map(const Image& ao_map) { _ao_map = ao_map; }
 void Renderer::set_diffuse_map(const Image& diffuse_map) { _diffuse_map = diffuse_map; }
-void Renderer::set_skybox(const Image& skybox) { _skybox = skybox; }
+void Renderer::set_skysphere(const Image& skybox) { _skysphere = skybox; }
+void Renderer::set_skybox(const Skybox& skybox) { _skybox = skybox; }
 
 void Renderer::clear_ao_map() { _ao_map = Image(); }
 void Renderer::clear_diffuse_map() { _diffuse_map = Image(); }
@@ -414,7 +414,7 @@ Color Renderer::shade_ray_inter_point(const Ray& ray, const HitInfo& hit_info) c
         if (hit_material.reflection > 0.0f)
             final_color = (1 - hit_material.reflection) * final_color + compute_reflection(ray, hit_info) * hit_material.reflection;
 
-        final_color = final_color + Renderer::AMBIENT_COLOR * hit_material.ambient_coeff * _render_settings.enable_ambient;
+        final_color = final_color + Renderer::AMBIENT_COLOR * hit_material.ambient_coeff * (1 - hit_material.reflection) * _render_settings.enable_ambient;
     }
     else if (_render_settings.shading_method == RenderSettings::ShadingMethod::ABS_NORMALS_SHADING)
         //Color triangles with std::abs(normal)
@@ -867,13 +867,15 @@ Color Renderer::trace_ray(const Ray& ray, HitInfo& final_hit_info, bool& interse
     }
     else
     {
-        if (_render_settings.enable_skybox)
+        if (_render_settings.enable_skysphere)
         {
             float u = 0.5 + std::atan2(-ray._direction.z, -ray._direction.x) / (2 * M_PI);
             float v = 0.5 + std::asin(-ray._direction.y) / M_PI;
 
-            return sample_texture(_skybox, u, v);
+            return sample_texture(_skysphere, u, v);
         }
+        else if (_render_settings.enable_skybox)
+            return _skybox.sample(ray._direction);
         else
             return Renderer::BACKGROUND_COLOR;
     }
@@ -884,7 +886,7 @@ void Renderer::ray_trace()
     int render_width, render_height;
     get_render_width_height(_render_settings, render_width, render_height);
 
-//#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)
     for (int py = 0; py < render_height; py++)
     {
         //Adding 0.5 to consider the center of the pixel

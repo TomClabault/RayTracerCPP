@@ -87,7 +87,8 @@ struct RenderSettings
     bool enable_diffuse_mapping = false;
     //Whether or not to sample the background color from a texture or not
     //If false, the background color of the scene will be a plain color
-    bool enable_skybox = true;
+    bool enable_skysphere = false;//Mapping from equirectangular image to skysphere
+    bool enable_skybox = true;//Mapping from cube map to skybox
 
     friend std::ostream& operator << (std::ostream& os, const RenderSettings& settings);
 };
