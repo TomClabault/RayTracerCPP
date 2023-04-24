@@ -855,7 +855,7 @@ Color Renderer::trace_ray(const Ray& ray, HitInfo& final_hit_info, bool& interse
     {
         intersection_found = true;
 
-        Color final_color = shade_ray_inter_point(ray, local_hit_info);
+        Color final_color = shade_ray_inter_point(ray, final_hit_info);
         final_color.r = std::clamp(final_color.r, 0.0f, 1.0f);
         final_color.g = std::clamp(final_color.g, 0.0f, 1.0f);
         final_color.b = std::clamp(final_color.b, 0.0f, 1.0f);

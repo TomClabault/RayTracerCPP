@@ -77,6 +77,7 @@ void MainWindow::update_render_image()
     //and that new update events should be sent yet to avoid
     //overloading the MainWindow thread (the Qt UI thread basically)
     _display_thread_handle.set_update_ongoing(true);
+    //TODO clean comments
 //    if (_render_display_context._q_image == nullptr)
 //    {
 //        #if QT_VERSION >= 0x060000
@@ -212,9 +213,11 @@ void MainWindow::prepare_renderer_buffers()
 
     _renderer.clear_z_buffer();
     _renderer.clear_normal_buffer();
-
-    if (_renderer.render_settings().hybrid_rasterization_tracing)
-        _renderer.clear_image();
+    //Note that we're clear the image buffer even if we're going to
+    //use the full ray tracing approach because this makes the 'live display updater'
+    //handled by the dispplay thread more 'impressive'. You can see the image being drawn
+    //from nothing instead of it being drawn on top of the previous one
+    _renderer.clear_image();
 }
 
 void MainWindow::transform_object()
