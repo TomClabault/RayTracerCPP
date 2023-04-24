@@ -41,6 +41,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     //Initializing the light's position
     on_light_position_edit_editingFinished();
 
+    load_skybox_into_renderer("data/skybox");
+    _renderer.render_settings().enable_skybox = true;
+
     setup_render_display_context();
     connect(&_display_thread_handle, &DisplayThread::update_image, this, &MainWindow::update_render_image);
     connect(&_render_thread_handle, &RenderThread::update_image, this, &MainWindow::update_render_image);
@@ -70,49 +73,51 @@ void MainWindow::update_render_image()
     Timer timer;
     timer.start();
 
-    if (_render_display_context._q_image != nullptr)
-    {
-        delete _render_display_context._q_image;
-        _render_display_context._q_image = nullptr;
-    }
+    //Indicate the display thread that the update is ongoing
+    //and that new update events should be sent yet to avoid
+    //overloading the MainWindow thread (the Qt UI thread basically)
+    _display_thread_handle.set_update_ongoing(true);
+//    if (_render_display_context._q_image == nullptr)
+//    {
+//        #if QT_VERSION >= 0x060000
+//        _render_display_context._q_image = new QImage((uchar*)_renderer.get_image()->data(), _renderer.get_image()->width(), _renderer.get_image()->height(), QImage::Format_RGBA32FPx4);
+//        #else
+//            //Because Qt5 doesn't have the QImage::Format_RGBA32FPx4 format which our image is encoded in
+//            //we're converting our image to a Format_RGBA8888 which Qt5 supports
+//            uchar* image_8888_data = new uchar[_renderer.getImage()->width() * _renderer.getImage()->height() * 4];
+//            for (int i = 0; i < _renderer.getImage()->height(); i++)
+//            {
+//                for (int j = 0; j < _renderer.getImage()->width(); j++)
+//                {
+//                    uchar r, g, b, a;
+//                    r = (uchar)(std::clamp(_renderer.getImage()->operator()(j, i).r, 0.0f, 1.0f) * 255);
+//                    g = (uchar)(std::clamp(_renderer.getImage()->operator()(j, i).g, 0.0f, 1.0f) * 255);
+//                    b = (uchar)(std::clamp(_renderer.getImage()->operator()(j, i).b, 0.0f, 1.0f) * 255);
+//                    a = (uchar)(std::clamp(_renderer.getImage()->operator()(j, i).a, 0.0f, 1.0f) * 255);
 
-    if (_render_display_context._q_image == nullptr)
-    {
-        #if QT_VERSION >= 0x060000
-        _render_display_context._q_image = new QImage((uchar*)_renderer.getImage()->data(), _renderer.getImage()->width(), _renderer.getImage()->height(), QImage::Format_RGBA32FPx4);
-        #else
-            //Because Qt5 doesn't have the QImage::Format_RGBA32FPx4 format which our image is encoded in
-            //we're converting our image to a Format_RGBA8888 which Qt5 supports
-            uchar* image_8888_data = new uchar[_renderer.getImage()->width() * _renderer.getImage()->height() * 4];
-            for (int i = 0; i < _renderer.getImage()->height(); i++)
-            {
-                for (int j = 0; j < _renderer.getImage()->width(); j++)
-                {
-                    uchar r, g, b, a;
-                    r = (uchar)(std::clamp(_renderer.getImage()->operator()(j, i).r, 0.0f, 1.0f) * 255);
-                    g = (uchar)(std::clamp(_renderer.getImage()->operator()(j, i).g, 0.0f, 1.0f) * 255);
-                    b = (uchar)(std::clamp(_renderer.getImage()->operator()(j, i).b, 0.0f, 1.0f) * 255);
-                    a = (uchar)(std::clamp(_renderer.getImage()->operator()(j, i).a, 0.0f, 1.0f) * 255);
+//                    image_8888_data[(i * _renderer.getImage()->width() + j) * 4 + 0] = r;
+//                    image_8888_data[(i * _renderer.getImage()->width() + j) * 4 + 1] = g;
+//                    image_8888_data[(i * _renderer.getImage()->width() + j) * 4 + 2] = b;
+//                    image_8888_data[(i * _renderer.getImage()->width() + j) * 4 + 3] = a;
+//                }
+//            }
 
-                    image_8888_data[(i * _renderer.getImage()->width() + j) * 4 + 0] = r;
-                    image_8888_data[(i * _renderer.getImage()->width() + j) * 4 + 1] = g;
-                    image_8888_data[(i * _renderer.getImage()->width() + j) * 4 + 2] = b;
-                    image_8888_data[(i * _renderer.getImage()->width() + j) * 4 + 3] = a;
-                }
-            }
-
-            this->q_image = new QImage(image_8888_data, _renderer.getImage()->width(), _renderer.getImage()->height(), QImage::Format_RGBA8888);
-        #endif
-    }
+//            this->q_image = new QImage(image_8888_data, _renderer.getImage()->width(), _renderer.getImage()->height(), QImage::Format_RGBA8888);
+//        #endif
+//    }
 
 //Flipping the image because our ray tracer produces flipped images
-#if QT_VERSION >= 0x060000
-    _render_display_context._q_image->mirror();
-#else
-    QImage mirrored = _render_display_context._q_image->mirrored();
-    delete _render_display_context._q_image;
-    _render_display_context._q_image = new QImage(mirrored);
-#endif
+//#if QT_VERSION >= 0x060000
+//    _renderer.get_image()->mirror();
+//#else
+    Timer timerr;
+    timerr.start();
+    _render_display_context._mirrored_image_buffer = _renderer.get_image()->mirrored();
+    timerr.stop();
+    std::cout << "Mirror time: " << timerr.elapsed() << std::endl;
+//    *_renderer.get_image() = QImage(mirrored);
+//#endif
+
     //We need to recreate the graphics scene every time to avoid
     //UI bugs (in particular when using SSAA)
     if (_render_display_context._graphics_scene != nullptr)
@@ -120,13 +125,19 @@ void MainWindow::update_render_image()
     _render_display_context._graphics_scene = new QGraphicsScene(this);
 
     _render_display_context._graphics_scene->clear();
-    _render_display_context._graphics_scene->addPixmap(QPixmap::fromImage(*_render_display_context._q_image));
-    QPixmap map = QPixmap::fromImage(*_render_display_context._q_image);
+    timerr.start();
+    _render_display_context._graphics_scene->addPixmap(QPixmap::fromImage(_render_display_context._mirrored_image_buffer));
+    timerr.stop();
+    std::cout << "Add pixmap time: " << timerr.elapsed() << std::endl;
 
     this->ui->graphics_view->setScene(_render_display_context._graphics_scene);
 
     timer.stop();
-    std::cout << timer.elapsed() << "ms" << std::endl;
+    std::cout << "Display update time: " << timer.elapsed() << "ms" << std::endl << std::endl;
+
+    //Indicate the display thread that the update is done and new
+    //update events can be sent
+    _display_thread_handle.set_update_ongoing(false);
 }
 
 void MainWindow::prepare_bvh()
@@ -201,7 +212,9 @@ void MainWindow::prepare_renderer_buffers()
 
     _renderer.clear_z_buffer();
     _renderer.clear_normal_buffer();
-    _renderer.clear_image();
+
+    if (_renderer.render_settings().hybrid_rasterization_tracing)
+        _renderer.clear_image();
 }
 
 void MainWindow::transform_object()
@@ -343,7 +356,7 @@ void MainWindow::on_dump_render_to_file_button_clicked()
     if (filename == "")
         return;
 
-    this->_render_display_context._q_image->save(filename);
+    this->_renderer.get_image()->save(filename);
 }
 
 void MainWindow::on_render_width_edit_returnPressed() { on_render_button_clicked(); }
@@ -820,6 +833,82 @@ void MainWindow::on_add_default_plane_button_clicked()
     _renderer.add_analytic_shape(Plane(Point(0, -2, 0), Vector(0, 1, 0), _renderer.get_materials().count() - 1));
 }
 
+void MainWindow::load_skybox_into_renderer(const QString& skybox_folder_path)
+{
+    QDir skybox_directory(skybox_folder_path);
+
+    QStringList files = skybox_directory.entryList();
+
+    if (files.size() < 6)
+        return;
+    else
+    {
+        //right, left, top, bottom, back, front
+        Image faces[6];
+        bool found[6] = {false, false, false, false, false, false};
+
+        for (QString file : files)
+        {
+            std::string file_path = skybox_directory.absolutePath().toStdString() + "/" + file.toStdString();
+
+            if ((file.endsWith("right.jpg") || file.endsWith("right.png")) &&!found[0])
+            {
+                faces[0] = load_texture_map(file_path.c_str());
+                found[0] = true;
+            }
+            else if ((file.endsWith("left.jpg") || file.endsWith("left.png")) &&!found[1])
+            {
+                faces[1] = load_texture_map(file_path.c_str());
+                found[1] = true;
+            }
+            else if ((file.endsWith("top.jpg") || file.endsWith("top.png")) &&!found[2])
+            {
+                faces[2] = load_texture_map(file_path.c_str());
+                found[2] = true;
+            }
+            else if ((file.endsWith("bottom.jpg") || file.endsWith("bottom.png")) && !found[3])
+            {
+                faces[3] = load_texture_map(file_path.c_str());
+                found[3] = true;
+            }
+            else if ((file.endsWith("back.jpg") || file.endsWith("back.png")) &&!found[4])
+            {
+                faces[4] = load_texture_map(file_path.c_str());
+                found[4] = true;
+            }
+            else if ((file.endsWith("front.jpg") || file.endsWith("front.png")) &&!found[5])
+            {
+                faces[5] = load_texture_map(file_path.c_str());
+                found[5] = true;
+            }
+        }
+
+        //Cjecking that all the faces were found in the folder
+        char faces_name[6][8] = {"right", "left", "top", "bottom", "back", "front"};
+        for (int i = 0; i < 6; i++)
+        {
+            //If one face wasn't found
+            if (!found[i])
+            {
+                std::stringstream ss;
+                ss << "The face '" << faces_name[i] << "' wasn't found in the given folder. "
+                                                       "The folder must contains six images named "
+                                                       "'right', 'left', 'top', 'bottom', 'back', 'front' "
+                                                       "that all have the extension .jpg or .png.";
+
+                write_to_console(ss);
+
+                return;
+            }
+        }
+
+        _renderer.set_skybox(Skybox(faces));
+
+        QStringList split_path = skybox_folder_path.split("/");
+        this->ui->skybox_loaded_edit->setText(split_path[split_path.size() - 1] + "/");
+    }
+}
+
 void MainWindow::on_load_skybox_button_clicked()
 {
     QFileDialog dialog(this, "Open skybox folder");
@@ -830,76 +919,8 @@ void MainWindow::on_load_skybox_button_clicked()
         QString folder_path = dialog.selectedFiles()[0];
 
         QDir skybox_directory(folder_path);
-        QStringList files = skybox_directory.entryList();
 
-        if (files.size() < 6)
-            return;
-        else
-        {
-            //right, left, top, bottom, back, front
-            Image faces[6];
-            bool found[6] = {false, false, false, false, false, false};
-
-            for (QString file : files)
-            {
-                std::string file_path = skybox_directory.absolutePath().toStdString() + "/" + file.toStdString();
-
-                if ((file.endsWith("right.jpg") || file.endsWith("right.png")) &&!found[0])
-                {
-                    faces[0] = load_texture_map(file_path.c_str());
-                    found[0] = true;
-                }
-                else if ((file.endsWith("left.jpg") || file.endsWith("left.png")) &&!found[1])
-                {
-                    faces[1] = load_texture_map(file_path.c_str());
-                    found[1] = true;
-                }
-                else if ((file.endsWith("top.jpg") || file.endsWith("top.png")) &&!found[2])
-                {
-                    faces[2] = load_texture_map(file_path.c_str());
-                    found[2] = true;
-                }
-                else if ((file.endsWith("bottom.jpg") || file.endsWith("bottom.png")) && !found[3])
-                {
-                    faces[3] = load_texture_map(file_path.c_str());
-                    found[3] = true;
-                }
-                else if ((file.endsWith("back.jpg") || file.endsWith("back.png")) &&!found[4])
-                {
-                    faces[4] = load_texture_map(file_path.c_str());
-                    found[4] = true;
-                }
-                else if ((file.endsWith("front.jpg") || file.endsWith("front.png")) &&!found[5])
-                {
-                    faces[5] = load_texture_map(file_path.c_str());
-                    found[5] = true;
-                }
-            }
-
-            //Cjecking that all the faces were found in the folder
-            char faces_name[6][8] = {"right", "left", "top", "bottom", "back", "front"};
-            for (int i = 0; i < 6; i++)
-            {
-                //If one face wasn't found
-                if (!found[i])
-                {
-                    std::stringstream ss;
-                    ss << "The face '" << faces_name[i] << "' wasn't found in the given folder. "
-                                                           "The folder must contains six images named "
-                                                           "'right', 'left', 'top', 'bottom', 'back', 'front' "
-                                                           "that all have the extension .jpg or .png.";
-
-                    write_to_console(ss);
-
-                    return;
-                }
-            }
-
-            _renderer.set_skybox(Skybox(faces));
-
-            QStringList split_path = folder_path.split("/");
-            this->ui->skybox_loaded_edit->setText(split_path[split_path.size() - 1] + "/");
-        }
+        load_skybox_into_renderer(folder_path);
     }
 }
 

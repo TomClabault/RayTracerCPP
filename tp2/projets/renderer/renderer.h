@@ -1,6 +1,8 @@
 #ifndef RAY_TRACER_H
 #define RAY_TRACER_H
 
+#include <QImage>
+
 #include <array>
 
 #include "analyticShape.h"
@@ -31,7 +33,7 @@ public:
     Renderer(Scene scene, std::vector<Triangle> triangles, RenderSettings render_settings);
     Renderer();
 
-	Image* getImage();
+    QImage* get_image();
 
 	RenderSettings& render_settings();
 
@@ -255,7 +257,7 @@ private:
 
 	BVH _bvh;
 
-	Image _image;
+    QImage _image;
     Image _ao_map;
     Image _diffuse_map;
     Image _skysphere;

@@ -10,10 +10,15 @@
 #include <sstream>
 #include <thread>
 
+#include <QDir>
 #include <QThread>
 
 class MainWindow;
 
+/**
+ * @brief The DisplayThread is in charge of sending display update events to the MainWindow
+ * so that the MainWindow updates the render display
+ */
 class DisplayThread : public QThread
 {
     Q_OBJECT
@@ -23,11 +28,21 @@ public:
 
     void run() override;
 
+    /**
+     * @brief Set a flag in the display thread. If the flag is true, it will prevent the thread from
+     * sending further display events to the MainWindow. This is to avoid the MainWindow from being
+     * overloaded with updates events and then becoming unresponsive
+     * @param ongoing The flag
+     */
+    void set_update_ongoing(bool ongoing);
+
 signals:
     void update_image();
 
 private:
     MainWindow* _main_window;
+
+    bool _update_ongoing = false;
 };
 
 class RenderThread : public QThread
@@ -57,7 +72,7 @@ struct RenderDisplayContext
     QGraphicsScene* _graphics_scene = nullptr;
     Graphics_view_zoom* _graphics_view_zoom = nullptr;
 
-    QImage* _q_image = nullptr;
+    QImage _mirrored_image_buffer;
 };
 
 class MainWindow : public QMainWindow
@@ -97,6 +112,8 @@ public:
 private:
     Transform get_object_transform_from_edits();
     Transform get_camera_transform_from_edits();
+
+    void load_skybox_into_renderer(const QString& skybox_folder_path);
 
 private slots:
     void on_render_button_clicked();

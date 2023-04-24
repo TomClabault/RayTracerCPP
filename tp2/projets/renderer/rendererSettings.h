@@ -63,7 +63,7 @@ struct RenderSettings
     int bvh_leaf_object_count = 60;
 
     //Whether or not to enable post-processing-screen-space ambient occlusion
-    bool enable_ssao = true;
+    bool enable_ssao = false;
     //Number of sample for the SSAO. The higher the sample count, the more precise
     //and less noisy the SSAO but this also means higher computation times
     int ssao_sample_count = 64;
@@ -88,7 +88,7 @@ struct RenderSettings
     //Whether or not to sample the background color from a texture or not
     //If false, the background color of the scene will be a plain color
     bool enable_skysphere = false;//Mapping from equirectangular image to skysphere
-    bool enable_skybox = true;//Mapping from cube map to skybox
+    bool enable_skybox = false;//Mapping from cube map to skybox
 
     friend std::ostream& operator << (std::ostream& os, const RenderSettings& settings);
 };

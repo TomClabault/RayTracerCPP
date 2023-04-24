@@ -3,6 +3,8 @@
 
 #include "image.h"
 
+#include <QImage>
+
 #include <cmath>
 #include <iostream>
 
@@ -89,6 +91,64 @@ public:
                 downscaled_output(x, y) = average;
             }
         }
+    }
+
+    //TODO y'a l'air d'avoir un probleme avec la distance d'intersection avec le plan. Quand on render le robot et le 'default plane' en meme temps, on voit bien le probleme
+
+    static void downscale_image_qt_ARGB32(const QImage& input_image, QImage& downscaled_output, const int factor)
+    {
+        if (input_image.width() % factor != 0)
+        {
+            std::cerr << "Image width isn't divisible by the factor";
+
+            return;
+        }
+
+        if (input_image.height() % factor != 0)
+        {
+            std::cerr << "Image height isn't divisible by the factor";
+
+            return;
+        }
+
+        //TODO vendredi 21 avril 2023 fix le bug dans la fonction de downscale --> ca se voit quand on utilise le SSAA
+        //TODO aussi: en release --> probleme de rendu, pas de skybox, pas de reflexion sur les sphere
+
+        int downscaled_width = input_image.width() / factor;
+        int downscaled_height = input_image.height() / factor;
+        downscaled_output = QImage(downscaled_width, downscaled_height, QImage::Format_ARGB32);
+
+#pragma omp parallel for
+        for (int y = 0; y < downscaled_height; y++)
+        {
+            for (int x = 0; x < downscaled_width; x++)
+            {
+                int average_r = 0;
+                int average_g = 0;
+                int average_b = 0;
+
+                for (int i = 0; i < factor; i++)
+                    for (int j = 0; j < factor; j++)
+                    {
+                        QColor pixel_color = input_image.pixelColor(x * factor + j, y * factor + i);
+
+                        average_r += pixel_color.red();
+                        average_g += pixel_color.green();
+                        average_b += pixel_color.blue();
+                    }
+
+                average_r = average_r / (factor * factor);
+                average_g = average_g / (factor * factor);
+                average_b = average_b / (factor * factor);
+
+                downscaled_output.setPixel(x, y, qRgb(average_r, average_g, average_b));
+            }
+        }
+    }
+
+    static QRgb gkit_color_to_Qt_ARGB32_uint(const Color& gkit_color)
+    {
+        return qRgb(gkit_color.r * 255, gkit_color.g * 255, gkit_color.b * 255);
     }
 };
 

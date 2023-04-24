@@ -982,7 +982,7 @@
                   <item row="2" column="2">
                    <widget class="QLineEdit" name="skybox_loaded_edit">
                     <property name="enabled">
-                     <bool>false</bool>
+                     <bool>true</bool>
                     </property>
                     <property name="sizePolicy">
                      <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -991,7 +991,7 @@
                      </sizepolicy>
                     </property>
                     <property name="text">
-                     <string>skybox/</string>
+                     <string/>
                     </property>
                     <property name="readOnly">
                      <bool>true</bool>
@@ -1036,7 +1036,7 @@
                   <item row="2" column="1">
                    <widget class="QPushButton" name="load_skybox_button">
                     <property name="enabled">
-                     <bool>false</bool>
+                     <bool>true</bool>
                     </property>
                     <property name="sizePolicy">
                      <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -1061,7 +1061,7 @@
                      <string>Skybox</string>
                     </property>
                     <property name="checked">
-                     <bool>false</bool>
+                     <bool>true</bool>
                     </property>
                    </widget>
                   </item>
@@ -1119,7 +1119,7 @@
                      <string>No sky tetxure</string>
                     </property>
                     <property name="checked">
-                     <bool>true</bool>
+                     <bool>false</bool>
                     </property>
                    </widget>
                   </item>

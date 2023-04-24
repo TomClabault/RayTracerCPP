@@ -90,7 +90,7 @@ Renderer::Renderer(Scene scene, std::vector<Triangle> triangles, RenderSettings 
 
 Renderer::Renderer() : Renderer(Scene(), std::vector<Triangle>(), RenderSettings::basic_settings(1280, 720)) {}
 
-Image* Renderer::getImage()
+QImage* Renderer::get_image()
 {
     return &_image;
 }
@@ -115,10 +115,10 @@ void Renderer::init_buffers(int width, int height)
     if (_render_settings.enable_ssao)
         _normal_buffer = Buffer<Vector>(width, height);
 
-    _image = Image(width, height);
+    _image = QImage(width, height, QImage::Format_ARGB32);
     for (int i = 0; i < height; i++)
         for (int j = 0; j < width; j++)
-            _image(j, i) = Renderer::BACKGROUND_COLOR;
+            _image.setPixel(j, i, ImageUtils::gkit_color_to_Qt_ARGB32_uint(Renderer::BACKGROUND_COLOR));
 }
 
 void Renderer::set_triangles(const std::vector<Triangle>& triangles)
@@ -149,8 +149,6 @@ void Renderer::destroy_ssao_buffers()
     _normal_buffer = Buffer<Vector>();
 }
 
-//TODO look for memory leaks
-
 void Renderer::clear_z_buffer()
 {
     _z_buffer.fill_values(INFINITY);
@@ -165,7 +163,7 @@ void Renderer::clear_image()
 {
     for (int i = 0; i < _image.height(); i++)
         for (int j = 0; j < _image.width(); j++)
-            _image(j, i) = Renderer::BACKGROUND_COLOR;
+            _image.setPixel(j, i, ImageUtils::gkit_color_to_Qt_ARGB32_uint(Renderer::BACKGROUND_COLOR));
 }
 
 void Renderer::clear_geometry()
@@ -816,7 +814,7 @@ void Renderer::raster_trace()
                         else if (_render_settings.shading_method == RenderSettings::ShadingMethod::VISUALIZE_AO)
                             final_color = shade_visualize_ao(perspective_projection_inv(clipped_triangle_NDC), u, v);
 
-                        _image(px, py) = final_color;
+                        _image.setPixel(px, py, ImageUtils::gkit_color_to_Qt_ARGB32_uint(final_color));
                     }
 
                 }
@@ -881,14 +879,21 @@ Color Renderer::trace_ray(const Ray& ray, HitInfo& final_hit_info, bool& interse
     }
 }
 
-//TODO probleme de graphics scene qui se resize bizaremment des fois
-
 void Renderer::ray_trace()
 {
     int render_width, render_height;
     get_render_width_height(_render_settings, render_width, render_height);
 
-#pragma omp parallel for schedule(dynamic)
+    //If we're using SSAA, the image is going to be downscaled at the end of the
+    //render process to apply the SSAA. This problem is that, to save memory,
+    //the image buffer of this renderer is going to be overwritten with the dowscaled
+    //image meaning that after one render using SSAA, the image buffer of this renderer
+    //is too small to contain the render size (since it has been downscaled). We're thus
+    //recreating the image
+    if (_render_settings.enable_ssaa)
+        _image = QImage(render_width, render_height, QImage::Format_ARGB32);
+
+#pragma omp parallel for schedule(dynamic) collapse(2)
     for (int py = 0; py < render_height; py++)
     {
         //Adding 0.5 to consider the center of the pixel
@@ -919,7 +924,7 @@ void Renderer::ray_trace()
                 }
             }
 
-            _image(px, py) = pixel_color;
+            _image.setPixel(px, py, ImageUtils::gkit_color_to_Qt_ARGB32_uint(pixel_color));
         }
     }
 }
@@ -934,8 +939,9 @@ void Renderer::post_process()
 
 void Renderer::apply_ssaa()
 {
-    Image downscaled_image;
-    ImageUtils::downscale_image(_image, downscaled_image, _render_settings.ssaa_factor);
+    QImage downscaled_image;
+
+    ImageUtils::downscale_image_qt_ARGB32(_image, downscaled_image, _render_settings.ssaa_factor);
 
     _image = downscaled_image;
 }
@@ -1024,7 +1030,8 @@ void Renderer::post_process_ssao_scalar()
 
             //Applying directly on the image
             float color_multiplier = 1 - ((float)sum / (float)(blur_size * blur_size) / (float)_render_settings.ssao_sample_count * (float)_render_settings.ssao_amount);
-            _image(x, y) = _image(x, y) * Color(color_multiplier, color_multiplier, color_multiplier, 1.0f);
+            QColor pixel_color = _image.pixelColor(x, y);
+            _image.setPixelColor(x, y, QColor(pixel_color.red() * color_multiplier, pixel_color.green() * color_multiplier, pixel_color.blue() * color_multiplier));
         }
     }
 
@@ -1230,7 +1237,8 @@ void Renderer::post_process_ssao_SIMD()
 
             //Applying directly on the image
             float color_multiplier = 1 - ((float)sum / (float)(blur_size * blur_size) / (float)_render_settings.ssao_sample_count * (float)_render_settings.ssao_amount);
-            _image(x, y) = _image(x, y) * Color(color_multiplier, color_multiplier, color_multiplier, 1.0f);
+            QColor pixel_color = _image.pixelColor(x, y);
+            _image.setPixelColor(x, y, QColor(pixel_color.red() * color_multiplier, pixel_color.green() * color_multiplier, pixel_color.blue() * color_multiplier));
         }
     }
 

@@ -8,10 +8,20 @@ void DisplayThread::run()
     while (true)
     {
         if (_main_window->get_render_going())
-            emit update_image();
+        {
+            while (_update_ongoing)
+                std::this_thread::sleep_for(std::chrono::milliseconds(25));
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+            std::this_thread::sleep_for(std::chrono::milliseconds(250));
+
+            emit update_image();
+        }
     }
+}
+
+void DisplayThread::set_update_ongoing(bool ongoing)
+{
+    _update_ongoing = ongoing;
 }
 
 RenderThread::RenderThread(MainWindow* main_window) : _main_window(main_window) {}
