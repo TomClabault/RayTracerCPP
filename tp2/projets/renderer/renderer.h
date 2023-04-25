@@ -4,6 +4,7 @@
 #include <QImage>
 
 #include <array>
+#include <mutex>
 
 #include "analyticShape.h"
 #include "buffer.h"
@@ -32,6 +33,9 @@ public:
 
     Renderer(Scene scene, std::vector<Triangle> triangles, RenderSettings render_settings);
     Renderer();
+
+    void lock_image_mutex();
+    void unlock_image_mutex();
 
     QImage* get_image();
 
@@ -317,6 +321,11 @@ private:
 
 	BVH _bvh;
 
+    //Mutex used when the image buffer is being harsly modifier by the renderer
+    //such as a memory move at the end of the SSAA downscale method for example
+    //to avoid other threads (mainly the display) to use the image while it's in
+    //an invalid memory state
+    std::mutex _image_mutex;
     QImage _image;
 
     Image _ao_map;

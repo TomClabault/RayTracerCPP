@@ -80,6 +80,16 @@ Renderer::Renderer(Scene scene, std::vector<Triangle> triangles, RenderSettings 
     _scene._camera.set_aspect_ratio((float)render_width / render_height);
 }
 
+void Renderer::lock_image_mutex()
+{
+    _image_mutex.lock();
+}
+
+void Renderer::unlock_image_mutex()
+{
+    _image_mutex.unlock();
+}
+
 QImage* Renderer::get_image()
 {
     return &_image;
@@ -183,7 +193,7 @@ Color Renderer::sample_texture(const Image& texture, float tex_coord_u, float te
 {
     //1 - tex_coord_v because gkit samples textures from bottom to top meaning that
     //if we don't have "1 -" here, our textures maps will be mirrored (top flipped to the bottom)
-    return texture.texture(tex_coord_u, 1 - tex_coord_v);
+    return texture.texture(tex_coord_u, tex_coord_v);
 }
 
 void Renderer::reset_previous_transform() { _previous_object_transform = Identity(); }
@@ -500,7 +510,7 @@ Color Renderer::shade_ray_inter_point(const Ray& ray, const HitInfo& hit_info) c
 
         Point inter_point = ray._origin + ray._direction * hit_info.t;
         if (_render_settings.enable_displacement_mapping)
-            steep_parallax_mapping(hit_info.triangle, hit_info.u, hit_info.v, inter_point, normalize(_scene._camera._position - inter_point), u, v);
+            parallax_occlusion_mapping(hit_info.triangle, hit_info.u, hit_info.v, inter_point, normalize(_scene._camera._position - inter_point), u, v);
 
         Vector direction_to_light = normalize(_scene._point_light._position - inter_point);
         Vector normal;
@@ -528,7 +538,8 @@ Color Renderer::shade_ray_inter_point(const Ray& ray, const HitInfo& hit_info) c
             final_color = final_color * Color(Renderer::SHADOW_INTENSITY);
         final_color = final_color + hit_material.emission * _render_settings.enable_emissive;
         if (hit_material.reflection > 0.0f)
-            final_color = (1 - hit_material.reflection) * final_color + compute_reflection(ray, hit_info) * hit_material.reflection;
+            //final_color = (1 - hit_material.reflection) * final_color + compute_reflection(ray, hit_info) * hit_material.reflection;
+            final_color = final_color + compute_reflection(ray, hit_info) * hit_material.reflection;
 
         final_color = final_color + Renderer::AMBIENT_COLOR * hit_material.ambient_coeff * (1 - hit_material.reflection) * _render_settings.enable_ambient;
     }
@@ -1011,7 +1022,7 @@ void Renderer::ray_trace()
     if (_render_settings.enable_ssaa)
         _image = QImage(render_width, render_height, QImage::Format_ARGB32);
 
-//#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)
     for (int py = 0; py < render_height; py++)
     {
         //Adding 0.5 to consider the center of the pixel
@@ -1061,7 +1072,9 @@ void Renderer::apply_ssaa()
 
     ImageUtils::downscale_image_qt_ARGB32(_image, downscaled_image, _render_settings.ssaa_factor);
 
+    _image_mutex.lock();
     _image = downscaled_image;
+    _image_mutex.unlock();
 }
 
 void Renderer::post_process_ssao_scalar()

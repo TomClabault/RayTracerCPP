@@ -112,7 +112,9 @@ void MainWindow::update_render_image()
 //#if QT_VERSION >= 0x060000
 //    _renderer.get_image()->mirror();
 //#else
+    _renderer.lock_image_mutex();
     _render_display_context._mirrored_image_buffer = _renderer.get_image()->mirrored();
+    _renderer.unlock_image_mutex();
 //    *_renderer.get_image() = QImage(mirrored);
 //#endif
 
