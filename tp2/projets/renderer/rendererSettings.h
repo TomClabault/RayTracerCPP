@@ -51,6 +51,9 @@ struct RenderSettings
     //true to compute shadows, false not to
     bool compute_shadows = false;
 
+    //Maximum recursion depth allowed for reflections / refractions / ...
+    int max_recursion_depth = 5;
+
     //Whether or not to use a BVH to intersect the scene
     bool enable_bvh = true;
     //Maximum depth of the BVH tree
@@ -77,6 +80,8 @@ struct RenderSettings
     bool enable_specular = true;
     //Whether or not to compute the emissive component of 'RT_SHADING'
     bool enable_emissive = true;
+    //Number of rays to trace to compute the average color of a rough reflection
+    int rough_reflections_sample_count = 8;
 
     //Whether or not to use a texture to compute the ambient occlusion
     bool enable_ao_mapping = false;
@@ -86,8 +91,8 @@ struct RenderSettings
     bool enable_normal_mapping = false;
     //Whether or not to use displacement mapping (steep occlusion mapping)
     bool enable_displacement_mapping = false;
-    float displacement_mapping_strength = 1.0f;
-    int parallax_mapping_steps = 10;
+    float displacement_mapping_strength = 0.02f;
+    int parallax_mapping_steps = 32;
 
     //Whether or not to sample the background color from a texture or not
     //If false, the background color of the scene will be a plain color

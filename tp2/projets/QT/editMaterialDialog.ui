@@ -209,6 +209,20 @@
      </property>
     </widget>
    </item>
+   <item row="2" column="4">
+    <widget class="QLineEdit" name="roughness_edit">
+     <property name="text">
+      <string>0.0</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="3">
+    <widget class="QLabel" name="roughness_label">
+     <property name="text">
+      <string>Roughness:</string>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <customwidgets>

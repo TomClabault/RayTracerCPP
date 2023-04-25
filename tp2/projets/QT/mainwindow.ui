@@ -53,7 +53,7 @@
            <enum>QTabWidget::Rounded</enum>
           </property>
           <property name="currentIndex">
-           <number>2</number>
+           <number>0</number>
           </property>
           <property name="elideMode">
            <enum>Qt::ElideNone</enum>
@@ -187,19 +187,6 @@
                <property name="verticalSpacing">
                 <number>3</number>
                </property>
-               <item row="0" column="0">
-                <widget class="QLabel" name="render_resolution_label">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="text">
-                  <string>Render resolution:</string>
-                 </property>
-                </widget>
-               </item>
                <item row="0" column="1">
                 <widget class="QLineEdit" name="render_width_edit">
                  <property name="sizePolicy">
@@ -219,6 +206,94 @@
                  </property>
                  <property name="text">
                   <string>1280</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="0">
+                <widget class="QCheckBox" name="enable_bvh_check_box">
+                 <property name="text">
+                  <string>Enable BVH</string>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="0">
+                <widget class="QLabel" name="render_resolution_label">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Render resolution:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="2">
+                <widget class="QLineEdit" name="bvh_max_leaf_object_edit">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string>40</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="2">
+                <widget class="QLineEdit" name="bvh_max_depth_edit">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>12</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="1">
+                <widget class="QLabel" name="bvh_max_leaf_object_label">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Max Leaf Objects: </string>
+                 </property>
+                </widget>
+               </item>
+               <item row="5" column="0">
+                <widget class="QCheckBox" name="enable_shadows_check_box">
+                 <property name="text">
+                  <string>Enable shadows</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QCheckBox" name="hybrid_check_box">
+                 <property name="enabled">
+                  <bool>true</bool>
+                 </property>
+                 <property name="text">
+                  <string>Hybrid rendering</string>
+                 </property>
+                 <property name="checked">
+                  <bool>false</bool>
                  </property>
                 </widget>
                </item>
@@ -258,19 +333,6 @@
                  </item>
                 </layout>
                </item>
-               <item row="1" column="0">
-                <widget class="QCheckBox" name="hybrid_check_box">
-                 <property name="enabled">
-                  <bool>true</bool>
-                 </property>
-                 <property name="text">
-                  <string>Hybrid rendering</string>
-                 </property>
-                 <property name="checked">
-                  <bool>false</bool>
-                 </property>
-                </widget>
-               </item>
                <item row="2" column="0">
                 <widget class="QCheckBox" name="clipping_check_box">
                  <property name="enabled">
@@ -281,48 +343,6 @@
                  </property>
                  <property name="checked">
                   <bool>true</bool>
-                 </property>
-                </widget>
-               </item>
-               <item row="3" column="0">
-                <widget class="QCheckBox" name="enable_bvh_check_box">
-                 <property name="text">
-                  <string>Enable BVH</string>
-                 </property>
-                 <property name="checked">
-                  <bool>true</bool>
-                 </property>
-                </widget>
-               </item>
-               <item row="3" column="1">
-                <widget class="QLabel" name="bvh_max_leaf_object_label">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="text">
-                  <string>Max Leaf Objects: </string>
-                 </property>
-                </widget>
-               </item>
-               <item row="3" column="2">
-                <widget class="QLineEdit" name="bvh_max_leaf_object_edit">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>0</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="text">
-                  <string>40</string>
                  </property>
                 </widget>
                </item>
@@ -339,23 +359,17 @@
                  </property>
                 </widget>
                </item>
-               <item row="4" column="2">
-                <widget class="QLineEdit" name="bvh_max_depth_edit">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
+               <item row="6" column="0">
+                <widget class="QLabel" name="maximum_recursion_depth_label">
                  <property name="text">
-                  <string>12</string>
+                  <string>Maximum recursion depth:</string>
                  </property>
                 </widget>
                </item>
-               <item row="5" column="0">
-                <widget class="QCheckBox" name="enable_shadows_check_box">
+               <item row="6" column="1">
+                <widget class="QLineEdit" name="maximum_recursion_depth_edit">
                  <property name="text">
-                  <string>Enable shadows</string>
+                  <string>8</string>
                  </property>
                 </widget>
                </item>
@@ -694,7 +708,7 @@
             <item>
              <widget class="QGroupBox" name="shading_components_group_box">
               <property name="title">
-               <string>  Shading components</string>
+               <string>  Shading</string>
               </property>
               <layout class="QGridLayout" name="gridLayout_12">
                <property name="topMargin">
@@ -706,10 +720,27 @@
                <property name="verticalSpacing">
                 <number>3</number>
                </property>
-               <item row="0" column="0">
-                <widget class="QCheckBox" name="enable_ambient_checkbox">
+               <item row="0" column="2">
+                <widget class="QCheckBox" name="enable_specular_checkbox">
                  <property name="text">
-                  <string>Enable ambient</string>
+                  <string>Enable specular</string>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="2">
+                <widget class="QLabel" name="roughness_samples_label">
+                 <property name="text">
+                  <string>Roughness samples:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QCheckBox" name="enable_emissive_checkbox">
+                 <property name="text">
+                  <string>Enable emissive</string>
                  </property>
                  <property name="checked">
                   <bool>true</bool>
@@ -726,20 +757,13 @@
                  </property>
                 </widget>
                </item>
-               <item row="0" column="2">
-                <widget class="QCheckBox" name="enable_specular_checkbox">
-                 <property name="text">
-                  <string>Enable specular</string>
-                 </property>
-                 <property name="checked">
-                  <bool>true</bool>
-                 </property>
-                </widget>
-               </item>
                <item row="0" column="4">
                 <spacer name="horizontalSpacer_2">
                  <property name="orientation">
                   <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeType">
+                  <enum>QSizePolicy::Minimum</enum>
                  </property>
                  <property name="sizeHint" stdset="0">
                   <size>
@@ -749,10 +773,23 @@
                  </property>
                 </spacer>
                </item>
-               <item row="1" column="0">
-                <widget class="QCheckBox" name="enable_emissive_checkbox">
+               <item row="1" column="4">
+                <widget class="QLineEdit" name="roughness_samples_edit">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
                  <property name="text">
-                  <string>Enable emissive</string>
+                  <string>10</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="0">
+                <widget class="QCheckBox" name="enable_ambient_checkbox">
+                 <property name="text">
+                  <string>Enable ambient</string>
                  </property>
                  <property name="checked">
                   <bool>true</bool>

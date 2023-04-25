@@ -5,6 +5,7 @@
 
 #include <array>
 #include <mutex>
+#include <omp.h>
 
 #include "analyticShape.h"
 #include "buffer.h"
@@ -14,6 +15,7 @@
 #include "rendererSettings.h"
 #include "scene/scene.h"
 #include "skybox.h"
+#include "xorshift.h"
 
 class Renderer
 {
@@ -25,6 +27,8 @@ public:
     static Material DEBUG_MATERIAL_1;
 	static Color AMBIENT_COLOR;
 	static Color BACKGROUND_COLOR;
+
+    static std::vector<XorShiftGenerator> _xorshift_generators;
 
     /**
      * @return A diffuse material that has a nice pastel color
@@ -117,7 +121,7 @@ public:
      * @return The color of the intersection between the ray and the triangle
      * if it exists
      */
-	Color trace_triangle(const Ray& ray, const Triangle& triangle) const;
+    Color trace_triangle(const Ray& ray, const Triangle& triangle, int current_recursion_depth) const;
 
     /**
      * @brief Renders the image using an hybrid rasterization / ray-tracing approach
@@ -128,10 +132,13 @@ public:
      * @brief trace_ray Traces a ray and computes the color returned by that ray
      * @param ray The ray
      * @param hit_info The hit information. Only relevant if an intersection was found
+     * @param current_recursion_depth Used to keep track of the current depth we're at
+     * and compare it against the max_recursion_depth parameter of RenderSettings to
+     * avoid infinite recursion
      * @param [out] intersection_found Whether or not an intersection was found
      * @return The color of the ray.
      */
-    Color trace_ray(const Ray& ray, HitInfo& hit_info, bool& intersection_found) const;
+    Color trace_ray(const Ray& ray, HitInfo& hit_info, int current_recursion_depth, bool& intersection_found) const;
 
     /**
      * @brief Renders the image full ray tracing
@@ -169,7 +176,7 @@ private:
     
     Color compute_specular(const Material& hitMaterial, const Vector& ray_direction, const Vector& normal, const Vector& direction_to_light) const;
 
-    Color compute_reflection(const Ray& ray, const HitInfo& hit_info) const;
+    Color compute_reflection(const Ray& ray, const Point& inter_point, const HitInfo& hit_info, int current_recursion_depth) const;
 
     /**
      * @return Returns true if the point is shadowed by another object
@@ -268,10 +275,13 @@ private:
      * @brief Computes the color of the point intersection of a ray and the scene
      * @param ray The ray that intersected the scene
      * @param hit_info The information about the intersection that occured
+     * @param current_recursion_depth Used to keep track of the current depth we're at
+     * and compare it against the max_recursion_depth parameter of RenderSettings to
+     * avoid infinite recursion
      * @return The color at the point of intersection. The color depends on the
      * shading method set in the renderer settings
      */
-    Color shade_ray_inter_point(const Ray& ray, const HitInfo& hit_info) const;
+    Color shade_ray_inter_point(const Ray& ray, HitInfo& hit_info, int current_recursion_depth) const;
 
     /**
 	 * Clips triangles given in @to_clip against the plane defined by the given @plane_index and @plane_sign and

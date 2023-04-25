@@ -1066,3 +1066,29 @@ void MainWindow::on_parallax_steps_edit_returnPressed()
     on_render_button_clicked();
 }
 
+void MainWindow::on_roughness_samples_edit_editingFinished()
+{
+    int roughness_samples_count = safe_text_to_int(this->ui->roughness_samples_edit->text());
+    if (roughness_samples_count != -1)
+        _renderer.render_settings().rough_reflections_sample_count = roughness_samples_count;
+}
+
+void MainWindow::on_roughness_samples_edit_returnPressed()
+{
+    on_roughness_samples_edit_editingFinished();
+    on_render_button_clicked();
+}
+
+void MainWindow::on_maximum_recursion_depth_edit_editingFinished()
+{
+    int max_recursion_depth = safe_text_to_int(this->ui->roughness_samples_edit->text());
+    if (max_recursion_depth != -1)
+        _renderer.render_settings().max_recursion_depth = max_recursion_depth;
+}
+
+void MainWindow::on_maximum_recursion_depth_edit_returnPressed()
+{
+    on_maximum_recursion_depth_edit_editingFinished();
+    on_render_button_clicked();
+}
+

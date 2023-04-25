@@ -18,12 +18,14 @@
 Color Renderer::AMBIENT_COLOR = Color(0.1f, 0.1f, 0.1f);
 Color Renderer::BACKGROUND_COLOR = Color(135.0f / 255.0f, 206.0f / 255.0f, 235.0f / 255.0f);//Sky color
 
+
 Material init_default_material()
 {
     Material mat = Material(Color(1.0f, 0.0f, 0.5f));//Pink color
     mat.specular = Color(0.5f, 0.5f, 0.5f);
     mat.ns = 5;
     mat.reflection = 0.0f;
+    mat.roughness = 0.0f;
 
     return mat;
 }
@@ -37,7 +39,7 @@ Material init_default_material()
  */
 Material init_default_plane_material()
 {
-    Material mat = Material(Color(0.9));//White color
+    Material mat = Material(Color(0.9f));//White color
     mat.diffuse = Color(0.3f);
     mat.ambient_coeff = Color((Color(0.8f) / Renderer::AMBIENT_COLOR).r);
 
@@ -46,6 +48,18 @@ Material init_default_plane_material()
 
 Material Renderer::DEFAULT_MATERIAL = init_default_material();
 Material Renderer::DEFAULT_PLANE_MATERIAL = init_default_plane_material();
+
+std::vector<XorShiftGenerator> init_xorshift_generators()
+{
+    std::vector<XorShiftGenerator> generators(omp_get_max_threads());
+
+    for (int i = 0; i < omp_get_max_threads(); i++)
+        generators[i] = XorShiftGenerator(std::rand());
+
+    return generators;
+}
+
+std::vector<XorShiftGenerator> Renderer::_xorshift_generators = init_xorshift_generators();
 
 Material Renderer::get_random_diffuse_pastel_material()
 {
@@ -64,7 +78,7 @@ Material Renderer::get_random_diffuse_pastel_material()
     return mat;
 }
 
-Renderer::Renderer() : Renderer(Scene(), std::vector<Triangle>(), RenderSettings()) {}
+Renderer::Renderer() : Renderer(Scene(), std::vector<Triangle>(), RenderSettings()) { }
 
 Renderer::Renderer(Scene scene, std::vector<Triangle> triangles, RenderSettings render_settings) : _triangles(triangles),
     _render_settings(render_settings), _scene(scene)
@@ -259,28 +273,48 @@ Color Renderer::compute_specular(const Material& hit_material, const Vector& ray
 }
 
 //TODO passer inter_point en argument pour eviter de le recalculer a chaque fois vu qu'on l'uilise deja potentiellment autre part etr donc on l'a deja potentiellement calcule
-Color Renderer::compute_reflection(const Ray& ray, const HitInfo& hit_info) const
+Color Renderer::compute_reflection(const Ray& ray, const Point& inter_point, const HitInfo& hit_info, int current_recursion_depth) const
 {
     bool intersection_found = false;
     HitInfo reflection_hit_info;
+    const Material& hit_material = _materials.material(hit_info.mat_index);
 
-    //TODO normaliser les normales qu'on met dans HitInfo
     Vector normalized_normal = hit_info.normal_at_intersection;
-    Point inter_point = ray._origin + ray._direction * hit_info.t;
 
     Point reflection_ray_origin = inter_point + normalized_normal * 0.01f;
-    Vector reflection_ray_direction = ray._direction - 2 * dot(ray._direction, normalized_normal) * normalized_normal;
-    Ray reflection_ray(reflection_ray_origin, reflection_ray_direction);
+    Vector perfect_reflection = ray._direction - 2 * dot(ray._direction, normalized_normal) * normalized_normal;
 
-//    std::cout << ray << std::endl;
-//    std::cout << inter_point << std::endl;
-//    std::cout << normalized_normal << std::endl;
-//    std::cout << reflection_ray << std::endl;
-//    std::exit(0);
+    int sample_count = 0;
+    Color total_reflection_color = Color(0.0f);
+    for (int i = 0; i < _render_settings.rough_reflections_sample_count; i++)
+    {
+        if (hit_material.roughness > 0)
+        {
+            Vector random_direction = normalize(Vector(_xorshift_generators[omp_get_thread_num()].get_rand_bilateral(), _xorshift_generators[omp_get_thread_num()].get_rand_bilateral(), _xorshift_generators[omp_get_thread_num()].get_rand_bilateral()));
+            if (dot(random_direction, hit_info.normal_at_intersection) < 0)
+                random_direction = -random_direction;//TODO correct ?
 
-    Color reflection_color = trace_ray(reflection_ray, reflection_hit_info, intersection_found);
+            Vector random_direction_lerped = hit_material.roughness * random_direction + (1 - hit_material.roughness) * perfect_reflection;
 
-    return reflection_color * Color(_materials.material(hit_info.mat_index).reflection);
+            Ray reflection_ray(reflection_ray_origin, random_direction_lerped);
+
+            total_reflection_color = total_reflection_color + trace_ray(reflection_ray, reflection_hit_info, current_recursion_depth + 1, intersection_found);
+
+            sample_count++;
+        }
+        else//Pure specular
+        {
+            Ray reflection_ray(reflection_ray_origin, perfect_reflection);
+
+            total_reflection_color = total_reflection_color + trace_ray(reflection_ray, reflection_hit_info, current_recursion_depth + 1, intersection_found);
+
+            sample_count = 1;
+            break;//Because this is pure specular, we don't need to gather multiple samples
+        }
+    }
+
+
+    return total_reflection_color / Color(sample_count) * Color(hit_material.reflection);
 }
 
 bool Renderer::is_shadowed(const Point& inter_point, const Vector& normal_at_intersection, const Point& light_position) const
@@ -499,7 +533,7 @@ void Renderer::parallax_occlusion_mapping(const Triangle* triangle, float u, flo
     new_v = (1 - interpolation_weight) * new_v + interpolation_weight * previous_v_coord;
 }
 
-Color Renderer::shade_ray_inter_point(const Ray& ray, const HitInfo& hit_info) const
+Color Renderer::shade_ray_inter_point(const Ray& ray, HitInfo& hit_info, int current_recursion_depth) const
 {
     Color final_color = Color(0.0f, 0.0f, 0.0f);
 
@@ -513,12 +547,9 @@ Color Renderer::shade_ray_inter_point(const Ray& ray, const HitInfo& hit_info) c
             parallax_occlusion_mapping(hit_info.triangle, hit_info.u, hit_info.v, inter_point, normalize(_scene._camera._position - inter_point), u, v);
 
         Vector direction_to_light = normalize(_scene._point_light._position - inter_point);
-        Vector normal;
 
         if (_render_settings.enable_normal_mapping)
-            normal = normal_mapping(hit_info, u, v);
-        else
-            normal = hit_info.normal_at_intersection;
+            hit_info.normal_at_intersection = normal_mapping(hit_info, u, v);
 
         Material hit_material = _materials(hit_info.mat_index);
 
@@ -530,16 +561,15 @@ Color Renderer::shade_ray_inter_point(const Ray& ray, const HitInfo& hit_info) c
         if (_render_settings.enable_diffuse_mapping)
             diffuse_color = diffuse_mapping(hit_info, u, v);
         else
-            diffuse_color = compute_diffuse(hit_material, normal, direction_to_light);
+            diffuse_color = compute_diffuse(hit_material, hit_info.normal_at_intersection, direction_to_light);
 
         final_color = final_color + diffuse_color * ao_map_contribution * _render_settings.enable_diffuse;
-        final_color = final_color + compute_specular(hit_material, ray._direction, normal, direction_to_light) * _render_settings.enable_specular;
+        final_color = final_color + compute_specular(hit_material, ray._direction, hit_info.normal_at_intersection, direction_to_light) * _render_settings.enable_specular;
         if (is_shadowed(inter_point, hit_info.normal_at_intersection, _scene._point_light._position))
             final_color = final_color * Color(Renderer::SHADOW_INTENSITY);
         final_color = final_color + hit_material.emission * _render_settings.enable_emissive;
         if (hit_material.reflection > 0.0f)
-            //final_color = (1 - hit_material.reflection) * final_color + compute_reflection(ray, hit_info) * hit_material.reflection;
-            final_color = final_color + compute_reflection(ray, hit_info) * hit_material.reflection;
+            final_color = final_color + compute_reflection(ray, inter_point, hit_info, current_recursion_depth) * hit_material.reflection;
 
         final_color = final_color + Renderer::AMBIENT_COLOR * hit_material.ambient_coeff * (1 - hit_material.reflection) * _render_settings.enable_ambient;
     }
@@ -563,13 +593,13 @@ Color Renderer::shade_ray_inter_point(const Ray& ray, const HitInfo& hit_info) c
     return final_color;
 }
 
-Color Renderer::trace_triangle(const Ray& ray, const Triangle& triangle) const
+Color Renderer::trace_triangle(const Ray& ray, const Triangle& triangle, int current_recursion_depth) const
 {
     HitInfo hit_info;
     Color finalColor = Color(0, 0, 0);
 
     if (triangle.intersect(ray, hit_info))
-        finalColor = shade_ray_inter_point(ray, hit_info);
+        finalColor = shade_ray_inter_point(ray, hit_info, current_recursion_depth);
 
     return finalColor;
 }
@@ -930,7 +960,7 @@ void Renderer::raster_trace()
                         {
                             final_color = trace_triangle(Ray(_scene._camera._position,
                                                              normalize(_scene._camera._camera_to_world_mat(perspective_projection_inv(pixel_point)) - _scene._camera._position)),
-                                                            _scene._camera._camera_to_world_mat(clipped_triangle_cam_space));
+                                                            _scene._camera._camera_to_world_mat(clipped_triangle_cam_space), 0);
                         }
                         else if (_render_settings.shading_method == RenderSettings::ShadingMethod::ABS_NORMALS_SHADING)
                             //Color triangles with std::abs(normal)
@@ -952,9 +982,12 @@ void Renderer::raster_trace()
     }
 }
 
-Color Renderer::trace_ray(const Ray& ray, HitInfo& final_hit_info, bool& intersection_found) const
+Color Renderer::trace_ray(const Ray& ray, HitInfo& final_hit_info, int current_recursion_depth, bool& intersection_found) const
 {
     HitInfo local_hit_info;
+
+    if (current_recursion_depth > _render_settings.max_recursion_depth)
+        return Color(0.0f);
 
     if (_render_settings.enable_bvh)
     {
@@ -984,7 +1017,7 @@ Color Renderer::trace_ray(const Ray& ray, HitInfo& final_hit_info, bool& interse
     {
         intersection_found = true;
 
-        Color final_color = shade_ray_inter_point(ray, final_hit_info);
+        Color final_color = shade_ray_inter_point(ray, final_hit_info, current_recursion_depth);
         final_color.r = std::clamp(final_color.r, 0.0f, 1.0f);
         final_color.g = std::clamp(final_color.g, 0.0f, 1.0f);
         final_color.b = std::clamp(final_color.b, 0.0f, 1.0f);
@@ -1043,7 +1076,7 @@ void Renderer::ray_trace()
             bool intersection_found = false;
             HitInfo hit_info;
 
-            Color pixel_color = trace_ray(ray, hit_info, intersection_found);
+            Color pixel_color = trace_ray(ray, hit_info, 0, intersection_found);
             if (intersection_found)
             {
                 //Updating the z_buffer for post-processing operations that need it

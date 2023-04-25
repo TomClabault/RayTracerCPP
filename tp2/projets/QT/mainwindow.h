@@ -234,6 +234,14 @@ private slots:
 
     void on_parallax_steps_edit_returnPressed();
 
+    void on_roughness_samples_edit_editingFinished();
+
+    void on_roughness_samples_edit_returnPressed();
+
+    void on_maximum_recursion_depth_edit_editingFinished();
+
+    void on_maximum_recursion_depth_edit_returnPressed();
+
 private:
     Ui::MainWindow *ui;
 

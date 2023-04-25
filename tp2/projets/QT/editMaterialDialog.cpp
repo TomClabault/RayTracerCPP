@@ -25,6 +25,7 @@ EditMaterialDialog::EditMaterialDialog(QWidget *parent) :
     update_color_frames();
 
     this->ui->reflection_intensity_edit->setText(std::to_string(Renderer::DEFAULT_MATERIAL.reflection).c_str());
+    this->ui->roughness_edit->setText(std::to_string(Renderer::DEFAULT_MATERIAL.roughness).c_str());
     this->ui->shininess_edit->setText(std::to_string(Renderer::DEFAULT_MATERIAL.ns).c_str());
     this->ui->refraction_index_edit->setText(std::to_string(Renderer::DEFAULT_MATERIAL.ni).c_str());
 }
@@ -67,6 +68,17 @@ float EditMaterialDialog::get_reflection_intensity()
         return reflection_intensity;
 }
 
+float EditMaterialDialog::get_roughness()
+{
+    bool ok;
+
+    float roughnesss = this->ui->roughness_edit->text().toFloat(&ok);
+    if (!ok)
+        return -1;
+    else
+        return roughnesss;
+}
+
 Material EditMaterialDialog::get_material()
 {
     Material mat;
@@ -84,6 +96,9 @@ Material EditMaterialDialog::get_material()
     mat.reflection = get_reflection_intensity();
     if (mat.reflection == -1)
         mat.reflection = 0.0f;//Default value
+    mat.roughness = get_roughness();
+    if (mat.roughness == -1)
+        mat.roughness = 0.0f;//Default value
     mat.ns_texture = -1;
     mat.specular_texture = -1;
     mat.specular = _specular_color;

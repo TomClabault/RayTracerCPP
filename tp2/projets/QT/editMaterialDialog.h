@@ -21,6 +21,7 @@ public:
     float get_refraction_index();
     float get_shininess();
     float get_reflection_intensity();
+    float get_roughness();
 
     Material get_material();
 
