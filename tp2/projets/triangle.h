@@ -69,6 +69,8 @@ public:
 
     bool barycentric_coordinates(const Point& point, float& u, float& v) const;
 
+    Vector get_tangent(const Vector& ab, const Vector& ac) const;
+
     /**
      * @brief Given UV barycentric coordinates, computes and stores the UV texture coordinates
      * of the same point in \param out_tex_u and \param out_tex_v

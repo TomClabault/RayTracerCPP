@@ -21,8 +21,8 @@ Color Renderer::BACKGROUND_COLOR = Color(135.0f / 255.0f, 206.0f / 255.0f, 235.0
 Material init_default_material()
 {
     Material mat = Material(Color(1.0f, 0.0f, 0.5f));//Pink color
-    mat.specular = Color(0.0f, 0.0f, 0.0f);
-    mat.ns = 30;
+    mat.specular = Color(0.5f, 0.5f, 0.5f);
+    mat.ns = 5;
     mat.reflection = 0.0f;
 
     return mat;
@@ -44,18 +44,8 @@ Material init_default_plane_material()
     return mat;
 }
 
-Material init_debug_material_1()
-{
-    Material mat = Material(Color(0.5f, 0.5f, 1.0f));//Blueish color
-    mat.specular = Color(1.0f, 1.0f, 1.0f);
-    mat.ns = 15;
-
-    return mat;
-}
-
 Material Renderer::DEFAULT_MATERIAL = init_default_material();
 Material Renderer::DEFAULT_PLANE_MATERIAL = init_default_plane_material();
-Material Renderer::DEBUG_MATERIAL_1 = init_debug_material_1();
 
 Material Renderer::get_random_diffuse_pastel_material()
 {
@@ -178,11 +168,16 @@ void Renderer::set_light_position(const Point& position) { _scene._point_light._
 
 void Renderer::set_ao_map(const Image& ao_map) { _ao_map = ao_map; }
 void Renderer::set_diffuse_map(const Image& diffuse_map) { _diffuse_map = diffuse_map; }
+void Renderer::set_normal_map(const Image& normal_map) { _normal_map = normal_map; }
+void Renderer::set_displacement_map(const Image& displacement_map) { _displacement_map = displacement_map; }
+
 void Renderer::set_skysphere(const Image& skybox) { _skysphere = skybox; }
 void Renderer::set_skybox(const Skybox& skybox) { _skybox = skybox; }
 
 void Renderer::clear_ao_map() { _ao_map = Image(); }
 void Renderer::clear_diffuse_map() { _diffuse_map = Image(); }
+void Renderer::clear_normal_map() { _normal_map = Image(); }
+void Renderer::clear_displacement_map() { _displacement_map = Image(); }
 
 Color Renderer::sample_texture(const Image& texture, float& tex_coord_u, float& tex_coord_v) const
 {
@@ -372,35 +367,91 @@ Color Renderer::shade_visualize_ao(const Triangle& triangle, float u, float v) c
     return color;
 }
 
+void Renderer::get_tex_coords(const Triangle* triangle, float u, float v, float& tex_coord_u, float& tex_coord_v) const
+{
+    if (triangle != nullptr)
+        triangle->interpolate_texcoords(u, v, tex_coord_u, tex_coord_v);
+    else
+    {
+        tex_coord_u = u;
+        tex_coord_v = v;
+    }
+}
+
+float Renderer::ao_mapping(const HitInfo& hit_info, float u, float v) const
+{
+    float tex_coord_u, tex_coord_v;
+    get_tex_coords(hit_info.triangle, u, v, tex_coord_u, tex_coord_v);
+
+    return sample_texture(_ao_map, tex_coord_u, tex_coord_v).r;
+}
+
+Color Renderer::diffuse_mapping(const HitInfo& hit_info, float u, float v) const
+{
+    float tex_coord_u, tex_coord_v;
+    get_tex_coords(hit_info.triangle, u, v, tex_coord_u, tex_coord_v);
+
+    return sample_texture(_diffuse_map, tex_coord_u, tex_coord_v);
+}
+
+
+Vector Renderer::normal_mapping(const HitInfo& hit_info, float u, float v) const
+{
+    float tex_coord_u, tex_coord_v;
+    get_tex_coords(hit_info.triangle, u, v, tex_coord_u, tex_coord_v);
+
+    Vector tangent = hit_info.tangent;
+    Vector bitangent = cross(tangent, hit_info.normal_at_intersection);
+
+    Transform btn_matrix = Transform(tangent, bitangent, hit_info.normal_at_intersection, Vector(0, 0, 0));
+
+    Color normal_color = sample_texture(_normal_map, tex_coord_u, tex_coord_v);
+    Vector normal_map_normal = Vector(normal_color.r, normal_color.g, normal_color.b) * 2 - Vector(1, 1, 1);
+    Vector perturbed_normal = btn_matrix(normalize(normal_map_normal));
+    return normalize(perturbed_normal);
+}
+
+void Renderer::parallax_mapping(const Triangle* triangle, float u, float v, const Point& original_inter_point, const Vector& view_dir, float& new_u, float& new_v) const
+{
+    float tex_coord_u, tex_coord_v;
+    get_tex_coords(triangle, u, v, tex_coord_u, tex_coord_v);
+
+    float inter_point_height = sample_texture(_displacement_map, tex_coord_u, tex_coord_v).r / (float)255;
+
+    new_u = u - view_dir.x * inter_point_height * _render_settings.displacement_mapping_strength;
+    new_v = v - view_dir.y * inter_point_height * _render_settings.displacement_mapping_strength;
+}
+
 Color Renderer::shade_ray_inter_point(const Ray& ray, const HitInfo& hit_info) const
 {
     Color final_color = Color(0.0f, 0.0f, 0.0f);
 
     if (_render_settings.shading_method == RenderSettings::ShadingMethod::RT_SHADING)
     {
+        //UV coordinates
+        float u = hit_info.u, v = hit_info.v;
+
         Point inter_point = ray._origin + ray._direction * hit_info.t;
+        if (_render_settings.enable_displacement_mapping)
+            parallax_mapping(hit_info.triangle, hit_info.u, hit_info.v, inter_point, normalize(_scene._camera._position - inter_point), u, v);
+
         Vector direction_to_light = normalize(_scene._point_light._position - inter_point);
-        Vector normal = hit_info.normal_at_intersection;
+        Vector normal;
+
+        if (_render_settings.enable_normal_mapping)
+            normal = normal_mapping(hit_info, u, v);
+        else
+            normal = hit_info.normal_at_intersection;
 
         Material hit_material = _materials(hit_info.mat_index);
 
         float ao_map_contribution = 1.0f;
         if (_render_settings.enable_ao_mapping)
-        {
-            float tex_coord_u, tex_coord_v;
-            hit_info.triangle->interpolate_texcoords(hit_info.u, hit_info.v, tex_coord_u, tex_coord_v);
-
-            ao_map_contribution = sample_texture(_ao_map, tex_coord_u, tex_coord_v).r;
-        }
+            ao_map_contribution = ao_mapping(hit_info, u, v);
 
         Color diffuse_color;
         if (_render_settings.enable_diffuse_mapping)
-        {
-            float tex_coord_u, tex_coord_v;
-            hit_info.triangle->interpolate_texcoords(hit_info.u, hit_info.v, tex_coord_u, tex_coord_v);
-
-            diffuse_color = sample_texture(_diffuse_map, tex_coord_u, tex_coord_v);
-        }
+            diffuse_color = diffuse_mapping(hit_info, u, v);
         else
             diffuse_color = compute_diffuse(hit_material, normal, direction_to_light);
 
@@ -893,7 +944,7 @@ void Renderer::ray_trace()
     if (_render_settings.enable_ssaa)
         _image = QImage(render_width, render_height, QImage::Format_ARGB32);
 
-#pragma omp parallel for schedule(dynamic) collapse(2)
+#pragma omp parallel for schedule(dynamic)
     for (int py = 0; py < render_height; py++)
     {
         //Adding 0.5 to consider the center of the pixel

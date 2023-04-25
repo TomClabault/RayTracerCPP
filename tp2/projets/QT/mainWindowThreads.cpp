@@ -16,6 +16,9 @@ void DisplayThread::run()
 
             emit update_image();
         }
+        else
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
     }
 }
 

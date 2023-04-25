@@ -8,6 +8,8 @@ Sphere::Sphere(const Point& center, float radius, int mat_index) : _center(cente
 
 bool Sphere::intersect(const Ray& ray, HitInfo& hit_info, bool compute_uv) const
 {
+    compute_uv = true;
+
     Vector L = ray._origin - _center;
     constexpr float a = 1;//dot(ray._direction, ray._direction) = 1 because direction is normalized
     float b = 2 * dot(ray._direction, L);
@@ -46,6 +48,9 @@ bool Sphere::intersect(const Ray& ray, HitInfo& hit_info, bool compute_uv) const
         {
             hit_info.u = 0.5 + std::atan2(-hit_info.normal_at_intersection.z, -hit_info.normal_at_intersection.x) / (2 * M_PI);
             hit_info.v = 0.5 + std::asin(-hit_info.normal_at_intersection.y) / M_PI;
+
+            //NOTE (Tom): This creates singularities at the poles!
+            hit_info.tangent = cross(Vector(0, 0, 1), hit_info.normal_at_intersection);
         }
 
         hit_info.mat_index = _mat_index;

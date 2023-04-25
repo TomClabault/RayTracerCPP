@@ -68,11 +68,16 @@ public:
 
     void set_ao_map(const Image& ao_map);
     void set_diffuse_map(const Image& diffuse_map);
+    void set_normal_map(const Image& normal_map);
+    void set_displacement_map(const Image& displacement_map);
+
     void set_skysphere(const Image& skybox);
     void set_skybox(const Skybox& skybox);
 
     void clear_ao_map();
     void clear_diffuse_map();
+    void clear_normal_map();
+    void clear_displacement_map();
 
     Color sample_texture(const Image& texture, float& tex_coord_u, float& tex_coord_v) const;
     
@@ -201,6 +206,59 @@ private:
     Color shade_visualize_ao(const Triangle& triangle, float u, float v) const;
 
     /**
+     * @brief This function basically interpolates the tex coords at the intersection
+     * point between the three vertices of the intersected triangle and stores the
+     * interpolated u and v in \param tex_coord_u and \param tex_coord_v. If the intersected
+     * shape isn't a triangle, \param tex_coord_u and \param tex_coord_v are set to
+     * \param u and \param v respectively
+     * @param triangle The intersected triangle. nullptr if an object other than a triangle was intersected
+     * @param u Input u coordinate to interpolate
+     * @param v Input v coordinate to interpolate
+     * @param [out] tex_coord_u The computed u texcoord
+     * @param [out] tex_coord_v The computed v texcoord
+     */
+    void get_tex_coords(const Triangle* triangle, float u, float v, float& tex_coord_u, float& tex_coord_v) const;
+
+    /**
+     * @brief Computes the ambient occlusion at the intersection point given
+     * by the hit_info struct and returns the occlusion factor
+     * @param hit_info The HitInfo struct
+     * @param u The u (from UV) coordinate to use for the texture sampling. Useful
+     * if using UV coordinates from displacement mapping is needed
+     * @param v The v (from UV) coordinate to use for the texture sampling. Useful
+     * if using UV coordinates from displacement mapping is needed
+     * @return The ambient occlusion factor
+     */
+    float ao_mapping(const HitInfo& hit_info, float u, float v) const;
+
+    /**
+     * @brief Computes the color from the diffuse map contained in the
+     * renderer using the given HitInfo
+     * @param hit_info The HitInfo struct
+     * @param u The u (from UV) coordinate to use for the texture sampling. Useful
+     * if using UV coordinates from displacement mapping is needed
+     * @param v The v (from UV) coordinate to use for the texture sampling. Useful
+     * if using UV coordinates from displacement mapping is needed
+     * @return The appropriate diffuse color
+     */
+    Color diffuse_mapping(const HitInfo& hit_info, float u, float v) const;
+
+    /**
+     * @brief Computes and returns the perturbed normal using the hit_info struct
+     * passed
+     * @param hit_info The structure containing the information about the intersection
+     * we just found
+     * @param u The u (from UV) coordinate to use for the texture sampling. Useful
+     * if using UV coordinates from displacement mapping is needed
+     * @param v The v (from UV) coordinate to use for the texture sampling. Useful
+     * if using UV coordinates from displacement mapping is needed
+     * @return The perturbed normal
+     */
+    Vector normal_mapping(const HitInfo& hit_info, float u, float v) const;
+
+    void parallax_mapping(const Triangle* triangle, float u, float v, const Point& original_inter_point, const Vector& view_dir, float& new_u, float& new_v) const;
+
+    /**
      * @brief Computes the color of the point intersection of a ray and the scene
      * @param ray The ray that intersected the scene
      * @param hit_info The information about the intersection that occured
@@ -258,8 +316,12 @@ private:
 	BVH _bvh;
 
     QImage _image;
+
     Image _ao_map;
     Image _diffuse_map;
+    Image _normal_map;
+    Image _displacement_map;
+
     Image _skysphere;
     Skybox _skybox;
 

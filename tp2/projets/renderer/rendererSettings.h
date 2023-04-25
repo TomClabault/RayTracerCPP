@@ -27,9 +27,6 @@ struct RenderSettings
     RenderSettings() {}
     RenderSettings(int width, int height) : image_width(width), image_height(height) {}
 
-    static RenderSettings basic_settings(int width, int height, bool hybrid_raster_trace = true);
-    static RenderSettings ssaa_settings(int width, int height, int ssaa_factor, bool hybrid_raster_trace = true, bool compute_shadows = false);
-
     int image_width = 1024;
     int image_height = 1024;
 
@@ -46,7 +43,7 @@ struct RenderSettings
     //triangles and then ray tracing for the rest of computations (shadows, reflections, ...)
     //0 for full ray-tracing
     //1 for rasterization/ray-tracing
-    bool hybrid_rasterization_tracing = true;
+    bool hybrid_rasterization_tracing = false;
 
     //Shading method used to shade the triangles
     ShadingMethod shading_method = RT_SHADING;
@@ -85,6 +82,12 @@ struct RenderSettings
     bool enable_ao_mapping = false;
     //Whether or not to use a texture to compute the diffuse color
     bool enable_diffuse_mapping = false;
+    //Whether or not to get the normals from a texture
+    bool enable_normal_mapping = false;
+    //Whether or not to use displacement mapping (steep occlusion mapping)
+    bool enable_displacement_mapping = false;
+    float displacement_mapping_strength = 1.0f;
+
     //Whether or not to sample the background color from a texture or not
     //If false, the background color of the scene will be a plain color
     bool enable_skysphere = false;//Mapping from equirectangular image to skysphere

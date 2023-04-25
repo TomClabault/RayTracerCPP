@@ -41,6 +41,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     //Initializing the light's position
     on_light_position_edit_editingFinished();
 
+    //TODO Load la skybox dans un thread pour pas freeze l'interface
     load_skybox_into_renderer("data/skybox");
     _renderer.render_settings().enable_skybox = true;
 
@@ -359,7 +360,7 @@ void MainWindow::on_dump_render_to_file_button_clicked()
     if (filename == "")
         return;
 
-    this->_renderer.get_image()->save(filename);
+    this->_renderer.get_image()->mirrored().save(filename);
 }
 
 void MainWindow::on_render_width_edit_returnPressed() { on_render_button_clicked(); }
@@ -514,6 +515,26 @@ void MainWindow::on_load_diffuse_map_button_clicked()
 
         QStringList split_path = file_path.split("/");
         this->ui->diffuse_map_loaded_edit->setText(split_path[split_path.size() - 1]);
+    }
+}
+
+void MainWindow::on_load_normal_map_button_clicked()
+{
+    QFileDialog dialog(this, "Open Normal Map");
+    dialog.setFileMode(QFileDialog::ExistingFile);
+    dialog.setNameFilter(tr("Image File (*.png *.jpg)"));
+
+    if (dialog.exec())
+    {
+        QStringList files = dialog.selectedFiles();
+        QString file_path = files[0];
+
+        Image normal_map = load_texture_map(file_path.toStdString().c_str());//TODO Image pas en float c'est trop lourd
+
+        _renderer.set_normal_map(normal_map);
+
+        QStringList split_path = file_path.split("/");
+        this->ui->normal_map_loaded_edit->setText(split_path[split_path.size() - 1]);
     }
 }
 
@@ -679,6 +700,14 @@ void MainWindow::on_diffuse_map_check_box_stateChanged(int checked)
     this->ui->diffuse_map_loaded_edit->setEnabled(checked);
 }
 
+void MainWindow::on_normal_map_checkbox_stateChanged(int checked)
+{
+    _renderer.render_settings().enable_normal_mapping = checked;
+
+    this->ui->load_normal_map_button->setEnabled(checked);
+    this->ui->normal_map_loaded_edit->setEnabled(checked);
+}
+
 void MainWindow::on_ssao_1_check_box_stateChanged(int checked)
 {
     //We're not changing the render settings here as this will be done
@@ -702,8 +731,10 @@ void MainWindow::on_enable_diffuse_checkbox_stateChanged(int checked) { _rendere
 void MainWindow::on_enable_specular_checkbox_stateChanged(int checked) { _renderer.render_settings().enable_specular = checked; }
 void MainWindow::on_enable_emissive_checkbox_stateChanged(int checked) { _renderer.render_settings().enable_emissive = checked; }
 
-void MainWindow::on_clear_diffuse_map_button_clicked() { _renderer.clear_diffuse_map(); this->ui->diffuse_map_loaded_edit->setText("no diffuse map loaded"); }
-void MainWindow::on_clear_ao_map_button_clicked(){ _renderer.clear_ao_map(); this->ui->ao_map_loaded_edit->setText("no ao map loaded"); }
+void MainWindow::on_clear_ao_map_button_clicked(){ _renderer.clear_ao_map(); this->ui->ao_map_loaded_edit->setText("no map loaded"); }
+void MainWindow::on_clear_diffuse_map_button_clicked() { _renderer.clear_diffuse_map(); this->ui->diffuse_map_loaded_edit->setText("no map loaded"); }
+void MainWindow::on_clear_normal_map_button_clicked() { _renderer.clear_normal_map(); this->ui->normal_map_loaded_edit->setText("no map loaded"); }
+void MainWindow::on_clear_displacement_map_button_clicked() { _renderer.clear_displacement_map(); this->ui->displacement_map_loaded_edit->setText("no map loaded"); }
 
 void MainWindow::on_clear_scene_button_clicked() { _renderer.clear_geometry(); }
 
@@ -979,4 +1010,49 @@ void MainWindow::on_skybox_radio_button_toggled(bool checked)
     this->ui->load_skybox_button->setEnabled(checked);
     this->ui->skybox_loaded_edit->setEnabled(checked);
 }
+
 void MainWindow::on_no_sky_texture_button_toggled(bool checked) { if (checked) _renderer.render_settings().enable_skybox = _renderer.render_settings().enable_skysphere = false; }
+
+void MainWindow::on_load_displacement_map_button_clicked()
+{
+    QFileDialog dialog(this, "Open Displacement Map");
+    dialog.setFileMode(QFileDialog::ExistingFile);
+    dialog.setNameFilter(tr("Image File (*.png *.jpg)"));
+
+    if (dialog.exec())
+    {
+        QStringList files = dialog.selectedFiles();
+        QString file_path = files[0];
+
+        Image displacement_map = load_texture_map(file_path.toStdString().c_str());//TODO Image en 8 bit please
+
+        _renderer.set_displacement_map(displacement_map);
+
+        QStringList split_path = file_path.split("/");
+        this->ui->displacement_map_loaded_edit->setText(split_path[split_path.size() - 1]);
+    }
+}
+
+void MainWindow::on_displacement_map_check_box_stateChanged(int checked)
+{
+    _renderer.render_settings().enable_displacement_mapping = checked;
+
+    this->ui->load_displacement_map_button->setEnabled(checked);
+    this->ui->displacement_map_loaded_edit->setEnabled(checked);
+    this->ui->displacement_strength_label->setEnabled(checked);
+    this->ui->displacement_strength_edit->setEnabled(checked);
+}
+
+void MainWindow::on_displacement_strength_edit_editingFinished()
+{
+    float displacement_strength = safe_text_to_float(this->ui->displacement_strength_edit->text());
+    if (displacement_strength != -1)
+        _renderer.render_settings().displacement_mapping_strength = displacement_strength;
+}
+
+void MainWindow::on_displacement_strength_edit_returnPressed()
+{
+    on_displacement_strength_edit_editingFinished();
+    on_render_button_clicked();
+}
+

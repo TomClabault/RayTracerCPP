@@ -82,6 +82,7 @@ bool Triangle::intersect(const Ray& ray, HitInfo& hitInfo) const
     //Barycentric coordinates are: P = (1 - u - v)A + uB + vC
     hitInfo.u = u;
     hitInfo.v = v;
+    hitInfo.tangent = get_tangent(ab, ac);
     hitInfo.mat_index = _materialIndex;
     hitInfo.normal_at_intersection = normalize(_normal);
     hitInfo.triangle = this;
@@ -128,6 +129,27 @@ bool Triangle::barycentric_coordinates(const Point& point, float& u, float& v) c
         return false;
 
     return true;
+}
+
+Vector Triangle::get_tangent(const Vector& ab, const Vector& ac) const
+{
+    float u1 = _tex_coords_u.x, v1 = _tex_coords_v.x;
+    float u2 = _tex_coords_u.y, v2 = _tex_coords_v.y;
+    float u3 = _tex_coords_u.z, v3 = _tex_coords_v.z;
+
+    float deltaU1 = u2 - u1;
+    float deltaV1 = v2 - v1;
+    float deltaU2 = u3 - u1;
+    float deltaV2 = v3 - v1;
+
+    float f = 1.0f / (deltaU1 * deltaV2 - deltaU2 * deltaV1);
+
+    Vector tangent;
+    tangent.x = f * (deltaV2 * ab.x - deltaV1 * ac.x);
+    tangent.y = f * (deltaV2 * ab.y - deltaV1 * ac.y);
+    tangent.z = f * (deltaV2 * ab.z - deltaV1 * ac.z);
+
+    return tangent;
 }
 
 void Triangle::interpolate_texcoords(float u, float v, float& out_tex_u, float& out_tex_v) const

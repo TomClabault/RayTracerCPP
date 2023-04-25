@@ -214,6 +214,22 @@ private slots:
 
     void on_no_sky_texture_button_toggled(bool checked);
 
+    void on_load_normal_map_button_clicked();
+
+    void on_normal_map_checkbox_stateChanged(int arg1);
+
+    void on_clear_normal_map_button_clicked();
+
+    void on_displacement_map_check_box_stateChanged(int arg1);
+
+    void on_load_displacement_map_button_clicked();
+
+    void on_clear_displacement_map_button_clicked();
+
+    void on_displacement_strength_edit_editingFinished();
+
+    void on_displacement_strength_edit_returnPressed();
+
 private:
     Ui::MainWindow *ui;
 
