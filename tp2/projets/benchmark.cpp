@@ -15,8 +15,12 @@ void Benchmark::benchmark_bvh_parameters(const char* filepath, Transform model_t
 	for (int obj_count = min_obj_count; obj_count <= max_obj_count; obj_count += obj_count_step)
 	{
 		for (int depth = min_depth; depth <= max_depth; depth += depth_step)
-		{
-			RenderSettings render_settings = RenderSettings::basic_settings(1920, 1080, false);
+        {
+            RenderSettings render_settings;
+            render_settings.image_width = 1920;
+            render_settings.image_height = 1080;
+            render_settings.hybrid_rasterization_tracing = false;
+
 			render_settings.bvh_leaf_object_count = obj_count;
             render_settings.bvh_max_depth = depth;
             render_settings.shading_method = RenderSettings::ShadingMethod::RT_SHADING;

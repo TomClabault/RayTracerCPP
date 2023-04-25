@@ -1,28 +1,29 @@
 #include "rendererSettings.h"
 
-RenderSettings RenderSettings::basic_settings(int width, int height, bool hybrid_raster_trace)
-{
-    RenderSettings settings;
-    settings.image_width = width;
-    settings.image_height = height;
-    settings.hybrid_rasterization_tracing = hybrid_raster_trace;
-    settings.compute_shadows = false;
+//TODO remove eventually
+//RenderSettings RenderSettings::basic_settings(int width, int height, bool hybrid_raster_trace)
+//{
+//    RenderSettings settings;
+//    settings.image_width = width;
+//    settings.image_height = height;
+//    settings.hybrid_rasterization_tracing = hybrid_raster_trace;
+//    settings.compute_shadows = false;
 
-    return settings;
-}
+//    return settings;
+//}
 
-RenderSettings RenderSettings::ssaa_settings(int width, int height, int ssaa_factor, bool hybrid_raster_trace, bool compute_shadows)
-{
-    RenderSettings settings;
-    settings.image_width = width;
-    settings.image_height = height;
-    settings.enable_ssaa = true;
-    settings.ssaa_factor = ssaa_factor;
-    settings.hybrid_rasterization_tracing = hybrid_raster_trace;
-    settings.compute_shadows = compute_shadows;
+//RenderSettings RenderSettings::ssaa_settings(int width, int height, int ssaa_factor, bool hybrid_raster_trace, bool compute_shadows)
+//{
+//    RenderSettings settings;
+//    settings.image_width = width;
+//    settings.image_height = height;
+//    settings.enable_ssaa = true;
+//    settings.ssaa_factor = ssaa_factor;
+//    settings.hybrid_rasterization_tracing = hybrid_raster_trace;
+//    settings.compute_shadows = compute_shadows;
 
-    return settings;
-}
+//    return settings;
+//}
 
 std::ostream& operator << (std::ostream& os, const RenderSettings& settings)
 {

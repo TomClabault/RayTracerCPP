@@ -79,7 +79,7 @@ public:
     void clear_normal_map();
     void clear_displacement_map();
 
-    Color sample_texture(const Image& texture, float& tex_coord_u, float& tex_coord_v) const;
+    Color sample_texture(const Image& texture, float tex_coord_u, float tex_coord_v) const;
     
     void reset_previous_transform();
 
@@ -257,6 +257,8 @@ private:
     Vector normal_mapping(const HitInfo& hit_info, float u, float v) const;
 
     void parallax_mapping(const Triangle* triangle, float u, float v, const Point& original_inter_point, const Vector& view_dir, float& new_u, float& new_v) const;
+    void steep_parallax_mapping(const Triangle* triangle, float u, float v, const Point& original_inter_point, const Vector& view_dir, float& new_u, float& new_v) const;
+    void parallax_occlusion_mapping(const Triangle* triangle, float u, float v, const Point& original_inter_point, const Vector& view_dir, float& new_u, float& new_v) const;
 
     /**
      * @brief Computes the color of the point intersection of a ray and the scene

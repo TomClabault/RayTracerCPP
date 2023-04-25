@@ -230,6 +230,10 @@ private slots:
 
     void on_displacement_strength_edit_returnPressed();
 
+    void on_parallax_steps_edit_editingFinished();
+
+    void on_parallax_steps_edit_returnPressed();
+
 private:
     Ui::MainWindow *ui;
 

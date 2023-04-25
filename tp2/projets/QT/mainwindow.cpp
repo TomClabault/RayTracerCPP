@@ -112,11 +112,7 @@ void MainWindow::update_render_image()
 //#if QT_VERSION >= 0x060000
 //    _renderer.get_image()->mirror();
 //#else
-    Timer timerr;
-    timerr.start();
     _render_display_context._mirrored_image_buffer = _renderer.get_image()->mirrored();
-    timerr.stop();
-    std::cout << "Mirror time: " << timerr.elapsed() << std::endl;
 //    *_renderer.get_image() = QImage(mirrored);
 //#endif
 
@@ -127,15 +123,12 @@ void MainWindow::update_render_image()
     _render_display_context._graphics_scene = new QGraphicsScene(this);
 
     _render_display_context._graphics_scene->clear();
-    timerr.start();
     _render_display_context._graphics_scene->addPixmap(QPixmap::fromImage(_render_display_context._mirrored_image_buffer));
-    timerr.stop();
-    std::cout << "Add pixmap time: " << timerr.elapsed() << std::endl;
 
     this->ui->graphics_view->setScene(_render_display_context._graphics_scene);
 
     timer.stop();
-    std::cout << "Display update time: " << timer.elapsed() << "ms" << std::endl << std::endl;
+    std::cout << "Display update time: " << timer.elapsed() << "ms" << std::endl;
 
     //Indicate the display thread that the update is done and new
     //update events can be sent
@@ -1041,6 +1034,8 @@ void MainWindow::on_displacement_map_check_box_stateChanged(int checked)
     this->ui->displacement_map_loaded_edit->setEnabled(checked);
     this->ui->displacement_strength_label->setEnabled(checked);
     this->ui->displacement_strength_edit->setEnabled(checked);
+    this->ui->parallax_steps_label->setEnabled(checked);
+    this->ui->parallax_steps_edit->setEnabled(checked);
 }
 
 void MainWindow::on_displacement_strength_edit_editingFinished()
@@ -1053,6 +1048,19 @@ void MainWindow::on_displacement_strength_edit_editingFinished()
 void MainWindow::on_displacement_strength_edit_returnPressed()
 {
     on_displacement_strength_edit_editingFinished();
+    on_render_button_clicked();
+}
+
+void MainWindow::on_parallax_steps_edit_editingFinished()
+{
+    int parallax_steps = safe_text_to_int(this->ui->parallax_steps_edit->text());
+    if (parallax_steps != -1)
+        _renderer.render_settings().parallax_mapping_steps = parallax_steps;
+}
+
+void MainWindow::on_parallax_steps_edit_returnPressed()
+{
+    on_parallax_steps_edit_editingFinished();
     on_render_button_clicked();
 }
 

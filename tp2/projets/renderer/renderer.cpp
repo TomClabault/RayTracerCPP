@@ -64,6 +64,8 @@ Material Renderer::get_random_diffuse_pastel_material()
     return mat;
 }
 
+Renderer::Renderer() : Renderer(Scene(), std::vector<Triangle>(), RenderSettings()) {}
+
 Renderer::Renderer(Scene scene, std::vector<Triangle> triangles, RenderSettings render_settings) : _triangles(triangles),
     _render_settings(render_settings), _scene(scene)
 {
@@ -77,8 +79,6 @@ Renderer::Renderer(Scene scene, std::vector<Triangle> triangles, RenderSettings 
     init_buffers(render_width, render_height);
     _scene._camera.set_aspect_ratio((float)render_width / render_height);
 }
-
-Renderer::Renderer() : Renderer(Scene(), std::vector<Triangle>(), RenderSettings::basic_settings(1280, 720)) {}
 
 QImage* Renderer::get_image()
 {
@@ -179,9 +179,11 @@ void Renderer::clear_diffuse_map() { _diffuse_map = Image(); }
 void Renderer::clear_normal_map() { _normal_map = Image(); }
 void Renderer::clear_displacement_map() { _displacement_map = Image(); }
 
-Color Renderer::sample_texture(const Image& texture, float& tex_coord_u, float& tex_coord_v) const
+Color Renderer::sample_texture(const Image& texture, float tex_coord_u, float tex_coord_v) const
 {
-    return texture.texture(tex_coord_u, tex_coord_v);
+    //1 - tex_coord_v because gkit samples textures from bottom to top meaning that
+    //if we don't have "1 -" here, our textures maps will be mirrored (top flipped to the bottom)
+    return texture.texture(tex_coord_u, 1 - tex_coord_v);
 }
 
 void Renderer::reset_previous_transform() { _previous_object_transform = Identity(); }
@@ -416,10 +418,75 @@ void Renderer::parallax_mapping(const Triangle* triangle, float u, float v, cons
     float tex_coord_u, tex_coord_v;
     get_tex_coords(triangle, u, v, tex_coord_u, tex_coord_v);
 
-    float inter_point_height = sample_texture(_displacement_map, tex_coord_u, tex_coord_v).r / (float)255;
+    float inter_point_depth = sample_texture(_displacement_map, tex_coord_u, tex_coord_v).r;
 
-    new_u = u - view_dir.x * inter_point_height * _render_settings.displacement_mapping_strength;
-    new_v = v - view_dir.y * inter_point_height * _render_settings.displacement_mapping_strength;
+    new_u = u - view_dir.x * inter_point_depth * _render_settings.displacement_mapping_strength;
+    new_v = v - view_dir.y * inter_point_depth * _render_settings.displacement_mapping_strength;
+}
+
+void Renderer::steep_parallax_mapping(const Triangle* triangle, float u, float v, const Point& original_inter_point, const Vector& view_dir, float& new_u, float& new_v) const
+{
+    float tex_coord_u, tex_coord_v;
+    get_tex_coords(triangle, u, v, tex_coord_u, tex_coord_v);
+
+    float current_depth;
+    float depth_step = 1.0f / _render_settings.parallax_mapping_steps;
+    float sampled_depth = sample_texture(_displacement_map, tex_coord_u, tex_coord_v).r;
+
+    Vector search_direction = -view_dir * _render_settings.displacement_mapping_strength;
+
+    float delta_u = search_direction.x / _render_settings.parallax_mapping_steps;
+    float delta_v = search_direction.y / _render_settings.parallax_mapping_steps;
+
+    current_depth = 0.0f;
+    new_u = tex_coord_u;
+    new_v = tex_coord_v;
+    while (current_depth < sampled_depth)
+    {
+        new_u += delta_u;
+        new_v += delta_v;
+
+        sampled_depth = sample_texture(_displacement_map, new_u, new_v).r;
+        current_depth += depth_step;
+    }
+}
+
+void Renderer::parallax_occlusion_mapping(const Triangle* triangle, float u, float v, const Point& original_inter_point, const Vector& view_dir, float& new_u, float& new_v) const
+{
+    float tex_coord_u, tex_coord_v;
+    get_tex_coords(triangle, u, v, tex_coord_u, tex_coord_v);
+
+    float current_depth;
+    float depth_step = 1.0f / _render_settings.parallax_mapping_steps;
+    float sampled_depth = sample_texture(_displacement_map, tex_coord_u, tex_coord_v).r;
+
+    Vector search_direction = -view_dir * _render_settings.displacement_mapping_strength;
+
+    float delta_u = search_direction.x / _render_settings.parallax_mapping_steps;
+    float delta_v = search_direction.y / _render_settings.parallax_mapping_steps;
+
+    current_depth = 0.0f;
+    new_u = tex_coord_u;
+    new_v = tex_coord_v;
+    while (current_depth < sampled_depth)
+    {
+        new_u += delta_u;
+        new_v += delta_v;
+
+        sampled_depth = sample_texture(_displacement_map, new_u, new_v).r;
+        current_depth += depth_step;
+    }
+
+    float previous_u_coord = new_u - delta_u;
+    float previous_v_coord = new_v - delta_v;
+
+    float after_depth = sampled_depth - current_depth;
+    float before_depth = sample_texture(_displacement_map, previous_u_coord, previous_v_coord).r - (current_depth - depth_step);
+
+    float interpolation_weight = after_depth / (after_depth - before_depth);
+
+    new_u = (1 - interpolation_weight) * new_u + interpolation_weight * previous_u_coord;
+    new_v = (1 - interpolation_weight) * new_v + interpolation_weight * previous_v_coord;
 }
 
 Color Renderer::shade_ray_inter_point(const Ray& ray, const HitInfo& hit_info) const
@@ -433,7 +500,7 @@ Color Renderer::shade_ray_inter_point(const Ray& ray, const HitInfo& hit_info) c
 
         Point inter_point = ray._origin + ray._direction * hit_info.t;
         if (_render_settings.enable_displacement_mapping)
-            parallax_mapping(hit_info.triangle, hit_info.u, hit_info.v, inter_point, normalize(_scene._camera._position - inter_point), u, v);
+            steep_parallax_mapping(hit_info.triangle, hit_info.u, hit_info.v, inter_point, normalize(_scene._camera._position - inter_point), u, v);
 
         Vector direction_to_light = normalize(_scene._point_light._position - inter_point);
         Vector normal;
@@ -944,7 +1011,7 @@ void Renderer::ray_trace()
     if (_render_settings.enable_ssaa)
         _image = QImage(render_width, render_height, QImage::Format_ARGB32);
 
-#pragma omp parallel for schedule(dynamic)
+//#pragma omp parallel for schedule(dynamic)
     for (int py = 0; py < render_height; py++)
     {
         //Adding 0.5 to consider the center of the pixel

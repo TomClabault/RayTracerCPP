@@ -49,7 +49,7 @@ struct RenderSettings
     ShadingMethod shading_method = RT_SHADING;
 
     //true to compute shadows, false not to
-    bool compute_shadows = true;
+    bool compute_shadows = false;
 
     //Whether or not to use a BVH to intersect the scene
     bool enable_bvh = true;
@@ -87,6 +87,7 @@ struct RenderSettings
     //Whether or not to use displacement mapping (steep occlusion mapping)
     bool enable_displacement_mapping = false;
     float displacement_mapping_strength = 1.0f;
+    int parallax_mapping_steps = 10;
 
     //Whether or not to sample the background color from a texture or not
     //If false, the background color of the scene will be a plain color
