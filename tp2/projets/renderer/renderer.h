@@ -78,6 +78,7 @@ public:
     void set_diffuse_map(const Image& diffuse_map);
     void set_normal_map(const Image& normal_map);
     void set_displacement_map(const Image& displacement_map);
+    void set_roughness_map(const Image& displacement_map);
 
     void set_skysphere(const Image& skybox);
     void set_skybox(const Skybox& skybox);
@@ -86,6 +87,7 @@ public:
     void clear_diffuse_map();
     void clear_normal_map();
     void clear_displacement_map();
+    void clear_roughness_map();
 
     Color sample_texture(const Image& texture, float tex_coord_u, float tex_coord_v) const;
     
@@ -338,10 +340,12 @@ private:
     std::mutex _image_mutex;
     QImage _image;
 
+    //TODO mettre ces images dans les Materiaux
     Image _ao_map;
     Image _diffuse_map;
     Image _normal_map;
     Image _displacement_map;
+    Image _roughness_map;
 
     Image _skysphere;
     Skybox _skybox;

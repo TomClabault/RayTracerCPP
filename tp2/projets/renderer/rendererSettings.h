@@ -93,6 +93,8 @@ struct RenderSettings
     bool enable_displacement_mapping = false;
     float displacement_mapping_strength = 0.02f;
     int parallax_mapping_steps = 32;
+    //Whether or not to fetch the roughness of a surface from a texture
+    bool enable_roughness_mapping = false;
 
     //Whether or not to sample the background color from a texture or not
     //If false, the background color of the scene will be a plain color

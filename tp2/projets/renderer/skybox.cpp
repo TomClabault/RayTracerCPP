@@ -47,8 +47,8 @@ Color Skybox::sample(const Vector& direction) const
 
     u = u * norm_factor + 0.5;
     v = v * norm_factor + 0.5;
-
-    return _faces[face_index].texture(u, v);
+    
+    return _faces[face_index].texture_bilinear(u, v);
 
 //    //Determines which face of the cube map the direction vector intersects
 //    int face_index;

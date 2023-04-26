@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1168</width>
-    <height>746</height>
+    <height>748</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -53,7 +53,7 @@
            <enum>QTabWidget::Rounded</enum>
           </property>
           <property name="currentIndex">
-           <number>0</number>
+           <number>2</number>
           </property>
           <property name="elideMode">
            <enum>Qt::ElideNone</enum>
@@ -879,8 +879,53 @@
                <property name="verticalSpacing">
                 <number>3</number>
                </property>
-               <item row="3" column="3">
-                <widget class="QPushButton" name="clear_displacement_map_button">
+               <item row="2" column="1">
+                <widget class="QPushButton" name="load_diffuse_map_button">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Load Diffuse Map...</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="2">
+                <widget class="QLineEdit" name="displacement_map_loaded_edit">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>no map loaded</string>
+                 </property>
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="7" column="3">
+                <widget class="QPushButton" name="clear_roughness_map_button">
+                 <property name="enabled">
+                  <bool>true</bool>
+                 </property>
+                 <property name="text">
+                  <string>Clear</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="3">
+                <widget class="QPushButton" name="clear_ao_map_button">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                    <horstretch>0</horstretch>
@@ -892,8 +937,8 @@
                  </property>
                 </widget>
                </item>
-               <item row="2" column="1">
-                <widget class="QPushButton" name="load_normal_map_button">
+               <item row="4" column="1">
+                <widget class="QPushButton" name="load_displacement_map_button">
                  <property name="enabled">
                   <bool>false</bool>
                  </property>
@@ -904,12 +949,15 @@
                   </sizepolicy>
                  </property>
                  <property name="text">
-                  <string>Load Normal Map...</string>
+                  <string>Load Map...</string>
                  </property>
                 </widget>
                </item>
-               <item row="1" column="0">
-                <widget class="QCheckBox" name="diffuse_map_check_box">
+               <item row="1" column="2">
+                <widget class="QLineEdit" name="ao_map_loaded_edit">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                    <horstretch>0</horstretch>
@@ -917,11 +965,17 @@
                   </sizepolicy>
                  </property>
                  <property name="text">
-                  <string>Diffuse map</string>
+                  <string>no map loaded</string>
+                 </property>
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                 <property name="placeholderText">
+                  <string>no ao map loaded</string>
                  </property>
                 </widget>
                </item>
-               <item row="4" column="3">
+               <item row="5" column="3">
                 <widget class="QLineEdit" name="displacement_strength_edit">
                  <property name="enabled">
                   <bool>false</bool>
@@ -937,7 +991,82 @@
                  </property>
                 </widget>
                </item>
+               <item row="3" column="3">
+                <widget class="QPushButton" name="clear_normal_map_button">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Clear</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="7" column="1">
+                <widget class="QPushButton" name="load_roughness_map_button">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="text">
+                  <string>Load Map...</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="7" column="2">
+                <widget class="QLineEdit" name="roughness_map_loaded_edit">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="text">
+                  <string>no map loaded</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QCheckBox" name="ao_map_check_box">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>AO Map</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="6" column="2">
+                <widget class="QLabel" name="parallax_steps_label">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Parallax steps:</string>
+                 </property>
+                </widget>
+               </item>
                <item row="3" column="0">
+                <widget class="QCheckBox" name="normal_map_check_box">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Normal map</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="0">
                 <widget class="QCheckBox" name="displacement_map_check_box">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -950,23 +1079,7 @@
                  </property>
                 </widget>
                </item>
-               <item row="0" column="1">
-                <widget class="QPushButton" name="load_ao_map_button">
-                 <property name="enabled">
-                  <bool>false</bool>
-                 </property>
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="text">
-                  <string>Load AO Map...</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="6" column="0" colspan="4">
+               <item row="8" column="0" colspan="4">
                 <widget class="QGroupBox" name="groupBox_2">
                  <property name="title">
                   <string>Sky texture</string>
@@ -1131,11 +1244,8 @@
                  </layout>
                 </widget>
                </item>
-               <item row="1" column="1">
-                <widget class="QPushButton" name="load_diffuse_map_button">
-                 <property name="enabled">
-                  <bool>false</bool>
-                 </property>
+               <item row="2" column="3">
+                <widget class="QPushButton" name="clear_diffuse_map_button">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                    <horstretch>0</horstretch>
@@ -1143,11 +1253,40 @@
                   </sizepolicy>
                  </property>
                  <property name="text">
-                  <string>Load Diffuse Map...</string>
+                  <string>Clear</string>
                  </property>
                 </widget>
                </item>
-               <item row="1" column="2">
+               <item row="5" column="2">
+                <widget class="QLabel" name="displacement_strength_label">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Displacement strength:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="3">
+                <widget class="QPushButton" name="clear_displacement_map_button">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Clear</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="2">
                 <widget class="QLineEdit" name="diffuse_map_loaded_edit">
                  <property name="enabled">
                   <bool>false</bool>
@@ -1166,110 +1305,7 @@
                  </property>
                 </widget>
                </item>
-               <item row="1" column="3">
-                <widget class="QPushButton" name="clear_diffuse_map_button">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="text">
-                  <string>Clear</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="3">
-                <widget class="QPushButton" name="clear_ao_map_button">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="text">
-                  <string>Clear</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="0">
-                <widget class="QCheckBox" name="ao_map_check_box">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="text">
-                  <string>AO Map</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="4" column="2">
-                <widget class="QLabel" name="displacement_strength_label">
-                 <property name="enabled">
-                  <bool>false</bool>
-                 </property>
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="text">
-                  <string>Displacement strength:</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="2">
-                <widget class="QLineEdit" name="ao_map_loaded_edit">
-                 <property name="enabled">
-                  <bool>false</bool>
-                 </property>
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="text">
-                  <string>no map loaded</string>
-                 </property>
-                 <property name="readOnly">
-                  <bool>true</bool>
-                 </property>
-                 <property name="placeholderText">
-                  <string>no ao map loaded</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="2" column="3">
-                <widget class="QPushButton" name="clear_normal_map_button">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="text">
-                  <string>Clear</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="2" column="0">
-                <widget class="QCheckBox" name="normal_map_checkbox">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="text">
-                  <string>Normal map</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="2" column="2">
+               <item row="3" column="2">
                 <widget class="QLineEdit" name="normal_map_loaded_edit">
                  <property name="enabled">
                   <bool>false</bool>
@@ -1288,27 +1324,8 @@
                  </property>
                 </widget>
                </item>
-               <item row="3" column="2">
-                <widget class="QLineEdit" name="displacement_map_loaded_edit">
-                 <property name="enabled">
-                  <bool>false</bool>
-                 </property>
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="text">
-                  <string>no map loaded</string>
-                 </property>
-                 <property name="readOnly">
-                  <bool>true</bool>
-                 </property>
-                </widget>
-               </item>
                <item row="3" column="1">
-                <widget class="QPushButton" name="load_displacement_map_button">
+                <widget class="QPushButton" name="load_normal_map_button">
                  <property name="enabled">
                   <bool>false</bool>
                  </property>
@@ -1319,27 +1336,40 @@
                   </sizepolicy>
                  </property>
                  <property name="text">
-                  <string>Load Map...</string>
+                  <string>Load Normal Map...</string>
                  </property>
                 </widget>
                </item>
-               <item row="5" column="2">
-                <widget class="QLabel" name="parallax_steps_label">
+               <item row="1" column="1">
+                <widget class="QPushButton" name="load_ao_map_button">
                  <property name="enabled">
                   <bool>false</bool>
                  </property>
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
                  </property>
                  <property name="text">
-                  <string>Parallax steps:</string>
+                  <string>Load AO Map...</string>
                  </property>
                 </widget>
                </item>
-               <item row="5" column="3">
+               <item row="2" column="0">
+                <widget class="QCheckBox" name="diffuse_map_check_box">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Diffuse map</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="6" column="3">
                 <widget class="QLineEdit" name="parallax_steps_edit">
                  <property name="enabled">
                   <bool>false</bool>
@@ -1352,6 +1382,20 @@
                  </property>
                  <property name="text">
                   <string>32</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="7" column="0">
+                <widget class="QCheckBox" name="roughness_map_check_box">
+                 <property name="text">
+                  <string>Roughness map</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1" colspan="2">
+                <widget class="QPushButton" name="load_whole_texture_folder">
+                 <property name="text">
+                  <string>Load whole texture folder...</string>
                  </property>
                 </widget>
                </item>
@@ -1619,7 +1663,7 @@
                  <x>0</x>
                  <y>0</y>
                  <width>507</width>
-                 <height>347</height>
+                 <height>349</height>
                 </rect>
                </property>
                <layout class="QGridLayout" name="gridLayout_15">

@@ -18,6 +18,7 @@
 Color Renderer::AMBIENT_COLOR = Color(0.1f, 0.1f, 0.1f);
 Color Renderer::BACKGROUND_COLOR = Color(135.0f / 255.0f, 206.0f / 255.0f, 235.0f / 255.0f);//Sky color
 
+//TODO roughness map
 
 Material init_default_material()
 {
@@ -194,6 +195,7 @@ void Renderer::set_ao_map(const Image& ao_map) { _ao_map = ao_map; }
 void Renderer::set_diffuse_map(const Image& diffuse_map) { _diffuse_map = diffuse_map; }
 void Renderer::set_normal_map(const Image& normal_map) { _normal_map = normal_map; }
 void Renderer::set_displacement_map(const Image& displacement_map) { _displacement_map = displacement_map; }
+void Renderer::set_roughness_map(const Image& roughness_map) { _roughness_map = roughness_map; }
 
 void Renderer::set_skysphere(const Image& skybox) { _skysphere = skybox; }
 void Renderer::set_skybox(const Skybox& skybox) { _skybox = skybox; }
@@ -202,12 +204,11 @@ void Renderer::clear_ao_map() { _ao_map = Image(); }
 void Renderer::clear_diffuse_map() { _diffuse_map = Image(); }
 void Renderer::clear_normal_map() { _normal_map = Image(); }
 void Renderer::clear_displacement_map() { _displacement_map = Image(); }
+void Renderer::clear_roughness_map() { _roughness_map = Image(); }
 
 Color Renderer::sample_texture(const Image& texture, float tex_coord_u, float tex_coord_v) const
 {
-    //1 - tex_coord_v because gkit samples textures from bottom to top meaning that
-    //if we don't have "1 -" here, our textures maps will be mirrored (top flipped to the bottom)
-    return texture.texture(tex_coord_u, tex_coord_v);
+    return texture.texture_floor(tex_coord_u, tex_coord_v);
 }
 
 void Renderer::reset_previous_transform() { _previous_object_transform = Identity(); }
@@ -288,13 +289,25 @@ Color Renderer::compute_reflection(const Ray& ray, const Point& inter_point, con
     Color total_reflection_color = Color(0.0f);
     for (int i = 0; i < _render_settings.rough_reflections_sample_count; i++)
     {
-        if (hit_material.roughness > 0)
+        float roughness;
+
+        if (_render_settings.enable_roughness_mapping)
+        {
+            float tex_coord_u, tex_coord_v;
+            get_tex_coords(hit_info.triangle, hit_info.u, hit_info.v, tex_coord_u, tex_coord_v);
+
+            roughness = sample_texture(_roughness_map, tex_coord_u, tex_coord_v).r;
+        }
+        else
+            roughness = hit_material.roughness;
+
+        if (roughness > 0)
         {
             Vector random_direction = normalize(Vector(_xorshift_generators[omp_get_thread_num()].get_rand_bilateral(), _xorshift_generators[omp_get_thread_num()].get_rand_bilateral(), _xorshift_generators[omp_get_thread_num()].get_rand_bilateral()));
             if (dot(random_direction, hit_info.normal_at_intersection) < 0)
                 random_direction = -random_direction;//TODO correct ?
 
-            Vector random_direction_lerped = hit_material.roughness * random_direction + (1 - hit_material.roughness) * perfect_reflection;
+            Vector random_direction_lerped = roughness * random_direction + (1 - roughness) * perfect_reflection;
 
             Ray reflection_ray(reflection_ray_origin, random_direction_lerped);
 

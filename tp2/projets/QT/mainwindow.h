@@ -102,6 +102,12 @@ public:
     void load_obj(const char* filepath, Transform transform);
     Image load_texture_map(const char* filepath);
 
+    void load_ao_map(QString file_path);
+    void load_diffuse_map(QString file_path);
+    void load_normal_map(QString file_path);
+    void load_displacement_map(QString file_path);
+    void load_roughness_map(QString file_path);
+
     void write_to_console(const std::stringstream& ss);
 
     bool get_render_going();
@@ -119,8 +125,8 @@ private slots:
     void on_render_button_clicked();
 
     void on_dump_render_to_file_button_clicked();
-    void on_hybrid_check_box_stateChanged(int arg1);
-    void on_clipping_check_box_stateChanged(int arg1);
+    void on_hybrid_check_box_stateChanged(int checked);
+    void on_clipping_check_box_stateChanged(int checked);
 
     void on_load_robot_obj_button_clicked();
     void on_load_geometry_obj_button_clicked();
@@ -134,7 +140,7 @@ private slots:
     void on_ssaa_factor_edit_returnPressed();
     void on_ssaa_radio_button_toggled(bool checked);
 
-    void on_ssao_1_check_box_stateChanged(int arg1);
+    void on_ssao_1_check_box_stateChanged(int checked);
 
     void on_ssao_1_radius_edit_editingFinished();
     void on_ssao_1_sample_count_edit_editingFinished();
@@ -146,9 +152,9 @@ private slots:
 
     void on_bvh_max_leaf_object_edit_returnPressed();
     void on_bvh_max_depth_edit_returnPressed();
-    void on_enable_bvh_check_box_stateChanged(int arg1);
+    void on_enable_bvh_check_box_stateChanged(int checked);
 
-    void on_enable_shadows_check_box_stateChanged(int arg1);
+    void on_enable_shadows_check_box_stateChanged(int checked);
 
     void on_light_position_edit_editingFinished();
     void on_light_position_edit_returnPressed();
@@ -159,7 +165,7 @@ private slots:
     void on_shade_barycentric_radio_button_toggled(bool checked);
     void on_shade_visualize_ao_radio_button_toggled(bool checked);
 
-    void on_ao_map_check_box_stateChanged(int arg1);
+    void on_ao_map_check_box_stateChanged(int checked);
     void on_load_ao_map_button_clicked();
 
     void on_load_obj_file_button_clicked();
@@ -173,13 +179,13 @@ private slots:
 
     void on_clear_ao_map_button_clicked();
     void on_load_diffuse_map_button_clicked();
-    void on_diffuse_map_check_box_stateChanged(int arg1);
+    void on_diffuse_map_check_box_stateChanged(int checked);
     void on_clear_diffuse_map_button_clicked();
 
-    void on_enable_ambient_checkbox_stateChanged(int arg1);
-    void on_enable_diffuse_checkbox_stateChanged(int arg1);
-    void on_enable_specular_checkbox_stateChanged(int arg1);
-    void on_enable_emissive_checkbox_stateChanged(int arg1);
+    void on_enable_ambient_checkbox_stateChanged(int checked);
+    void on_enable_diffuse_checkbox_stateChanged(int checked);
+    void on_enable_specular_checkbox_stateChanged(int checked);
+    void on_enable_emissive_checkbox_stateChanged(int checked);
 
     void on_clear_scene_button_clicked();
 
@@ -216,11 +222,8 @@ private slots:
 
     void on_load_normal_map_button_clicked();
 
-    void on_normal_map_checkbox_stateChanged(int arg1);
-
     void on_clear_normal_map_button_clicked();
 
-    void on_displacement_map_check_box_stateChanged(int arg1);
 
     void on_load_displacement_map_button_clicked();
 
@@ -241,6 +244,16 @@ private slots:
     void on_maximum_recursion_depth_edit_editingFinished();
 
     void on_maximum_recursion_depth_edit_returnPressed();
+
+    void on_load_roughness_map_button_clicked();
+
+    void on_clear_roughness_map_button_clicked();
+
+    void on_load_whole_texture_folder_clicked();
+
+    void on_normal_map_check_box_stateChanged(int checked);
+    void on_displacement_map_check_box_stateChanged(int checked);
+    void on_roughness_map_check_box_stateChanged(int checked);
 
 private:
     Ui::MainWindow *ui;

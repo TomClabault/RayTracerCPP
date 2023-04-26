@@ -473,6 +473,16 @@ void MainWindow::on_shade_visualize_ao_radio_button_toggled(bool checked)
     _renderer.render_settings().shading_method = RenderSettings::ShadingMethod::VISUALIZE_AO;
 }
 
+void MainWindow::load_ao_map(QString file_path)
+{
+    Image ao_map = load_texture_map(file_path.toStdString().c_str());//TODO Image pas en float c'est trop lourd
+
+    _renderer.set_ao_map(ao_map);
+
+    QStringList split_path = file_path.split("/");
+    this->ui->ao_map_loaded_edit->setText(split_path[split_path.size() - 1]);
+}
+
 void MainWindow::on_load_ao_map_button_clicked()
 {
     QFileDialog dialog(this, "Open AO Map");
@@ -484,13 +494,18 @@ void MainWindow::on_load_ao_map_button_clicked()
         QStringList files = dialog.selectedFiles();
         QString file_path = files[0];
 
-        Image ao_map = load_texture_map(file_path.toStdString().c_str());//TODO Image pas en float c'est trop lourd
-
-        _renderer.set_ao_map(ao_map);
-
-        QStringList split_path = file_path.split("/");
-        this->ui->ao_map_loaded_edit->setText(split_path[split_path.size() - 1]);
+        load_ao_map(file_path);
     }
+}
+
+void MainWindow::load_diffuse_map(QString file_path)
+{
+    Image diffuse_map = load_texture_map(file_path.toStdString().c_str());//TODO Image pas en float c'est trop lourd
+
+    _renderer.set_diffuse_map(diffuse_map);
+
+    QStringList split_path = file_path.split("/");
+    this->ui->diffuse_map_loaded_edit->setText(split_path[split_path.size() - 1]);
 }
 
 void MainWindow::on_load_diffuse_map_button_clicked()
@@ -504,13 +519,18 @@ void MainWindow::on_load_diffuse_map_button_clicked()
         QStringList files = dialog.selectedFiles();
         QString file_path = files[0];
 
-        Image diffuse_map = load_texture_map(file_path.toStdString().c_str());//TODO Image pas en float c'est trop lourd
-
-        _renderer.set_diffuse_map(diffuse_map);
-
-        QStringList split_path = file_path.split("/");
-        this->ui->diffuse_map_loaded_edit->setText(split_path[split_path.size() - 1]);
+        load_diffuse_map(file_path);
     }
+}
+
+void MainWindow::load_normal_map(QString file_path)
+{
+    Image normal_map = load_texture_map(file_path.toStdString().c_str());//TODO Image pas en float c'est trop lourd
+
+    _renderer.set_normal_map(normal_map);
+
+    QStringList split_path = file_path.split("/");
+    this->ui->normal_map_loaded_edit->setText(split_path[split_path.size() - 1]);
 }
 
 void MainWindow::on_load_normal_map_button_clicked()
@@ -524,12 +544,57 @@ void MainWindow::on_load_normal_map_button_clicked()
         QStringList files = dialog.selectedFiles();
         QString file_path = files[0];
 
-        Image normal_map = load_texture_map(file_path.toStdString().c_str());//TODO Image pas en float c'est trop lourd
+        load_normal_map(file_path);
+    }
+}
 
-        _renderer.set_normal_map(normal_map);
+void MainWindow::load_displacement_map(QString file_path)
+{
+    Image displacement_map = load_texture_map(file_path.toStdString().c_str());//TODO Image en 8 bit please
 
-        QStringList split_path = file_path.split("/");
-        this->ui->normal_map_loaded_edit->setText(split_path[split_path.size() - 1]);
+    _renderer.set_displacement_map(displacement_map);
+
+    QStringList split_path = file_path.split("/");
+    this->ui->displacement_map_loaded_edit->setText(split_path[split_path.size() - 1]);
+}
+
+void MainWindow::on_load_displacement_map_button_clicked()
+{
+    QFileDialog dialog(this, "Open Displacement Map");
+    dialog.setFileMode(QFileDialog::ExistingFile);
+    dialog.setNameFilter(tr("Image File (*.png *.jpg)"));
+
+    if (dialog.exec())
+    {
+        QStringList files = dialog.selectedFiles();
+        QString file_path = files[0];
+
+        load_displacement_map(file_path);
+    }
+}
+
+void MainWindow::load_roughness_map(QString file_path)
+{
+    Image roughness_map = load_texture_map(file_path.toStdString().c_str());//TODO Image pas en float c'est trop lourd
+
+    _renderer.set_roughness_map(roughness_map);
+
+    QStringList split_path = file_path.split("/");
+    this->ui->roughness_map_loaded_edit->setText(split_path[split_path.size() - 1]);
+}
+
+void MainWindow::on_load_roughness_map_button_clicked()
+{
+    QFileDialog dialog(this, "Open Roughness Map");
+    dialog.setFileMode(QFileDialog::ExistingFile);
+    dialog.setNameFilter(tr("Image File (*.png *.jpg)"));
+
+    if (dialog.exec())
+    {
+        QStringList files = dialog.selectedFiles();
+        QString file_path = files[0];
+
+        load_roughness_map(file_path);
     }
 }
 
@@ -695,12 +760,32 @@ void MainWindow::on_diffuse_map_check_box_stateChanged(int checked)
     this->ui->diffuse_map_loaded_edit->setEnabled(checked);
 }
 
-void MainWindow::on_normal_map_checkbox_stateChanged(int checked)
+void MainWindow::on_normal_map_check_box_stateChanged(int checked)
 {
     _renderer.render_settings().enable_normal_mapping = checked;
 
     this->ui->load_normal_map_button->setEnabled(checked);
     this->ui->normal_map_loaded_edit->setEnabled(checked);
+}
+
+void MainWindow::on_displacement_map_check_box_stateChanged(int checked)
+{
+    _renderer.render_settings().enable_displacement_mapping = checked;
+
+    this->ui->load_displacement_map_button->setEnabled(checked);
+    this->ui->displacement_map_loaded_edit->setEnabled(checked);
+    this->ui->displacement_strength_label->setEnabled(checked);
+    this->ui->displacement_strength_edit->setEnabled(checked);
+    this->ui->parallax_steps_label->setEnabled(checked);
+    this->ui->parallax_steps_edit->setEnabled(checked);
+}
+
+void MainWindow::on_roughness_map_check_box_stateChanged(int checked)
+{
+    _renderer.render_settings().enable_roughness_mapping = checked;
+
+    this->ui->load_roughness_map_button->setEnabled(checked);
+    this->ui->roughness_map_loaded_edit->setEnabled(checked);
 }
 
 void MainWindow::on_ssao_1_check_box_stateChanged(int checked)
@@ -730,6 +815,7 @@ void MainWindow::on_clear_ao_map_button_clicked(){ _renderer.clear_ao_map(); thi
 void MainWindow::on_clear_diffuse_map_button_clicked() { _renderer.clear_diffuse_map(); this->ui->diffuse_map_loaded_edit->setText("no map loaded"); }
 void MainWindow::on_clear_normal_map_button_clicked() { _renderer.clear_normal_map(); this->ui->normal_map_loaded_edit->setText("no map loaded"); }
 void MainWindow::on_clear_displacement_map_button_clicked() { _renderer.clear_displacement_map(); this->ui->displacement_map_loaded_edit->setText("no map loaded"); }
+void MainWindow::on_clear_roughness_map_button_clicked() { _renderer.clear_roughness_map(); this->ui->roughness_map_loaded_edit->setText("no map loaded"); }
 
 void MainWindow::on_clear_scene_button_clicked() { _renderer.clear_geometry(); }
 
@@ -1008,36 +1094,9 @@ void MainWindow::on_skybox_radio_button_toggled(bool checked)
 
 void MainWindow::on_no_sky_texture_button_toggled(bool checked) { if (checked) _renderer.render_settings().enable_skybox = _renderer.render_settings().enable_skysphere = false; }
 
-void MainWindow::on_load_displacement_map_button_clicked()
+void load_displacement_map(QString file_path)
 {
-    QFileDialog dialog(this, "Open Displacement Map");
-    dialog.setFileMode(QFileDialog::ExistingFile);
-    dialog.setNameFilter(tr("Image File (*.png *.jpg)"));
 
-    if (dialog.exec())
-    {
-        QStringList files = dialog.selectedFiles();
-        QString file_path = files[0];
-
-        Image displacement_map = load_texture_map(file_path.toStdString().c_str());//TODO Image en 8 bit please
-
-        _renderer.set_displacement_map(displacement_map);
-
-        QStringList split_path = file_path.split("/");
-        this->ui->displacement_map_loaded_edit->setText(split_path[split_path.size() - 1]);
-    }
-}
-
-void MainWindow::on_displacement_map_check_box_stateChanged(int checked)
-{
-    _renderer.render_settings().enable_displacement_mapping = checked;
-
-    this->ui->load_displacement_map_button->setEnabled(checked);
-    this->ui->displacement_map_loaded_edit->setEnabled(checked);
-    this->ui->displacement_strength_label->setEnabled(checked);
-    this->ui->displacement_strength_edit->setEnabled(checked);
-    this->ui->parallax_steps_label->setEnabled(checked);
-    this->ui->parallax_steps_edit->setEnabled(checked);
 }
 
 void MainWindow::on_displacement_strength_edit_editingFinished()
@@ -1092,3 +1151,51 @@ void MainWindow::on_maximum_recursion_depth_edit_returnPressed()
     on_render_button_clicked();
 }
 
+void MainWindow::on_load_whole_texture_folder_clicked()
+{
+    QFileDialog dialog(this, "Open texture folder");
+    dialog.setFileMode(QFileDialog::Directory);
+
+    if (dialog.exec())
+    {
+        QString folder_path = dialog.selectedFiles()[0];
+
+        QDir texture_directory(folder_path);
+
+        for (QString file : texture_directory.entryList())
+        {
+            std::string file_path = texture_directory.absolutePath().toStdString() + "/" + file.toStdString();
+
+            if (file == "ao.png" || file == "ao.jpg")
+            {
+                load_ao_map(QString(file_path.c_str()));
+
+                this->ui->ao_map_check_box->setChecked(true);
+            }
+            else if (file == "diffuse.png" || file == "diffuse.jpg")
+            {
+                load_diffuse_map(QString(file_path.c_str()));
+
+                this->ui->diffuse_map_check_box->setChecked(true);
+            }
+            else if (file == "normal.png" || file == "normal.jpg")
+            {
+                load_normal_map(QString(file_path.c_str()));
+
+                this->ui->normal_map_check_box->setChecked(true);
+            }
+            else if (file == "displacement.png" || file == "displacement.jpg")
+            {
+                load_displacement_map(QString(file_path.c_str()));
+
+                this->ui->displacement_map_check_box->setChecked(true);
+            }
+            else if (file == "roughness.png" || file == "roughness.jpg")
+            {
+                load_roughness_map(QString(file_path.c_str()));
+
+                this->ui->roughness_map_check_box->setChecked(true);
+            }
+        }
+    }
+}

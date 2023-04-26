@@ -63,7 +63,7 @@ public:
     }
     
     //! renvoie la couleur interpolee a la position (x, y) [0 .. width]x[0 .. height].
-    Color sample( const float x, const float y ) const
+    Color sample_bilinear( const float x, const float y ) const
     {
         // interpolation bilineaire 
         float u= x - std::floor(x);
@@ -75,11 +75,25 @@ public:
             + (*this)(ix, iy+1)   * ((1 - u) * v)
             + (*this)(ix+1, iy+1) * (u       * v);
     }
+
+    Color sample_floor( const float x, const float y ) const
+    {
+        // interpolation bilineaire
+        float u = std::floor(x);
+        float v = std::floor(y);
+
+        return (*this)(u, v);
+    }
     
     //! renvoie la couleur interpolee aux coordonnees normalisees (x, y) [0 .. 1]x[0 .. 1].
-    Color texture( const float x, const float y ) const
+    Color texture_bilinear( const float x, const float y ) const
     {
-        return sample(x * m_width, y * m_height);
+        return sample_bilinear(x * m_width, y * m_height);
+    }
+
+    Color texture_floor( const float x, const float y ) const
+    {
+        return sample_floor(x * m_width, y * m_height);
     }
     
     //! renvoie un const pointeur sur le stockage des couleurs des pixels.
