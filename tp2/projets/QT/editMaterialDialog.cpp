@@ -1,4 +1,4 @@
-#include "EditMaterialDialog.h"
+#include "editMaterialDialog.h"
 #include "ui_editMaterialDialog.h"
 
 #include "materials.h"
