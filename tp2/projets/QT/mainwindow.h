@@ -255,6 +255,22 @@ private slots:
     void on_displacement_map_check_box_stateChanged(int checked);
     void on_roughness_map_check_box_stateChanged(int checked);
 
+
+    void on_go_in_front_button_clicked();
+
+//    void on_go_behind_button_clicked();
+//    void on_go_bottom_right_button_clicked();
+//    void on_go_bottom_left_button_clicked();
+//    void on_go_right_button_clicked();
+//    void on_go_left_button_clicked();
+//    void on_go_top_left_button_clicked();
+//    void on_go_top_right_button_clicked();
+
+    void on_turn_right_around_sphere_button_clicked();
+    void on_turn_left_around_sphere_button_clicked();
+
+    void on_progressive_render_refresh_check_box_stateChanged(int arg1);
+
 private:
     Ui::MainWindow *ui;
 
@@ -263,12 +279,18 @@ private:
     Material _added_sphere_material = Renderer::DEFAULT_MATERIAL;
     Material _added_plane_material = Renderer::DEFAULT_PLANE_MATERIAL;
 
+    //See on_turn_around_sphere_button_clicked for a detailed comment on this boolean
+    bool _bypass_camera_transform_check;
+
     Vector _cached_object_transform_translation;
     Vector _cached_object_transform_rotation;
     Vector _cached_object_transform_scale;
 
     Renderer _renderer;
 
+    //This boolean determines whether or not the signals sent by the display thread
+    //will be taken into account and the render display refreshed or not
+    bool _enable_progressive_render_refresh = true;
     bool _render_going = false;//Whether or not a render is on-going.
     //Used by the render thread to know if the display should be updated or not
 

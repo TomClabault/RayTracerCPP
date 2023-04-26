@@ -95,6 +95,7 @@ public:
 
     void set_object_transform(const Transform& object_transform);
     void set_camera_transform(const Transform& camera_transform);
+    void apply_transformation_to_camera(const Transform& additional_transformation);
 
     /**
      * @brief Builds the BVH using the present triangles and the BVH

@@ -234,6 +234,14 @@ void Renderer::set_camera_transform(const Transform& camera_transform)
     _scene._camera._position = camera_transform(Point(0, 0, 0));
 }
 
+void Renderer::apply_transformation_to_camera(const Transform& additional_transformation)
+{
+    _scene._camera._camera_to_world_mat = additional_transformation(_scene._camera._camera_to_world_mat);
+    _scene._camera._world_to_camera_mat = _scene._camera._camera_to_world_mat.inverse();
+
+    _scene._camera._position = additional_transformation(_scene._camera._position);
+}
+
 void Renderer::reconstruct_bvh_new()
 {
     _bvh = BVH(&_triangles, _render_settings.bvh_max_depth, _render_settings.bvh_leaf_object_count);
@@ -1026,7 +1034,8 @@ Color Renderer::trace_ray(const Ray& ray, HitInfo& final_hit_info, int current_r
         }, analytic_shape);
     }
 
-    if (final_hit_info.t > 0)//We found an intersection
+    float min_t = 0.1;//TODO pass as argument
+    if (final_hit_info.t > min_t)//We found an intersection
     {
         intersection_found = true;
 

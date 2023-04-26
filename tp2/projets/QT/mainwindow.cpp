@@ -71,6 +71,9 @@ void MainWindow::setup_render_display_context()
 
 void MainWindow::update_render_image()
 {
+    if (!_enable_progressive_render_refresh && _render_going)
+        return;
+
     Timer timer;
     timer.start();
 
@@ -252,7 +255,10 @@ void MainWindow::on_render_button_clicked()
 
     timer.start();
     transform_object();
-    build_camera_to_world_matrix();
+    if (_bypass_camera_transform_check)
+        _bypass_camera_transform_check = false;
+    else
+        build_camera_to_world_matrix();
     timer.stop();
     ss << std::endl << "Object transformation time: " << timer.elapsed() << "ms" << std::endl;
     write_to_console(ss);
@@ -1198,4 +1204,102 @@ void MainWindow::on_load_whole_texture_folder_clicked()
             }
         }
     }
+}
+
+//TODO removed if unused after a while. Left here in case we need it after all
+//void MainWindow::on_go_behind_button_clicked()
+//{
+//    this->ui->camera_translation_edit->setText("0.0/0.0/-6.0");
+//    this->ui->camera_rotation_edit->setText("0.0/180.0/0.0");
+
+//    on_render_button_clicked();
+//}
+
+//void MainWindow::on_go_bottom_right_button_clicked()
+//{
+//    this->ui->camera_translation_edit->setText("4.2/0.0/0.0");
+//    this->ui->camera_rotation_edit->setText("0.0/55.0/0.0");
+
+//    on_render_button_clicked();
+//}
+
+//void MainWindow::on_go_bottom_left_button_clicked()
+//{
+//    this->ui->camera_translation_edit->setText("-4.2/0.0/0.0");
+//    this->ui->camera_rotation_edit->setText("0.0/-55.0/0.0");
+
+//    on_render_button_clicked();
+//}
+
+//void MainWindow::on_go_right_button_clicked()
+//{
+//    this->ui->camera_translation_edit->setText("-4.2/0.0/-3.0");
+//    this->ui->camera_rotation_edit->setText("0.0/90.0/0.0");
+
+//    on_render_button_clicked();
+//}
+
+//void MainWindow::on_go_left_button_clicked()
+//{
+//    this->ui->camera_translation_edit->setText("4.2/0.0/-3.0");
+//    this->ui->camera_rotation_edit->setText("0.0/-90.0/0.0");
+
+//    on_render_button_clicked();
+//}
+
+//void MainWindow::on_go_top_left_button_clicked()
+//{
+//    this->ui->camera_translation_edit->setText("-4.2/0.0/-6.0");
+//    this->ui->camera_rotation_edit->setText("0.0/-110.0/0.0");
+
+//    on_render_button_clicked();
+//}
+
+//void MainWindow::on_go_top_right_button_clicked()
+//{
+//    this->ui->camera_translation_edit->setText("4.2/0.0/-6.0");
+//    this->ui->camera_rotation_edit->setText("0.0/110.0/0.0");
+
+//    on_render_button_clicked();
+//}
+
+void MainWindow::on_go_in_front_button_clicked()
+{
+    this->ui->camera_translation_edit->setText("0.0/0.0/0.0");
+    this->ui->camera_rotation_edit->setText("0.0/0.0/0.0");
+
+    on_render_button_clicked();
+}
+
+void MainWindow::on_turn_right_around_sphere_button_clicked()
+{
+    //This is used not to check the camera_translation_edit and camera_rotation_edit
+    //before rendering the image. Because these edits do not represent the actual transformation
+    //that is being applied, if they are checked before rendering, the transformation
+    //of the camera is going to be set to whatever is in the edits instead of the additional
+    //rotation that we are performing here
+    //Said otherwise, without this boolean, the 'on_render_button_clicked' function is going
+    //to override the camera transformation that we are performing here with whatever is in the edits
+    _bypass_camera_transform_check = true;
+
+    Transform additional_rotation_around_sphere = Translation(0, 0, -3) * RotationY(20) * Translation(0, 0, 3);
+    _renderer.apply_transformation_to_camera(additional_rotation_around_sphere);
+
+    on_render_button_clicked();
+}
+
+void MainWindow::on_turn_left_around_sphere_button_clicked()
+{
+    //Same as in 'on_turn_right_around_sphere_button_clicked'
+    _bypass_camera_transform_check = true;
+
+    Transform additional_rotation_around_sphere = Translation(0, 0, -3) * RotationY(-20) * Translation(0, 0, 3);
+    _renderer.apply_transformation_to_camera(additional_rotation_around_sphere);
+
+    on_render_button_clicked();
+}
+
+void MainWindow::on_progressive_render_refresh_check_box_stateChanged(int checked)
+{
+    _enable_progressive_render_refresh = checked;
 }
