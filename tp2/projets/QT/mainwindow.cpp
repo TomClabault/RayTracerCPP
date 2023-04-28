@@ -41,14 +41,19 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     //Initializing the light's position
     on_light_position_edit_editingFinished();
 
+    connect(this, &MainWindow::disable_render_button_signal, this, &MainWindow::disable_render_button);
+    connect(this, &MainWindow::enable_render_button_signal, this, &MainWindow::enable_render_button);
+
     //TODO Load la skybox dans un thread pour pas freeze l'interface
     std::thread load_skybox_thread = std::thread([this]
     {
         //Disabling the render button as long as the skybox isn't loaded as this would cause
-        //undefined behavior
-        this->ui->render_button->setEnabled(false);
+        //undefined behavior. We're calling the 'emit_render_button' function here because
+        //the std::thread cannot directly interact with a Qt Widget. The QT Main UI thread
+        //has to do it so we're going to send a signal for it to do the job
+        this->emit_disable_render_button();
         this->load_skybox_into_renderer("data/skybox");
-        this->ui->render_button->setEnabled(true);
+        this->emit_enable_render_button();
     });
     load_skybox_thread.detach();
     _renderer.render_settings().enable_skybox = true;
@@ -56,7 +61,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     setup_render_display_context();
     connect(&_display_thread_handle, &DisplayThread::update_image, this, &MainWindow::update_render_image);
     connect(&_render_thread_handle, &RenderThread::update_image, this, &MainWindow::update_render_image);
-    connect(&_render_thread_handle, &RenderThread::write_to_main_console, this, &MainWindow::write_to_console);
+    connect(&_render_thread_handle, &RenderThread::write_to_main_console, this, &MainWindow::write_to_console_str);
     _display_thread_handle.start();
 
     //Initializing the random generator here for later uses
@@ -74,7 +79,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::setup_render_display_context()
 {
-    //_render_display_context._graphics_scene = new QGraphicsScene(this);
+    //_render_display_context._graphics_scene = new QGraphicsScene(this);//TODO clean
     _render_display_context._graphics_view_zoom = new Graphics_view_zoom(ui->graphics_view);
 }
 
@@ -317,23 +322,25 @@ void MainWindow::load_obj(const char* filepath, Transform transform)
 //TODO les obj qui sortent de blender sont tout noir --> normals buguees ???
 //TODO opti le display thread en utilisant une QImage dans le renderer ? pour ne pas avoir a faire la conversion vers les float a chaque fois
 
-Image MainWindow::load_texture_map(const char* filepath)
-{
-    return read_image(filepath, false);
-}
+Image MainWindow::load_texture_map(const char* filepath) { return read_image(filepath, false); }
 
-void MainWindow::write_to_console(const std::stringstream& ss)
+void MainWindow::write_to_console_str(const std::string& str)
 {
-    std::string ss_string = ss.str();
-
-    this->ui->output_console->append(QString(ss_string.c_str()));
+    this->ui->output_console->append(QString(str.c_str()));
     this->ui->output_console->ensureCursorVisible();
 }
+
+void MainWindow::write_to_console(const std::stringstream& ss) { write_to_console_str(ss.str()); }
 
 bool MainWindow::get_render_going() { return _render_going; }
 void MainWindow::set_render_going(bool render_going) { _render_going = render_going; }
 
 Renderer& MainWindow::get_renderer() { return _renderer; }
+
+void MainWindow::emit_disable_render_button() { emit disable_render_button_signal(); }
+void MainWindow::emit_enable_render_button() { emit enable_render_button_signal(); }
+void MainWindow::disable_render_button() { this->ui->render_button->setEnabled(false); }
+void MainWindow::enable_render_button() { this->ui->render_button->setEnabled(true); }
 
 void MainWindow::on_load_robot_obj_button_clicked()
 {
