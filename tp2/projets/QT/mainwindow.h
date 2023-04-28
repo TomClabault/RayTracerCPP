@@ -36,6 +36,11 @@ public:
      */
     void set_update_ongoing(bool ongoing);
 
+    /**
+     * @brief This will ask the thread to exit its 'while true' display loop
+     */
+    void request_stop();
+
 signals:
     void update_image();
 
@@ -43,6 +48,10 @@ private:
     MainWindow* _main_window;
 
     bool _update_ongoing = false;
+
+    //The thread will loop indefinitely as long as this boolean is false.
+    //If this boolean is set to true (via 'request_stop'), the thread will exit
+    bool _stop_requested = false;
 };
 
 class RenderThread : public QThread

@@ -68,7 +68,7 @@ MainWindow::~MainWindow()
     delete ui;
 
     //Clean exit of the display thread
-    _display_thread_handle.quit();
+    _display_thread_handle.request_stop();
     _display_thread_handle.wait();
 }
 

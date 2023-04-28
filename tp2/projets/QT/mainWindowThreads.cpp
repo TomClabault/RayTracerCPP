@@ -5,7 +5,7 @@ DisplayThread::DisplayThread(MainWindow* main_window) : _main_window(main_window
 
 void DisplayThread::run()
 {
-    while (true)
+    while (!_stop_requested)
     {
         if (_main_window->get_render_going())
         {
@@ -25,6 +25,11 @@ void DisplayThread::run()
 void DisplayThread::set_update_ongoing(bool ongoing)
 {
     _update_ongoing = ongoing;
+}
+
+void DisplayThread::request_stop()
+{
+    _stop_requested = true;
 }
 
 RenderThread::RenderThread(MainWindow* main_window) : _main_window(main_window) {}
