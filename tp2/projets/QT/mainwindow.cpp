@@ -42,7 +42,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     on_light_position_edit_editingFinished();
 
     //TODO Load la skybox dans un thread pour pas freeze l'interface
-    load_skybox_into_renderer("data/skybox");
+    std::thread load_skybox_thread = std::thread([this]
+    {
+        //Disabling the render button as long as the skybox isn't loaded as this would cause
+        //undefined behavior
+        this->ui->render_button->setEnabled(false);
+        this->load_skybox_into_renderer("data/skybox");
+        this->ui->render_button->setEnabled(true);
+    });
+    load_skybox_thread.detach();
     _renderer.render_settings().enable_skybox = true;
 
     setup_render_display_context();
