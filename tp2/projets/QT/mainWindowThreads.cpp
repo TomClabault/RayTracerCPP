@@ -51,7 +51,8 @@ void RenderThread::run()
     timer.stop();
     ss << "Post-processing time: " << timer.elapsed() << "ms";
 
-    _main_window->write_to_console(ss);
+    //Sending a signal to the main window for it to write the logs in the UI console
+    emit write_to_main_console(ss);
 
     //Render finished, we're sending a signal to the main window so that it
     //updates the display

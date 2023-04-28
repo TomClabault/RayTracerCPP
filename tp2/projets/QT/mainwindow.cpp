@@ -48,6 +48,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     setup_render_display_context();
     connect(&_display_thread_handle, &DisplayThread::update_image, this, &MainWindow::update_render_image);
     connect(&_render_thread_handle, &RenderThread::update_image, this, &MainWindow::update_render_image);
+    connect(&_render_thread_handle, &RenderThread::write_to_main_console, this, &MainWindow::write_to_console);
     _display_thread_handle.start();
 
     //Initializing the random generator here for later uses

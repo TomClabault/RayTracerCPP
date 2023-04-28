@@ -56,6 +56,7 @@ public:
 
 signals:
     void update_image();
+    void write_to_main_console(std::stringstream& ss);
 
 private:
     MainWindow* _main_window;

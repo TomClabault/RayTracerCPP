@@ -108,7 +108,7 @@ endif()
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     message("GNU Compiler Detected")
 
-    set(CMAKE_CXX_FLAGS "-Wall -Wextra -march=native") #Flags always active
+    set(CMAKE_CXX_FLAGS "-Wall -Wextra -march=native -mfma") #Flags always active
     set(CMAKE_CXX_FLAGS_DEBUG "-g") #Flags when compiling in debug
     set(CMAKE_CXX_FLAGS_RELEASE "-O3") #Flags when compiling in release
 
