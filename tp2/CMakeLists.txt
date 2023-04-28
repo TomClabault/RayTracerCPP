@@ -77,7 +77,6 @@ target_include_directories(RayTracing_Tests PRIVATE projets/QT/)
 #Adding OpenMP to the projects
 find_package(OpenMP)
 
-set (CMAKE_PREFIX_PATH "E:\\Programmes\\Qt\\6.3.2\\msvc2019_64")
 find_package(Qt6 COMPONENTS Core Widgets Gui OpenGL OpenGLWidgets)
 if (Qt6_FOUND)
     target_link_libraries(RayTracing PUBLIC OpenMP::OpenMP_CXX Qt6::Core Qt6::Widgets Qt6::Gui)
