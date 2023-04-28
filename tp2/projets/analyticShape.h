@@ -4,6 +4,8 @@
 #include "hitInfo.h"
 #include "ray.h"
 
+#include "image.h"
+
 #include <variant>
 
 template <typename T>
@@ -24,6 +26,7 @@ public:
 
     friend std::ostream& operator << (std::ostream& os, const Sphere& sphere);
 private:
+
     Point _center;
 
     float _radius;

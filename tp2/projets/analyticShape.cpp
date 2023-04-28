@@ -46,11 +46,11 @@ bool Sphere::intersect(const Ray& ray, HitInfo& hit_info, bool compute_uv) const
 
         if (compute_uv)
         {
-            hit_info.u = 0.5 + std::atan2(-hit_info.normal_at_intersection.z, -hit_info.normal_at_intersection.x) / (2 * M_PI);
-            hit_info.v = 0.5 + std::asin(-hit_info.normal_at_intersection.y) / M_PI;
+            hit_info.u = 0.5f + std::atan2(-hit_info.normal_at_intersection.z, -hit_info.normal_at_intersection.x) / (2.0f * (float)M_PI);
+            hit_info.v = 0.5f + std::asin(-hit_info.normal_at_intersection.y) / (float)M_PI;
 
             //NOTE (Tom): This creates singularities at the poles!
-            hit_info.tangent = cross(Vector(0, 0, 1), hit_info.normal_at_intersection);
+            hit_info.tangent = cross(Vector(0, 1, 0), hit_info.normal_at_intersection);//TODO should we use the normal map here to compute the tangent space ?
         }
 
         hit_info.mat_index = _mat_index;

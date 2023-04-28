@@ -18,8 +18,6 @@
 Color Renderer::AMBIENT_COLOR = Color(0.1f, 0.1f, 0.1f);
 Color Renderer::BACKGROUND_COLOR = Color(135.0f / 255.0f, 206.0f / 255.0f, 235.0f / 255.0f);//Sky color
 
-//TODO roughness map
-
 Material init_default_material()
 {
     Material mat = Material(Color(1.0f, 0.0f, 0.5f));//Pink color
@@ -293,6 +291,7 @@ Color Renderer::compute_reflection(const Ray& ray, const Point& inter_point, con
     Point reflection_ray_origin = inter_point + normalized_normal * 0.01f;
     Vector perfect_reflection = ray._direction - 2 * dot(ray._direction, normalized_normal) * normalized_normal;
 
+    int my_thread_num = omp_get_thread_num();
     int sample_count = 0;
     Color total_reflection_color = Color(0.0f);
     for (int i = 0; i < _render_settings.rough_reflections_sample_count; i++)
@@ -311,7 +310,7 @@ Color Renderer::compute_reflection(const Ray& ray, const Point& inter_point, con
 
         if (roughness > 0)
         {
-            Vector random_direction = normalize(Vector(_xorshift_generators[omp_get_thread_num()].get_rand_bilateral(), _xorshift_generators[omp_get_thread_num()].get_rand_bilateral(), _xorshift_generators[omp_get_thread_num()].get_rand_bilateral()));
+            Vector random_direction = normalize(Vector(_xorshift_generators[my_thread_num].get_rand_bilateral(), _xorshift_generators[my_thread_num].get_rand_bilateral(), _xorshift_generators[my_thread_num].get_rand_bilateral()));
             if (dot(random_direction, hit_info.normal_at_intersection) < 0)
                 random_direction = -random_direction;//TODO correct ?
 
@@ -580,7 +579,10 @@ Color Renderer::shade_ray_inter_point(const Ray& ray, HitInfo& hit_info, int cur
 
         Color diffuse_color;
         if (_render_settings.enable_diffuse_mapping)
+        {
             diffuse_color = diffuse_mapping(hit_info, u, v);
+            diffuse_color = diffuse_color * Color(std::max(0.5f, dot(hit_info.normal_at_intersection, normalize(_scene._camera._position - inter_point))));
+        }
         else
             diffuse_color = compute_diffuse(hit_material, hit_info.normal_at_intersection, direction_to_light);
 
