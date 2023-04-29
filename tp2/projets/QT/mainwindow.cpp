@@ -44,7 +44,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     connect(this, &MainWindow::disable_render_button_signal, this, &MainWindow::disable_render_button);
     connect(this, &MainWindow::enable_render_button_signal, this, &MainWindow::enable_render_button);
 
-    //TODO Load la skybox dans un thread pour pas freeze l'interface
     std::thread load_skybox_thread = std::thread([this]
     {
         //Disabling the render button as long as the skybox isn't loaded as this would cause
@@ -79,7 +78,6 @@ MainWindow::~MainWindow()
 
 void MainWindow::setup_render_display_context()
 {
-    //_render_display_context._graphics_scene = new QGraphicsScene(this);//TODO clean
     _render_display_context._graphics_view_zoom = new Graphics_view_zoom(ui->graphics_view);
 }
 
@@ -95,45 +93,10 @@ void MainWindow::update_render_image()
     //and that new update events should be sent yet to avoid
     //overloading the MainWindow thread (the Qt UI thread basically)
     _display_thread_handle.set_update_ongoing(true);
-    //TODO clean comments
-//    if (_render_display_context._q_image == nullptr)
-//    {
-//        #if QT_VERSION >= 0x060000
-//        _render_display_context._q_image = new QImage((uchar*)_renderer.get_image()->data(), _renderer.get_image()->width(), _renderer.get_image()->height(), QImage::Format_RGBA32FPx4);
-//        #else
-//            //Because Qt5 doesn't have the QImage::Format_RGBA32FPx4 format which our image is encoded in
-//            //we're converting our image to a Format_RGBA8888 which Qt5 supports
-//            uchar* image_8888_data = new uchar[_renderer.getImage()->width() * _renderer.getImage()->height() * 4];
-//            for (int i = 0; i < _renderer.getImage()->height(); i++)
-//            {
-//                for (int j = 0; j < _renderer.getImage()->width(); j++)
-//                {
-//                    uchar r, g, b, a;
-//                    r = (uchar)(std::clamp(_renderer.getImage()->operator()(j, i).r, 0.0f, 1.0f) * 255);
-//                    g = (uchar)(std::clamp(_renderer.getImage()->operator()(j, i).g, 0.0f, 1.0f) * 255);
-//                    b = (uchar)(std::clamp(_renderer.getImage()->operator()(j, i).b, 0.0f, 1.0f) * 255);
-//                    a = (uchar)(std::clamp(_renderer.getImage()->operator()(j, i).a, 0.0f, 1.0f) * 255);
 
-//                    image_8888_data[(i * _renderer.getImage()->width() + j) * 4 + 0] = r;
-//                    image_8888_data[(i * _renderer.getImage()->width() + j) * 4 + 1] = g;
-//                    image_8888_data[(i * _renderer.getImage()->width() + j) * 4 + 2] = b;
-//                    image_8888_data[(i * _renderer.getImage()->width() + j) * 4 + 3] = a;
-//                }
-//            }
-
-//            this->q_image = new QImage(image_8888_data, _renderer.getImage()->width(), _renderer.getImage()->height(), QImage::Format_RGBA8888);
-//        #endif
-//    }
-
-//Flipping the image because our ray tracer produces flipped images
-//#if QT_VERSION >= 0x060000
-//    _renderer.get_image()->mirror();
-//#else
     _renderer.lock_image_mutex();
     _render_display_context._mirrored_image_buffer = _renderer.get_image()->mirrored();
     _renderer.unlock_image_mutex();
-//    *_renderer.get_image() = QImage(mirrored);
-//#endif
 
     //We need to recreate the graphics scene every time to avoid
     //UI bugs (in particular when using SSAA)
@@ -185,6 +148,7 @@ void MainWindow::prepare_bvh()
 
 void MainWindow::prepare_renderer_buffers()
 {
+    bool new_render_method;
     bool new_ssaa, new_ssao;
     int new_ssaa_factor;
     int new_width = safe_text_to_int(ui->render_width_edit->text());
@@ -200,16 +164,21 @@ void MainWindow::prepare_renderer_buffers()
         new_ssaa_factor = _renderer.render_settings().ssaa_factor;
     new_ssao = this->ui->ssao_1_check_box->isChecked();
 
+    new_render_method = this->ui->hybrid_check_box->isChecked();
+
     bool render_size_changed = (new_width != _renderer.render_settings().image_width)   ||
                                (new_height != _renderer.render_settings().image_height) ||
                                (new_ssaa != _renderer.render_settings().enable_ssaa)    ||
                                (new_ssaa_factor != _renderer.render_settings().ssaa_factor);
 
+    bool render_method_changed = new_render_method != _renderer.render_settings().hybrid_rasterization_tracing;
+
     //Recreating the buffers if the width or the height changed
-    if (render_size_changed)
+    if (render_size_changed || render_method_changed)
     {
         _renderer.render_settings().enable_ssaa = new_ssaa;
         _renderer.render_settings().ssaa_factor = new_ssaa_factor;
+        _renderer.render_settings().hybrid_rasterization_tracing = new_render_method;
 
         _renderer.change_render_size(new_width, new_height);
     }
@@ -299,6 +268,10 @@ void MainWindow::load_obj(const char* filepath, Transform transform)
     timer.start();
 
     MeshIOData meshData = read_meshio_data(filepath);
+    meshData.materials.materials.at(0).roughness = 0.05;
+    meshData.materials.materials.at(0).reflection = 0.9;
+    meshData.materials.materials.at(0).specular = Color(0.2f);
+    meshData.materials.materials.at(0).diffuse = Color(0.5f);
     std::vector<Triangle> triangles = MeshIOUtils::create_triangles(meshData, _renderer.get_materials().count(), transform);
 
     _renderer.set_triangles(triangles);
@@ -320,7 +293,6 @@ void MainWindow::load_obj(const char* filepath, Transform transform)
 }
 
 //TODO les obj qui sortent de blender sont tout noir --> normals buguees ???
-//TODO opti le display thread en utilisant une QImage dans le renderer ? pour ne pas avoir a faire la conversion vers les float a chaque fois
 
 Image MainWindow::load_texture_map(const char* filepath) { return read_image(filepath, false); }
 
@@ -360,16 +332,9 @@ void MainWindow::on_load_geometry_obj_button_clicked()
     this->ui->object_scale_edit->setText("2.0/2.0/2.0");
 }
 
-void MainWindow::on_hybrid_check_box_stateChanged(int value)
-{
-    _renderer.render_settings().hybrid_rasterization_tracing = value;
-    this->ui->clipping_check_box->setEnabled(value);
-}
+void MainWindow::on_hybrid_check_box_stateChanged(int value) { this->ui->clipping_check_box->setEnabled(value); }
 
-void MainWindow::on_clipping_check_box_stateChanged(int value)
-{
-    _renderer.render_settings().enable_clipping = value;
-}
+void MainWindow::on_clipping_check_box_stateChanged(int value) { _renderer.render_settings().enable_clipping = value; }
 
 void MainWindow::on_dump_render_to_file_button_clicked()
 {

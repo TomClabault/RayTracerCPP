@@ -17,11 +17,11 @@ std::vector<Triangle> MeshIOUtils::create_triangles(const MeshIOData& meshData, 
 						  Point(meshTransform(meshData.positions[index2])));
         triangle._materialIndex = meshData.material_indices[i / 3] + current_material_count;
 
-        //if (meshData.texcoords.size() > 0)//If texcoords exist
-        //{
+        if (meshData.texcoords.size() > 0)//If texcoords exist
+        {
             triangle._tex_coords_u = Point(meshData.texcoords[index0].x, meshData.texcoords[index1].x, meshData.texcoords[index2].x);
             triangle._tex_coords_v = Point(meshData.texcoords[index0].y, meshData.texcoords[index1].y, meshData.texcoords[index2].y);
-        //}
+        }
 
 		_triangles.push_back(triangle);
 	}
