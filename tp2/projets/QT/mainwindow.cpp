@@ -596,7 +596,17 @@ void MainWindow::on_load_obj_file_button_clicked()
         QStringList files = dialog.selectedFiles();
         QString file_path = files[0];
 
-        load_obj(file_path.toStdString().c_str(), Identity());
+        std::thread load_obj_thread = std::thread([this, file_path]
+        {
+            //Disabling the render button as long as the skybox isn't loaded as this would cause
+            //undefined behavior. We're calling the 'emit_render_button' function here because
+            //the std::thread cannot directly interact with a Qt Widget. The QT Main UI thread
+            //has to do it so we're going to send a signal for it to do the job
+            this->emit_disable_render_button();
+            this->load_obj(file_path.toStdString().c_str(), Identity());
+            this->emit_enable_render_button();
+        });
+        load_obj_thread.detach();
     }
 }
 
