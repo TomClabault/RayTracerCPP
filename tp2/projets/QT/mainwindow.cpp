@@ -598,8 +598,8 @@ void MainWindow::on_load_obj_file_button_clicked()
 
         std::thread load_obj_thread = std::thread([this, file_path]
         {
-            //Disabling the render button as long as the skybox isn't loaded as this would cause
-            //undefined behavior. We're calling the 'emit_render_button' function here because
+            //Disabling the render button as long as the OBJ isn't loaded to avoid freezing the interface
+            //We're calling the 'emit_render_button' function here because
             //the std::thread cannot directly interact with a Qt Widget. The QT Main UI thread
             //has to do it so we're going to send a signal for it to do the job
             this->emit_disable_render_button();
