@@ -57,10 +57,10 @@ struct RenderSettings
     //Whether or not to use a BVH to intersect the scene
     bool enable_bvh = false;
     //Maximum depth of the BVH tree
-    int bvh_max_depth = 13;
+    int bvh_max_depth = 12;
     //Maximum number of objects per leaf of the BVH tree if the maximum recursion depth
     //defined by bvh_max_depth hasn't been reached
-    int bvh_leaf_object_count = 60;
+    int bvh_leaf_object_count = 40;
 
     //Whether or not to enable post-processing-screen-space ambient occlusion
     bool enable_ssao = false;
@@ -81,7 +81,7 @@ struct RenderSettings
     //Whether or not to compute the emissive component of 'RT_SHADING'
     bool enable_emissive = true;
     //Number of rays to trace to compute the average color of a rough reflection
-    int rough_reflections_sample_count = 8;
+    int rough_reflections_sample_count = 3;
 
     //Whether or not to use a texture to compute the ambient occlusion
     bool enable_ao_mapping = false;
