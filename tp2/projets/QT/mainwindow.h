@@ -36,6 +36,11 @@ public:
      */
     void set_update_ongoing(bool ongoing);
 
+    /**
+     * @brief This will ask the thread to exit its 'while true' display loop
+     */
+    void request_stop();
+
 signals:
     void update_image();
 
@@ -43,6 +48,10 @@ private:
     MainWindow* _main_window;
 
     bool _update_ongoing = false;
+
+    //The thread will loop indefinitely as long as this boolean is false.
+    //If this boolean is set to true (via 'request_stop'), the thread will exit
+    bool _stop_requested = false;
 };
 
 class RenderThread : public QThread
@@ -56,6 +65,7 @@ public:
 
 signals:
     void update_image();
+    void write_to_main_console(const std::string& str);
 
 private:
     MainWindow* _main_window;
@@ -108,6 +118,9 @@ public:
     void load_displacement_map(QString file_path);
     void load_roughness_map(QString file_path);
 
+    //This function is necessary as a 'standalone' function (and not an overload
+    //of 'write_to_console' because Qt doesn't support overloaded slots well
+    void write_to_console_str(const std::string& str);
     void write_to_console(const std::stringstream& ss);
 
     bool get_render_going();
@@ -115,11 +128,26 @@ public:
 
     Renderer& get_renderer();
 
+    //Functions used to emit the 'disable_render_button_signal' and
+    //'enable_render_button_signal' signals
+    void emit_disable_render_button();
+    void emit_enable_render_button();
+
+signals:
+    //These signals are used to allow a thread other than the QT Main UI
+    //thread to enable and disable to render button
+    void disable_render_button_signal();
+    void enable_render_button_signal();
+
 private:
     Transform get_object_transform_from_edits();
     Transform get_camera_transform_from_edits();
 
     void load_skybox_into_renderer(const QString& skybox_folder_path);
+
+    //As these functions should never be called by another thread, they are private
+    void disable_render_button();
+    void enable_render_button();
 
 private slots:
     void on_render_button_clicked();

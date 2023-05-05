@@ -42,7 +42,6 @@ list(APPEND SRC_FILES ${SRC_FILES_PROJETS_RENDERER})
 list(APPEND SRC_FILES ${SRC_FILES_PROJETS_QT})
 
 file(GLOB UI_FILES_PROJETS_QT ${PROJECT_SOURCE_DIR}/projets/QT/*.ui)
-#file(GLOB QRC_FILES_PROJETS_QT ${PROJECT_SOURCE_DIR}/darkstyle/*.qrc)
 
 #Copying ${SRC_FILES} into ${SRC_FILES_TESTS}
 list(APPEND SRC_FILES_TESTS ${SRC_FILES})
@@ -77,7 +76,6 @@ target_include_directories(RayTracing_Tests PRIVATE projets/QT/)
 #Adding OpenMP to the projects
 find_package(OpenMP)
 
-set (CMAKE_PREFIX_PATH "E:\\Programmes\\Qt\\6.3.2\\msvc2019_64")
 find_package(Qt6 COMPONENTS Core Widgets Gui OpenGL OpenGLWidgets)
 if (Qt6_FOUND)
     target_link_libraries(RayTracing PUBLIC OpenMP::OpenMP_CXX Qt6::Core Qt6::Widgets Qt6::Gui)
@@ -97,7 +95,6 @@ endif()
 #Copying the "data" folder into the binary directory so that the application has access to the data folder even when in the folders created by the QtCreator "compiler"
 message(${PROJECT_BINARY_DIR})
 file(COPY data DESTINATION ${PROJECT_BINARY_DIR})
-file(COPY darkstyle DESTINATION ${PROJECT_BINARY_DIR})
 message("/data OBJ files copied")
 
 #If CMAKE_BUILD_TYPE hasn't been specified on the commandline, defaulting to release
@@ -108,7 +105,7 @@ endif()
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     message("GNU Compiler Detected")
 
-    set(CMAKE_CXX_FLAGS "-Wall -Wextra -march=native") #Flags always active
+    set(CMAKE_CXX_FLAGS "-Wall -Wextra -march=native -mfma") #Flags always active
     set(CMAKE_CXX_FLAGS_DEBUG "-g") #Flags when compiling in debug
     set(CMAKE_CXX_FLAGS_RELEASE "-O3") #Flags when compiling in release
 

@@ -5,7 +5,7 @@ DisplayThread::DisplayThread(MainWindow* main_window) : _main_window(main_window
 
 void DisplayThread::run()
 {
-    while (true)
+    while (!_stop_requested)
     {
         if (_main_window->get_render_going())
         {
@@ -25,6 +25,11 @@ void DisplayThread::run()
 void DisplayThread::set_update_ongoing(bool ongoing)
 {
     _update_ongoing = ongoing;
+}
+
+void DisplayThread::request_stop()
+{
+    _stop_requested = true;
 }
 
 RenderThread::RenderThread(MainWindow* main_window) : _main_window(main_window) {}
@@ -51,7 +56,8 @@ void RenderThread::run()
     timer.stop();
     ss << "Post-processing time: " << timer.elapsed() << "ms";
 
-    _main_window->write_to_console(ss);
+    //Sending a signal to the main window for it to write the logs in the UI console
+    emit write_to_main_console(ss.str());
 
     //Render finished, we're sending a signal to the main window so that it
     //updates the display
