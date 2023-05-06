@@ -7,7 +7,7 @@ void Benchmark::benchmark_bvh_parameters(const char* filepath, Transform model_t
 	MeshIOData mesh_data = read_meshio_data(filepath);
     std::vector<Triangle> triangles = MeshIOUtils::create_triangles(mesh_data, 0, model_transform);
 
-    Scene scene = Scene(Camera(Point(0, 0, 0), 90), PointLight(Point(2, 0, 2)));//TODO mettre les Materials dans le renderer
+    Scene scene = Scene(Camera(Point(0, 0, 0), 90), PointLight(Point(2, 0, 2)));
 
 	int best_obj_count;
 	int best_depth;
