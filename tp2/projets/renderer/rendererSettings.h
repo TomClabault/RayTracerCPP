@@ -55,7 +55,7 @@ struct RenderSettings
     int max_recursion_depth = 5;
 
     //Whether or not to use a BVH to intersect the scene
-    bool enable_bvh = false;
+    bool enable_bvh = true;
     //Maximum depth of the BVH tree
     int bvh_max_depth = 12;
     //Maximum number of objects per leaf of the BVH tree if the maximum recursion depth

@@ -122,32 +122,22 @@ public:
     //of 'write_to_console' because Qt doesn't support overloaded slots well
     void write_to_console_str(const std::string& str);
     void write_to_console(const std::stringstream& ss);
+    /**
+     * @brief Allow writing to the console from a thread other than the main QT UI thread
+     * @param ss The stringstream to write
+     */
+    void write_to_console_external_thread(const std::stringstream& ss);
 
     bool get_render_going();
     void set_render_going(bool render_going);
 
     Renderer& get_renderer();
 
-    //Functions used to emit the 'disable_render_button_signal' and
-    //'enable_render_button_signal' signals
-    void emit_disable_render_button();
-    void emit_enable_render_button();
-
-signals:
-    //These signals are used to allow a thread other than the QT Main UI
-    //thread to enable and disable to render button
-    void disable_render_button_signal();
-    void enable_render_button_signal();
-
 private:
     Transform get_object_transform_from_edits();
     Transform get_camera_transform_from_edits();
 
     void load_skybox_into_renderer(const QString& skybox_folder_path);
-
-    //As these functions should never be called by another thread, they are private
-    void disable_render_button();
-    void enable_render_button();
 
 private slots:
     void on_render_button_clicked();

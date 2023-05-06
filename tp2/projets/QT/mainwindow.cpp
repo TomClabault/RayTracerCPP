@@ -41,20 +41,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     //Initializing the light's position
     on_light_position_edit_editingFinished();
 
-    connect(this, &MainWindow::disable_render_button_signal, this, &MainWindow::disable_render_button);
-    connect(this, &MainWindow::enable_render_button_signal, this, &MainWindow::enable_render_button);
-
-    std::thread load_skybox_thread = std::thread([this]
-    {
-        //Disabling the render button as long as the skybox isn't loaded as this would cause
-        //undefined behavior. We're calling the 'emit_render_button' function here because
-        //the std::thread cannot directly interact with a Qt Widget. The QT Main UI thread
-        //has to do it so we're going to send a signal for it to do the job
-        this->emit_disable_render_button();
-        this->load_skybox_into_renderer("data/skybox");
-        this->emit_enable_render_button();
-    });
-    load_skybox_thread.detach();
+    //This call is asynchronous and it disables the render button until the skybox is loaded
+    this->load_skybox_into_renderer("data/skybox");
     _renderer.render_settings().enable_skybox = true;
 
     setup_render_display_context();
@@ -268,7 +256,7 @@ void MainWindow::load_obj(const char* filepath, Transform transform)
     timer.start();
 
     MeshIOData meshData = read_meshio_data(filepath);
-    meshData.materials.materials.at(0).roughness = 0.05;
+    meshData.materials.materials.at(0).roughness = 0.0;
     meshData.materials.materials.at(0).reflection = 0.9;
     meshData.materials.materials.at(0).specular = Color(0.2f);
     meshData.materials.materials.at(0).diffuse = Color(0.5f);
@@ -304,15 +292,16 @@ void MainWindow::write_to_console_str(const std::string& str)
 
 void MainWindow::write_to_console(const std::stringstream& ss) { write_to_console_str(ss.str()); }
 
+void MainWindow::write_to_console_external_thread(const std::stringstream& ss)
+{
+    QMetaObject::invokeMethod(this->ui->output_console, "append", Qt::AutoConnection, Q_ARG(const char*, ss.str().c_str()));
+    QMetaObject::invokeMethod(this->ui->output_console, "ensureCursorVisible", Qt::AutoConnection);
+}
+
 bool MainWindow::get_render_going() { return _render_going; }
 void MainWindow::set_render_going(bool render_going) { _render_going = render_going; }
 
 Renderer& MainWindow::get_renderer() { return _renderer; }
-
-void MainWindow::emit_disable_render_button() { emit disable_render_button_signal(); }
-void MainWindow::emit_enable_render_button() { emit enable_render_button_signal(); }
-void MainWindow::disable_render_button() { this->ui->render_button->setEnabled(false); }
-void MainWindow::enable_render_button() { this->ui->render_button->setEnabled(true); }
 
 void MainWindow::on_load_robot_obj_button_clicked()
 {
@@ -598,13 +587,9 @@ void MainWindow::on_load_obj_file_button_clicked()
 
         std::thread load_obj_thread = std::thread([this, file_path]
         {
-            //Disabling the render button as long as the OBJ isn't loaded to avoid freezing the interface
-            //We're calling the 'emit_render_button' function here because
-            //the std::thread cannot directly interact with a Qt Widget. The QT Main UI thread
-            //has to do it so we're going to send a signal for it to do the job
-            this->emit_disable_render_button();
+            QMetaObject::invokeMethod(ui->render_button, "setEnabled", Qt::AutoConnection, Q_ARG(bool, false));
             this->load_obj(file_path.toStdString().c_str(), Identity());
-            this->emit_enable_render_button();
+            QMetaObject::invokeMethod(ui->render_button, "setEnabled", Qt::AutoConnection, Q_ARG(bool, true));
         });
         load_obj_thread.detach();
     }
@@ -947,78 +932,94 @@ void MainWindow::on_add_default_plane_button_clicked()
 
 void MainWindow::load_skybox_into_renderer(const QString& skybox_folder_path)
 {
-    QDir skybox_directory(skybox_folder_path);
+    std::thread skybox_thread([skybox_folder_path, this] {
+        //Disabling the render button as long as the skybox isn't loaded as launching
+        //a render while the skybox is still loading would cause undefined behavior.
+        //We need to use this QMetaObject::invokeMethod construct because we're not
+        //allowed to interact with QT widgets from outside the QT UI thread (the main thread
+        //of the application). So to be able to disable the render button from this thread
+        //we need to use this method
+        QMetaObject::invokeMethod(ui->render_button, "setEnabled", Qt::AutoConnection, Q_ARG(bool, false));
 
-    QStringList files = skybox_directory.entryList();
+        QDir skybox_directory(skybox_folder_path);
 
-    if (files.size() < 6)
-        return;
-    else
-    {
-        //right, left, top, bottom, back, front
-        Image faces[6];
-        bool found[6] = {false, false, false, false, false, false};
+        QStringList files = skybox_directory.entryList();
 
-        for (QString file : files)
+        if (files.size() < 6)
+            return;
+        else
         {
-            std::string file_path = skybox_directory.absolutePath().toStdString() + "/" + file.toStdString();
+            //right, left, top, bottom, back, front
+            Image faces[6];
+            bool found[6] = {false, false, false, false, false, false};
 
-            if ((file.endsWith("right.jpg") || file.endsWith("right.png")) &&!found[0])
+            for (QString file : files)
             {
-                faces[0] = load_texture_map(file_path.c_str());
-                found[0] = true;
+                std::string file_path = skybox_directory.absolutePath().toStdString() + "/" + file.toStdString();
+
+                if ((file.endsWith("right.jpg") || file.endsWith("right.png")) &&!found[0])
+                {
+                    faces[0] = load_texture_map(file_path.c_str());
+                    found[0] = true;
+                }
+                else if ((file.endsWith("left.jpg") || file.endsWith("left.png")) &&!found[1])
+                {
+                    faces[1] = load_texture_map(file_path.c_str());
+                    found[1] = true;
+                }
+                else if ((file.endsWith("top.jpg") || file.endsWith("top.png")) &&!found[2])
+                {
+                    faces[2] = load_texture_map(file_path.c_str());
+                    found[2] = true;
+                }
+                else if ((file.endsWith("bottom.jpg") || file.endsWith("bottom.png")) && !found[3])
+                {
+                    faces[3] = load_texture_map(file_path.c_str());
+                    found[3] = true;
+                }
+                else if ((file.endsWith("back.jpg") || file.endsWith("back.png")) &&!found[4])
+                {
+                    faces[4] = load_texture_map(file_path.c_str());
+                    found[4] = true;
+                }
+                else if ((file.endsWith("front.jpg") || file.endsWith("front.png")) &&!found[5])
+                {
+                    faces[5] = load_texture_map(file_path.c_str());
+                    found[5] = true;
+                }
             }
-            else if ((file.endsWith("left.jpg") || file.endsWith("left.png")) &&!found[1])
+
+            //Checking that all the faces were found in the folder
+            char faces_name[6][8] = {"right", "left", "top", "bottom", "back", "front"};
+            for (int i = 0; i < 6; i++)
             {
-                faces[1] = load_texture_map(file_path.c_str());
-                found[1] = true;
+                //If one face wasn't found
+                if (!found[i])
+                {
+                    std::stringstream ss;
+                    ss << "The face '" << faces_name[i] << "' wasn't found in the given folder. "
+                                                           "The folder must contains six images named "
+                                                           "'right', 'left', 'top', 'bottom', 'back', 'front' "
+                                                           "that all have the extension .jpg or .png.";
+
+                    write_to_console_external_thread(ss);
+
+                    QMetaObject::invokeMethod(ui->render_button, "setEnabled", Qt::AutoConnection, Q_ARG(bool, true));
+                    return;
+                }
             }
-            else if ((file.endsWith("top.jpg") || file.endsWith("top.png")) &&!found[2])
-            {
-                faces[2] = load_texture_map(file_path.c_str());
-                found[2] = true;
-            }
-            else if ((file.endsWith("bottom.jpg") || file.endsWith("bottom.png")) && !found[3])
-            {
-                faces[3] = load_texture_map(file_path.c_str());
-                found[3] = true;
-            }
-            else if ((file.endsWith("back.jpg") || file.endsWith("back.png")) &&!found[4])
-            {
-                faces[4] = load_texture_map(file_path.c_str());
-                found[4] = true;
-            }
-            else if ((file.endsWith("front.jpg") || file.endsWith("front.png")) &&!found[5])
-            {
-                faces[5] = load_texture_map(file_path.c_str());
-                found[5] = true;
-            }
+
+            _renderer.set_skybox(Skybox(faces));
+
+            QStringList split_path = skybox_folder_path.split("/");
+            QMetaObject::invokeMethod(this->ui->skybox_loaded_edit, "setText", Q_ARG(QString, split_path[split_path.size() - 1] + "/"));
         }
 
-        //Cjecking that all the faces were found in the folder
-        char faces_name[6][8] = {"right", "left", "top", "bottom", "back", "front"};
-        for (int i = 0; i < 6; i++)
-        {
-            //If one face wasn't found
-            if (!found[i])
-            {
-                std::stringstream ss;
-                ss << "The face '" << faces_name[i] << "' wasn't found in the given folder. "
-                                                       "The folder must contains six images named "
-                                                       "'right', 'left', 'top', 'bottom', 'back', 'front' "
-                                                       "that all have the extension .jpg or .png.";
+        //Re-enabling the render button
+        QMetaObject::invokeMethod(ui->render_button, "setEnabled", Qt::AutoConnection, Q_ARG(bool, true));
+    });
 
-                write_to_console(ss);
-
-                return;
-            }
-        }
-
-        _renderer.set_skybox(Skybox(faces));
-
-        QStringList split_path = skybox_folder_path.split("/");
-        this->ui->skybox_loaded_edit->setText(split_path[split_path.size() - 1] + "/");
-    }
+    skybox_thread.detach();
 }
 
 void MainWindow::on_load_skybox_button_clicked()
@@ -1055,12 +1056,18 @@ void MainWindow::on_load_skysphere_button_clicked()
         QStringList files = dialog.selectedFiles();
         QString file_path = files[0];
 
-        Image skysphere_tex = load_texture_map(file_path.toStdString().c_str());//TODO Image pas en float c'est trop lourd
+        std::thread skysphere_thread([this, file_path] {
+            QMetaObject::invokeMethod(ui->render_button, "setEnabled", Qt::AutoConnection, Q_ARG(bool, false));
+            Image skysphere_tex = load_texture_map(file_path.toStdString().c_str());//TODO Image pas en float c'est trop lourd
 
-        _renderer.set_skysphere(skysphere_tex);
+            _renderer.set_skysphere(skysphere_tex);
 
-        QStringList split_path = file_path.split("/");
-        this->ui->skysphere_loaded_edit->setText(split_path[split_path.size() - 1]);
+            QStringList split_path = file_path.split("/");
+            QMetaObject::invokeMethod(this->ui->skysphere_loaded_edit, "setText", Q_ARG(QString, split_path[split_path.size() - 1]));
+            QMetaObject::invokeMethod(ui->render_button, "setEnabled", Qt::AutoConnection, Q_ARG(bool, true));
+        });
+
+        skysphere_thread.detach();
     }
 }
 
@@ -1157,102 +1164,53 @@ void MainWindow::on_load_whole_texture_folder_clicked()
     {
         QString folder_path = dialog.selectedFiles()[0];
 
-        QDir texture_directory(folder_path);
+        std::thread texture_folder_thread([this, folder_path] {
+            QMetaObject::invokeMethod(ui->render_button, "setEnabled", Qt::AutoConnection, Q_ARG(bool, false));
 
-        for (QString file : texture_directory.entryList())
-        {
-            std::string file_path = texture_directory.absolutePath().toStdString() + "/" + file.toStdString();
+            QDir texture_directory(folder_path);
 
-            if (file == "ao.png" || file == "ao.jpg")
+            for (const QString& file : texture_directory.entryList())
             {
-                load_ao_map(QString(file_path.c_str()));
+                std::string file_path = texture_directory.absolutePath().toStdString() + "/" + file.toStdString();
 
-                this->ui->ao_map_check_box->setChecked(true);
-            }
-            else if (file == "diffuse.png" || file == "diffuse.jpg")
-            {
-                load_diffuse_map(QString(file_path.c_str()));
+                if (file == "ao.png" || file == "ao.jpg")
+                {
+                    load_ao_map(QString(file_path.c_str()));
 
-                this->ui->diffuse_map_check_box->setChecked(true);
-            }
-            else if (file == "normal.png" || file == "normal.jpg")
-            {
-                load_normal_map(QString(file_path.c_str()));
+                    QMetaObject::invokeMethod(ui->ao_map_check_box, "setChecked", Qt::AutoConnection, Q_ARG(bool, true));
+                }
+                else if (file == "diffuse.png" || file == "diffuse.jpg")
+                {
+                    load_diffuse_map(QString(file_path.c_str()));
 
-                this->ui->normal_map_check_box->setChecked(true);
-            }
-            else if (file == "displacement.png" || file == "displacement.jpg")
-            {
-                load_displacement_map(QString(file_path.c_str()));
+                    QMetaObject::invokeMethod(ui->diffuse_map_check_box, "setChecked", Qt::AutoConnection, Q_ARG(bool, true));
+                }
+                else if (file == "normal.png" || file == "normal.jpg")
+                {
+                    load_normal_map(QString(file_path.c_str()));
 
-                this->ui->displacement_map_check_box->setChecked(true);
-            }
-            else if (file == "roughness.png" || file == "roughness.jpg")
-            {
-                load_roughness_map(QString(file_path.c_str()));
+                    QMetaObject::invokeMethod(ui->normal_map_check_box, "setChecked", Qt::AutoConnection, Q_ARG(bool, true));
+                }
+                else if (file == "displacement.png" || file == "displacement.jpg")
+                {
+                    load_displacement_map(QString(file_path.c_str()));
 
-                this->ui->roughness_map_check_box->setChecked(true);
+                    QMetaObject::invokeMethod(ui->displacement_map_check_box, "setChecked", Qt::AutoConnection, Q_ARG(bool, true));
+                }
+                else if (file == "roughness.png" || file == "roughness.jpg")
+                {
+                    load_roughness_map(QString(file_path.c_str()));
+
+                    QMetaObject::invokeMethod(ui->roughness_map_check_box, "setChecked", Qt::AutoConnection, Q_ARG(bool, true));
+                }
             }
-        }
+
+            QMetaObject::invokeMethod(ui->render_button, "setEnabled", Qt::AutoConnection, Q_ARG(bool, true));
+        });
+
+        texture_folder_thread.detach();
     }
 }
-
-//TODO removed if unused after a while. Left here in case we need it after all
-//void MainWindow::on_go_behind_button_clicked()
-//{
-//    this->ui->camera_translation_edit->setText("0.0/0.0/-6.0");
-//    this->ui->camera_rotation_edit->setText("0.0/180.0/0.0");
-
-//    on_render_button_clicked();
-//}
-
-//void MainWindow::on_go_bottom_right_button_clicked()
-//{
-//    this->ui->camera_translation_edit->setText("4.2/0.0/0.0");
-//    this->ui->camera_rotation_edit->setText("0.0/55.0/0.0");
-
-//    on_render_button_clicked();
-//}
-
-//void MainWindow::on_go_bottom_left_button_clicked()
-//{
-//    this->ui->camera_translation_edit->setText("-4.2/0.0/0.0");
-//    this->ui->camera_rotation_edit->setText("0.0/-55.0/0.0");
-
-//    on_render_button_clicked();
-//}
-
-//void MainWindow::on_go_right_button_clicked()
-//{
-//    this->ui->camera_translation_edit->setText("-4.2/0.0/-3.0");
-//    this->ui->camera_rotation_edit->setText("0.0/90.0/0.0");
-
-//    on_render_button_clicked();
-//}
-
-//void MainWindow::on_go_left_button_clicked()
-//{
-//    this->ui->camera_translation_edit->setText("4.2/0.0/-3.0");
-//    this->ui->camera_rotation_edit->setText("0.0/-90.0/0.0");
-
-//    on_render_button_clicked();
-//}
-
-//void MainWindow::on_go_top_left_button_clicked()
-//{
-//    this->ui->camera_translation_edit->setText("-4.2/0.0/-6.0");
-//    this->ui->camera_rotation_edit->setText("0.0/-110.0/0.0");
-
-//    on_render_button_clicked();
-//}
-
-//void MainWindow::on_go_top_right_button_clicked()
-//{
-//    this->ui->camera_translation_edit->setText("4.2/0.0/-6.0");
-//    this->ui->camera_rotation_edit->setText("0.0/110.0/0.0");
-
-//    on_render_button_clicked();
-//}
 
 void MainWindow::on_go_in_front_button_clicked()
 {
