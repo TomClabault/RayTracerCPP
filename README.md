@@ -22,5 +22,5 @@ The mesh of the sphere is perfectly flat (analytic sphere). The perceived geomet
 - Super Sampling Anti Aliasing (SSAA)
 - AVX2 Screen Space Ambient Occlusion (SSAO) implementation
 ![AVX2 SSAO](data/img/ssao.jpg)
-- Hair modelisation
+- Hair modeling
 ![hair demo](data/img/hair.jpg)
